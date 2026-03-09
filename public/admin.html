@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+
+<title>Super Admin Dashboard</title>
+
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Arial;}
+
+body{display:flex;height:100vh;background:#f4f7fb;}
+
+.sidebar{
+width:240px;
+background:#1e293b;
+color:white;
+padding:25px;
+}
+
+.sidebar h2{margin-bottom:30px;}
+
+.sidebar button{
+width:100%;
+margin-bottom:12px;
+padding:10px;
+border:none;
+border-radius:6px;
+background:#334155;
+color:white;
+cursor:pointer;
+}
+
+.sidebar button:hover{background:#475569;}
+
+.main{flex:1;padding:25px;overflow:auto;}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(5,1fr);
+gap:15px;
+margin-bottom:25px;
+}
+
+.stat-card{
+background:white;
+padding:15px;
+border-radius:8px;
+box-shadow:0 4px 10px rgba(0,0,0,0.08);
+text-align:center;
+}
+
+.stat-card p{
+font-size:24px;
+font-weight:bold;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 4px 10px rgba(0,0,0,0.08);
+margin-bottom:20px;
+}
+
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #ddd;
+text-align:left;
+}
+
+th{background:#f1f5f9;}
+
+button.action{
+background:#ef4444;
+color:white;
+border:none;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer;
+}
+
+button.delete{
+background:#111;
+color:white;
+border:none;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer;
+margin-left:6px;
+}
+
+button.participants{
+background:#2563eb;
+color:white;
+border:none;
+padding:6px 10px;
+border-radius:6px;
+cursor:pointer;
+}
+
+input{
+padding:8px;
+width:250px;
+margin-bottom:10px;
+}
+
+.highlight{
+background:#fde68a;
+font-weight:bold;
+}
+
+.sidebar button.active{
+background:#2563eb;
+}
+
+#exportMenu button{
+background:#475569;
+margin-bottom:8px;
+font-size:14px;
+}
+
+#exportMenu button:hover{
+background:#64748b;
+}
+
+
+</style>
+
+</head>
+
+<body>
+
+<div class="sidebar">
+
+<h2>Admin Panel</h2>
+
+<button onclick="setActive(this);showDashboard()">Dashboard</button>
+
+<button onclick="setActive(this);showCreateUser()">Create User</button>
+
+<button onclick="setActive(this);loadStudents()">Students</button>
+
+<button onclick="setActive(this);loadOrganizers()">Organizers</button>
+
+<button onclick="setActive(this);loadHODs()">HODs</button>
+
+<button onclick="setActive(this);loadDepartments()">Departments</button>
+
+<button onclick="setActive(this);showCreateDepartment()">Create Department</button>
+
+<button onclick="setActive(this);loadEvents()">Events</button>
+
+<button onclick="setActive(this);attendanceAnalytics()">Attendance Analytics</button>
+
+<button onclick="setActive(this);loadAuditLogs()">Audit Logs</button>
+
+
+<button onclick="setActive(this);showExport()">Export</button>
+
+<button onclick="logout()">Logout</button>
+
+</div>
+
+<div class="main">
+
+<h1>Super Admin Dashboard</h1>
+
+<!-- STATS -->
+
+<div class="stats">
+
+<div class="stat-card">
+Students
+<p id="students">0</p>
+</div>
+
+<div class="stat-card">
+Organizers
+<p id="organizers">0</p>
+</div>
+
+<div class="stat-card">
+HODs
+<p id="hods">0</p>
+</div>
+
+<div class="stat-card">
+Events
+<p id="events">0</p>
+</div>
+
+<div class="stat-card">
+Participants
+<p id="participants">0</p>
+</div>
+
+</div>
+
+<!-- SEARCH -->
+
+<div class="card" id="searchCard" style="display:none">
+
+<h3>Search Users</h3>
+
+<input id="searchInput" placeholder="Search name/email/college id">
+
+<button onclick="searchUsers()">Search</button>
+
+</div>
+
+<!-- CREATE USER -->
+
+<div class="card" id="createDepartmentCard" style="display:none">
+
+<h2>Create Department</h2>
+
+<input id="departmentName" placeholder="Department Name">
+
+<button onclick="createDepartment()">Create Department</button>
+
+<p id="departmentMsg"></p>
+
+</div>
+
+<div class="card" id="createUserCard" style="display:none">
+
+<h2>Create User</h2>
+
+<input id="college_id" placeholder="College ID"><br> <input id="name" placeholder="Name"><br> <input id="email" placeholder="Email"><br> <input id="password" placeholder="Password"><br>
+
+<select id="role">
+<option value="student">Student</option>
+<option value="organizer">Organizer</option>
+<option value="hod">HOD</option>
+</select>
+
+<br>
+
+<input id="department_id" placeholder="Department ID"><br>
+
+<button onclick="createUser()">Create User</button>
+
+<p id="createMsg"></p>
+
+</div>
+
+<!-- TABLE -->
+
+<div class="card">
+
+<h2>Data</h2>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+<th>Name / Title</th>
+<th>Email / Info</th>
+<th>Status</th>
+<th>Participants</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="tableBody"></tbody>
+
+</table>
+
+</div>
+
+<!-- PARTICIPANTS -->
+
+<div class="card" id="participantsCard" style="display:none">
+
+<h2>Event Participants</h2>
+
+<table>
+
+<thead>
+<tr>
+<th>Name</th>
+<th>College ID</th>
+</tr>
+</thead>
+
+<tbody id="participantsTable"></tbody>
+
+</table>
+
+</div>
+
+<div class="card" id="exportCard" style="display:none">
+
+<h2>Export Data</h2>
+
+<button onclick="exportUsers()">Download Users</button>
+
+<button onclick="exportEvents()">Download Events</button>
+
+<button onclick="exportAttendance()">Download Attendance</button>
+
+<button onclick="exportParticipants()">Download Participants</button>
+
+<button onclick="exportAudit()">Download Audit Logs</button>
+
+</div>
+
+</div>
+
+<script>
+
+/* SECURITY */
+
+const role = localStorage.getItem("role")
+const token = localStorage.getItem("token")
+
+if(role !== "super_admin" || !token){
+alert("Access denied")
+window.location="login.html"
+}
+
+
+/* RESET UI */
+
+function resetUI(){
+
+document.getElementById("createUserCard").style.display="none"
+document.getElementById("participantsCard").style.display="none"
+document.getElementById("createDepartmentCard").style.display="none"
+document.getElementById("exportCard").style.display="none"
+document.getElementById("searchCard").style.display="none"
+
+document.getElementById("tableBody").innerHTML=""
+
+}
+
+
+/* DASHBOARD */
+
+function showDashboard(){
+resetUI()
+}
+
+
+/* CREATE USER */
+
+function showCreateUser(){
+resetUI()
+document.getElementById("createUserCard").style.display="block"
+}
+
+
+/* CREATE USER */
+
+async function createUser(){
+
+const college_id=document.getElementById("college_id").value
+const name=document.getElementById("name").value
+const email=document.getElementById("email").value
+const password=document.getElementById("password").value
+const role=document.getElementById("role").value
+const department_id=document.getElementById("department_id").value
+
+const res=await fetch("/api/auth/create-user",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
+},
+
+body:JSON.stringify({
+college_id,name,email,password,role,department_id
+})
+
+})
+
+const data=await res.json()
+
+document.getElementById("createMsg").innerText=data.message || data.error
+
+}
+
+
+/* LOAD STATS */
+
+async function loadStats(){
+
+const res=await fetch("/api/admin/stats",{
+headers:{Authorization:"Bearer "+token}
+})
+
+const data=await res.json()
+
+students.innerText=data.students
+organizers.innerText=data.organizers
+hods.innerText=data.hods
+events.innerText=data.events
+participants.innerText=data.participants
+
+}
+
+
+/* SEARCH USERS */
+
+function searchUsers(){
+
+const keyword = document.getElementById("searchInput").value.toLowerCase()
+
+const rows = document.querySelectorAll("#tableBody tr")
+
+rows.forEach(row=>{
+
+row.classList.remove("highlight")
+
+const id = row.children[0]?.innerText.toLowerCase() || ""
+const name = row.children[1]?.innerText.toLowerCase() || ""
+const email = row.children[2]?.innerText.toLowerCase() || ""
+
+if(
+id.includes(keyword) ||
+name.includes(keyword) ||
+email.includes(keyword)
+){
+row.style.display = ""
+if(keyword !== "") row.classList.add("highlight")
+}
+else{
+row.style.display = "none"
+}
+
+})
+
+}
+
+
+/* RENDER USERS */
+
+function renderUsers(data){
+
+const table=document.getElementById("tableBody")
+table.innerHTML=""
+
+data.forEach(item=>{
+
+const row=document.createElement("tr")
+
+row.innerHTML=`
+<td>${item.college_id || item.id}</td>
+<td>${item.name}</td>
+<td>${item.email}</td>
+<td>${item.role}</td>
+<td>-</td>
+<td>
+<button class="action" onclick="deactivate(${item.id})">Deactivate</button>
+<button class="delete" onclick="deleteUser(${item.id})">Delete</button>
+</td>
+`
+
+table.appendChild(row)
+
+})
+
+}
+
+
+/* USERS */
+
+async function loadStudents(){
+
+resetUI()
+
+document.getElementById("searchCard").style.display="block"
+
+const res=await fetch("/api/admin/users/student",{headers:{Authorization:"Bearer "+token}})
+renderUsers(await res.json())
+
+}
+
+async function loadOrganizers(){
+
+resetUI()
+
+document.getElementById("searchCard").style.display="block"
+
+const res=await fetch("/api/admin/users/organizer",{headers:{Authorization:"Bearer "+token}})
+renderUsers(await res.json())
+
+
+}
+
+async function loadHODs(){
+
+resetUI()
+
+document.getElementById("searchCard").style.display="block"
+
+const res=await fetch("/api/admin/users/hod",{headers:{Authorization:"Bearer "+token}})
+renderUsers(await res.json())
+
+}
+
+
+/* DEPARTMENTS */
+
+async function loadDepartments(){
+
+resetUI()
+
+document.getElementById("searchCard").style.display="block"
+
+const res=await fetch("/api/departments",{headers:{Authorization:"Bearer "+token}})
+const data=await res.json()
+
+const table=document.getElementById("tableBody")
+table.innerHTML=""
+
+data.forEach(dep=>{
+
+const row=document.createElement("tr")
+
+row.innerHTML=`
+<td>${dep.id}</td>
+<td>${dep.name}</td>
+<td>HOD: ${dep.hod_id || "-"}</td>
+<td>${dep.created_at}</td>
+<td>-</td>
+<td>
+<button class="delete" onclick="deleteDepartment(${dep.id})">
+Delete
+</button>
+</td>
+`
+
+table.appendChild(row)
+
+})
+
+}
+
+
+/* EVENTS */
+
+async function loadEvents(){
+
+resetUI()
+
+document.getElementById("searchCard").style.display="block"
+
+const res=await fetch("/api/admin/events",{headers:{Authorization:"Bearer "+token}})
+const data=await res.json()
+
+const table=document.getElementById("tableBody")
+table.innerHTML=""
+
+data.forEach(item=>{
+
+const row=document.createElement("tr")
+
+row.innerHTML=`
+<td>${item.id}</td>
+<td>${item.title}</td>
+<td>-</td>
+<td>${item.status}</td>
+<td>${item.participants || 0}</td>
+<td>
+<button class="participants" onclick="viewParticipants(${item.id})">
+View
+</button>
+</td>
+`
+
+table.appendChild(row)
+
+})
+
+}
+
+
+/* PARTICIPANTS */
+
+async function viewParticipants(event_id){
+
+const res = await fetch(`/api/admin/participants/${event_id}`,{
+headers:{Authorization:"Bearer "+token}
+})
+
+const data = await res.json()
+
+const table=document.getElementById("participantsTable")
+table.innerHTML=""
+
+data.forEach(p=>{
+
+const row=document.createElement("tr")
+
+row.innerHTML=`
+<td>${p.name}</td>
+<td>${p.college_id}</td>
+`
+
+table.appendChild(row)
+
+})
+
+document.getElementById("participantsCard").style.display="block"
+
+}
+
+
+/* ATTENDANCE ANALYTICS */
+
+async function attendanceAnalytics(){
+
+const res=await fetch("/api/admin/attendance-analytics",{
+headers:{Authorization:"Bearer "+token}
+})
+
+const data=await res.json()
+
+alert(
+"Present: "+data.present+
+"\nAbsent: "+data.absent+
+"\nOD: "+data.od
+)
+
+}
+
+/* AUDIT LOGS */
+
+async function loadAuditLogs(){
+
+resetUI()
+
+const res=await fetch("/api/admin/audit-logs",{
+headers:{Authorization:"Bearer "+token}
+})
+
+const data=await res.json()
+
+if(!Array.isArray(data)){
+console.log("Audit log error:",data)
+return
+}
+
+const table=document.getElementById("tableBody")
+table.innerHTML=""
+
+data.forEach(log=>{
+
+const row=document.createElement("tr")
+
+row.innerHTML=`
+<td>${log.id}</td>
+<td>${log.name || "User "+log.user_id}</td>
+<td>${log.action}</td>
+<td>${log.created_at}</td>
+<td>-</td>
+<td>-</td>
+`
+
+table.appendChild(row)
+
+})
+
+}
+
+
+
+/* USER ACTIONS */
+
+async function deactivate(id){
+
+await fetch("/api/admin/deactivate",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
+},
+body:JSON.stringify({user_id:id})
+})
+
+loadStats()
+
+}
+
+async function deleteUser(id){
+
+if(!confirm("Delete this user permanently?")) return
+
+await fetch("/api/admin/delete-user",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
+},
+body:JSON.stringify({user_id:id})
+})
+
+loadStats()
+
+}
+
+
+/* LOGOUT */
+
+function logout(){
+localStorage.clear()
+window.location="login.html"
+}
+
+/* active dashboard show */
+
+function setActive(btn){
+
+const buttons=document.querySelectorAll(".sidebar button")
+
+buttons.forEach(b=>b.classList.remove("active"))
+
+btn.classList.add("active")
+
+}
+
+/* show create department function */
+
+function showCreateDepartment(){
+
+resetUI()
+
+document.getElementById("createDepartmentCard").style.display="block"
+
+}
+
+/////////// second one
+
+async function createDepartment(){
+
+const name=document.getElementById("departmentName").value
+
+const res=await fetch("/api/departments/create",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
+},
+
+body:JSON.stringify({name})
+
+})
+
+const data=await res.json()
+
+document.getElementById("departmentMsg").innerText=data.message || data.error
+
+}
+
+/* delete department */
+
+async function deleteDepartment(id){
+
+if(!confirm("Delete this department?")) return
+
+await fetch("/api/departments/delete",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
+},
+
+body:JSON.stringify({department_id:id})
+
+})
+
+loadDepartments()
+
+}
+
+/* EXPORT FILES DOWNLOAD */
+
+function downloadFile(url,name){
+
+fetch(url,{
+headers:{Authorization:"Bearer "+token}
+})
+.then(res=>res.blob())
+.then(blob=>{
+
+const link=document.createElement("a")
+link.href=window.URL.createObjectURL(blob)
+link.download=name
+link.click()
+
+})
+
+}
+
+function exportUsers(){
+downloadFile("/api/admin/export-users","users.csv")
+}
+
+function exportEvents(){
+downloadFile("/api/admin/export-events","events.csv")
+}
+
+function exportAttendance(){
+downloadFile("/api/admin/export-attendance","attendance.csv")
+}
+
+function exportParticipants(){
+downloadFile("/api/admin/export-participants","participants.csv")
+}
+
+function exportAudit(){
+downloadFile("/api/admin/export-audit","audit_logs.csv")
+}
+
+/* TOGGLE EXPORT MENU */
+
+function toggleExportMenu(){
+
+const menu = document.getElementById("exportMenu")
+
+if(menu.style.display === "none"){
+menu.style.display = "block"
+}
+else{
+menu.style.display = "none"
+}
+
+}
+
+function showExport(){
+
+resetUI()
+
+document.getElementById("exportCard").style.display="block"
+
+}
+
+/* INIT */
+
+loadStats()
+
+</script>
+
+</body>
+</html>

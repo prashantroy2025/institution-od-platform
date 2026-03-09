@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Organizer Dashboard</title>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI,Arial;
+}
+
+body{
+display:flex;
+height:100vh;
+background:#f4f7fb;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+width:230px;
+background:#1e293b;
+color:white;
+padding:25px;
+}
+
+.sidebar h2{
+margin-bottom:30px;
+}
+
+.sidebar button{
+width:100%;
+margin-bottom:12px;
+padding:10px;
+border:none;
+border-radius:6px;
+background:#334155;
+color:white;
+cursor:pointer;
+transition:0.2s;
+}
+
+.sidebar button:hover{
+background:#475569;
+}
+
+/* MAIN */
+
+.main{
+flex:1;
+padding:25px;
+overflow:auto;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
+.header h1{
+font-size:24px;
+}
+
+/* CARDS */
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 4px 10px rgba(0,0,0,0.08);
+margin-bottom:20px;
+}
+
+/* GRID */
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+}
+
+/* INPUT */
+
+input{
+width:100%;
+padding:10px;
+margin-bottom:10px;
+border:1px solid #ccc;
+border-radius:6px;
+}
+
+/* BUTTON */
+
+.btn{
+background:#3b82f6;
+color:white;
+padding:10px 15px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+transition:0.15s;
+}
+
+.btn:hover{
+background:#2563eb;
+}
+
+.btn:active{
+transform:scale(0.95);
+}
+
+/* FILE INPUT */
+
+#file{
+background:#f1f5f9;
+padding:8px;
+border-radius:6px;
+}
+
+/* TABLE */
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #ddd;
+text-align:left;
+}
+
+th{
+background:#f1f5f9;
+}
+
+.stat{
+font-size:26px;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+
+<div class="sidebar">
+
+<h2>OD System</h2>
+
+<button onclick="scrollToSection('create')">Create Event</button>
+<button onclick="scrollToSection('upload')">Upload Participants</button>
+<button onclick="scrollToSection('attendance')">Attendance</button>
+<button onclick="scrollToSection('qr')">QR</button>
+<button onclick="scrollToSection('participants')">Participants</button>
+<button onclick="scrollToSection('analytics')">Analytics</button>
+
+<button onclick="logout()">Logout</button>
+
+</div>
+
+
+<!-- MAIN -->
+
+<div class="main">
+
+<div class="header">
+<h1>Organizer Dashboard</h1>
+</div>
+
+<div class="grid">
+
+<!-- CREATE EVENT -->
+
+<div class="card" id="create">
+
+<h3>Create Event</h3>
+
+<input id="title" placeholder="Event Title">
+<input id="club_id" placeholder="Club ID">
+<input id="department_id" placeholder="Department ID">
+<input id="date" placeholder="Date (YYYY-MM-DD)">
+
+<button class="btn" onclick="createEvent()">Create Event</button>
+
+<p id="eventMsg"></p>
+
+</div>
+
+
+<!-- ATTENDANCE CONTROL -->
+
+<div class="card" id="attendance">
+
+<h3>Attendance Control</h3>
+
+<input id="eventId" placeholder="Event ID">
+
+<button class="btn" onclick="startAttendance()">Start Attendance</button>
+<button class="btn" onclick="closeAttendance()">Close Attendance</button>
+
+</div>
+
+</div>
+
+
+<!-- UPLOAD PARTICIPANTS -->
+
+<div class="card" id="upload">
+
+<h3>Upload Participants</h3>
+
+<input type="text" id="upload_event_id" placeholder="Event ID">
+
+<input type="file" id="file" accept=".csv">
+
+<button class="btn" onclick="uploadFile()">Upload CSV</button>
+
+<p id="uploadStatus"></p>
+
+</div>
+
+
+<!-- QR -->
+
+<div class="card" id="qr">
+<h3>Event QR</h3>
+<div id="qrcode"></div>
+</div>
+
+
+<!-- PARTICIPANTS -->
+
+<div class="card" id="participants">
+
+<h3>Live Participants</h3>
+
+<p>Total: <span id="count">0</span></p>
+
+<table>
+
+<thead>
+<tr>
+<th>Student ID</th>
+<th>Time</th>
+</tr>
+</thead>
+
+<tbody id="list"></tbody>
+
+</table>
+
+</div>
+
+
+<!-- ANALYTICS -->
+
+<div class="card" id="analytics">
+
+<h3>Event Analytics</h3>
+
+<input id="eventIdAnalytics" placeholder="Event ID for analytics">
+
+<button class="btn" onclick="loadStats()">Load Analytics</button>
+
+<p>Total Participants: <span class="stat" id="stats">0</span></p>
+
+<canvas id="deptChart" height="120"></canvas>
+
+</div>
+
+</div>
+
+
+<script>
+
+const role = localStorage.getItem("role")
+
+if(role !== "organizer"){
+alert("Access denied")
+window.location = "login.html"
+}
+
+const token = localStorage.getItem("token")
+const socket = io("http://localhost:3000")
+
+let chart
+
+
+function scrollToSection(id){
+document.getElementById(id).scrollIntoView({behavior:"smooth"})
+}
+
+
+/* UPLOAD CSV */
+
+async function uploadFile(){
+
+const file=document.getElementById("file").files[0]
+const eventId=document.getElementById("upload_event_id").value
+
+if(!file || !eventId){
+alert("Select file and enter Event ID")
+return
+}
+
+const formData=new FormData()
+
+formData.append("file",file)
+formData.append("event_id",eventId)
+
+const res=await fetch(
+"http://localhost:3000/api/events/upload-participants",
+{
+method:"POST",
+headers:{Authorization:"Bearer "+token},
+body:formData
+})
+
+const data=await res.json()
+
+document.getElementById("uploadStatus").innerText=data.message
+
+}
+
+
+/* CREATE EVENT */
+
+async function createEvent(){
+
+const title=document.getElementById("title").value
+const club_id=document.getElementById("club_id").value
+const department_id=document.getElementById("department_id").value
+const date=document.getElementById("date").value
+
+const res=await fetch("http://localhost:3000/api/events/create",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+
+body:JSON.stringify({
+title:title,
+club_id:club_id,
+department_id:department_id,
+from_date:date,
+to_date:date,
+is_full_day:1
+})
+
+})
+
+const data=await res.json()
+
+document.getElementById("eventMsg").innerText=data.message
+
+}
+
+
+/* START ATTENDANCE */
+
+async function startAttendance(){
+
+const eventId=document.getElementById("eventId").value
+
+await fetch("http://localhost:3000/api/qr/start-attendance",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+
+body:JSON.stringify({event_id:eventId})
+
+})
+
+generateQR(eventId)
+
+}
+
+
+/* CLOSE ATTENDANCE */
+
+async function closeAttendance(){
+
+const eventId=document.getElementById("eventId").value
+
+await fetch("http://localhost:3000/api/qr/close-attendance",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+
+body:JSON.stringify({event_id:eventId})
+
+})
+
+alert("Attendance Closed")
+
+}
+
+
+/* GENERATE QR */
+
+let qrInterval = null
+
+async function generateQR(eventId){
+
+    // Clear previous QR rotation
+    if(qrInterval){
+        clearInterval(qrInterval)
+    }
+
+    // First QR load
+    await loadQR(eventId)
+
+    // Rotate QR every 20 seconds
+    qrInterval = setInterval(()=>{
+        loadQR(eventId)
+    },20000)
+
+}
+
+
+/* LOAD QR */
+
+async function loadQR(eventId){
+
+const res = await fetch("http://localhost:3000/api/qr/generate",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+
+body:JSON.stringify({event_id:eventId})
+
+})
+
+const data = await res.json()
+
+document.getElementById("qrcode").innerHTML = ""
+
+new QRCode(
+document.getElementById("qrcode"),
+{
+text:data.qr_data,
+width:250,
+height:250
+}
+)
+
+}
+
+/* stop qr */
+
+function stopQR(){
+
+if(qrInterval){
+clearInterval(qrInterval)
+}
+
+}
+
+
+/* ANALYTICS */
+
+async function loadStats(){
+
+const eventId=document.getElementById("eventIdAnalytics").value
+
+const res=await fetch("http://localhost:3000/api/qr/stats/"+eventId,{
+headers:{Authorization:"Bearer "+token}
+})
+
+const data=await res.json()
+
+document.getElementById("stats").innerText=data.participants
+
+const res2=await fetch("http://localhost:3000/api/events/"+eventId+"/analytics",{
+headers:{Authorization:"Bearer "+token}
+})
+
+const deptData=await res2.json()
+
+const labels=deptData.map(d=>d.department_name)
+const values=deptData.map(d=>d.count)
+
+if(chart) chart.destroy()
+
+const ctx=document.getElementById("deptChart")
+
+chart=new Chart(ctx,{
+type:"bar",
+data:{
+labels:labels,
+datasets:[{
+label:"Participants per Department",
+data:values
+}]
+},
+options:{
+responsive:true,
+plugins:{
+legend:{display:false}
+}
+}
+})
+
+}
+
+
+/* LIVE ATTENDANCE */
+
+socket.on("attendance_update",data=>{
+
+let count=document.getElementById("count")
+count.innerText=parseInt(count.innerText)+1
+
+const row=document.createElement("tr")
+
+row.innerHTML=`
+<td>${data.student_id}</td>
+<td>${new Date().toLocaleTimeString()}</td>
+`
+
+document.getElementById("list").appendChild(row)
+
+loadStats()
+
+})
+
+
+/* LOGOUT */
+
+function logout(){
+localStorage.clear()
+window.location="login.html"
+}
+
+</script>
+
+</body>
+</html>

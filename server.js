@@ -1,0 +1,133 @@
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+const rateLimit = require("express-rate-limit");
+
+const startTokenCleanup = require('./services/tokenCleanupService');
+
+const app = express();
+
+/* ---------------- MIDDLEWARE ---------------- */
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+/* ---------------- RATE LIMITERS ---------------- */
+
+const limiter = rateLimit({
+ windowMs: 1 * 60 * 1000,
+ max: 40
+});
+app.use(limiter);
+
+const loginLimiter = rateLimit({
+ windowMs: 15 * 60 * 1000,
+ max: 15
+});
+app.use("/api/auth/login", loginLimiter);
+
+const qrLimiter = rateLimit({
+ windowMs: 1 * 60 * 1000,
+ max: 15
+});
+app.use("/api/qr/scan", qrLimiter);
+
+/* ---------------- ROOT ROUTE ---------------- */
+
+app.get('/', (req, res) => {
+ res.send('Institution OD Platform API Running 🚀');
+});
+
+/* ---------------- ROUTES ---------------- */
+
+const departmentRoutes = require('./routes/departmentRoutes');
+app.use('/api/departments', departmentRoutes);
+
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
+
+const eventRoutes = require('./routes/eventRoutes');
+app.use('/api/events', eventRoutes);
+
+const hodRoutes = require('./routes/hodRoutes');
+app.use('/api/hod', hodRoutes);
+
+const studentRoutes = require('./routes/studentRoutes');
+app.use('/api/student', studentRoutes);
+
+const participantRoutes = require('./routes/participantRoutes');
+app.use('/api/participants', participantRoutes);
+
+const notificationRoutes = require('./routes/notificationRoutes');
+app.use('/api/notifications', notificationRoutes);
+
+const qrRoutes = require('./routes/qrRoutes');
+app.use('/api/qr', qrRoutes);
+
+const analyticsRoutes = require('./routes/analyticsRoutes');
+app.use('/api/analytics', analyticsRoutes);
+
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
+
+/* ---------------- ADMIN TEST ---------------- */
+
+const { verifyToken, allowRoles } = require('./middleware/authMiddleware');
+
+app.get(
+ '/api/admin/test',
+ verifyToken,
+ allowRoles('super_admin'),
+ (req, res) => {
+  res.json({ message: "Super Admin Access Granted" });
+ }
+);
+
+/* ---------------- 404 HANDLER ---------------- */
+
+app.use((req,res)=>{
+ res.status(404).json({
+  message:"Route not found"
+ });
+});
+
+/* ---------------- ERROR HANDLER ---------------- */
+
+const errorHandler = require('./middleware/errorMiddleware');
+app.use(errorHandler);
+
+/* ---------------- SOCKET.IO ---------------- */
+
+const http = require('http');
+const { Server } = require('socket.io');
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+ cors: { origin: "*" }
+});
+
+app.set("io", io);
+
+/* ---------------- SERVER START ---------------- */
+
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+ console.log(`Server running on port ${PORT}`);
+});
+
+/* ---------------- SERVICES ---------------- */
+
+startTokenCleanup();
+
+const qrService = require('./services/qrService');
+
+setInterval(()=>{
+ qrService.cleanExpiredTokens();
+},60000);
+
+/* ---------------- EVENT LIMIT ---------------- */
+
+require('events').EventEmitter.defaultMaxListeners = 20;

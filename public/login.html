@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>College OD System</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI,Arial,sans-serif;
+}
+
+body{
+
+height:100vh;
+display:flex;
+background:linear-gradient(-45deg,#3a7bd5,#00d2ff,#43cea2,#185a9d);
+background-size:400% 400%;
+animation:bgMove 12s ease infinite;
+
+}
+
+@keyframes bgMove{
+
+0%{background-position:0% 50%;}
+50%{background-position:100% 50%;}
+100%{background-position:0% 50%;}
+
+}
+
+/* LEFT SIDE */
+
+.left{
+
+flex:1;
+display:flex;
+justify-content:center;
+align-items:center;
+color:white;
+padding:60px;
+text-align:center;
+
+}
+
+.left h1{
+
+font-size:40px;
+margin-bottom:15px;
+
+}
+
+.left p{
+
+font-size:18px;
+opacity:0.9;
+
+}
+
+/* RIGHT SIDE */
+
+.right{
+
+flex:1;
+display:flex;
+justify-content:center;
+align-items:center;
+
+}
+
+/* LOGIN CARD */
+
+.card{
+
+width:380px;
+padding:45px;
+
+background:rgba(255,255,255,0.15);
+backdrop-filter:blur(15px);
+
+border-radius:20px;
+
+box-shadow:0 25px 45px rgba(0,0,0,0.2);
+
+}
+
+/* TITLE */
+
+.card h2{
+
+text-align:center;
+color:white;
+margin-bottom:30px;
+
+}
+
+/* INPUT GROUP */
+
+.input-group{
+
+position:relative;
+margin-bottom:22px;
+
+}
+
+.input-group input{
+
+width:100%;
+padding:14px 40px;
+
+border:none;
+border-radius:8px;
+
+outline:none;
+
+font-size:15px;
+
+}
+
+.input-group input:focus{
+
+box-shadow:0 0 12px rgba(255,255,255,0.8);
+
+}
+
+/* ICONS */
+
+.icon{
+
+position:absolute;
+left:12px;
+top:50%;
+transform:translateY(-50%);
+font-size:18px;
+
+}
+
+/* PASSWORD TOGGLE */
+
+.toggle{
+
+position:absolute;
+right:12px;
+top:50%;
+transform:translateY(-50%);
+cursor:pointer;
+
+}
+
+/* BUTTON */
+
+button{
+
+width:100%;
+padding:14px;
+
+border:none;
+border-radius:8px;
+
+background:white;
+
+font-weight:bold;
+
+font-size:16px;
+
+cursor:pointer;
+
+transition:0.15s;
+
+display:flex;
+justify-content:center;
+align-items:center;
+
+}
+
+/* CLICK EFFECT */
+
+button:active{
+
+transform:scale(0.96);
+box-shadow:0 3px 10px rgba(0,0,0,0.4) inset;
+
+}
+
+/* LOADER */
+
+.loader{
+
+border:3px solid #ddd;
+border-top:3px solid black;
+
+border-radius:50%;
+
+width:20px;
+height:20px;
+
+animation:spin 1s linear infinite;
+
+display:none;
+
+}
+
+@keyframes spin{
+
+0%{transform:rotate(0deg);}
+100%{transform:rotate(360deg);}
+
+}
+
+/* MESSAGE */
+
+#msg{
+
+margin-top:15px;
+text-align:center;
+color:white;
+
+}
+
+/* MOBILE */
+
+@media(max-width:900px){
+
+.left{
+display:none;
+}
+
+body{
+justify-content:center;
+align-items:center;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="left">
+
+<div>
+
+<h1>College OD Automation</h1>
+
+<p>
+QR based attendance and automated OD approval system
+</p>
+
+</div>
+
+</div>
+
+
+<div class="right">
+
+<div class="card">
+
+<h2>Login</h2>
+
+<div class="input-group">
+
+<span class="icon">📧</span>
+
+<input id="email" placeholder="Email">
+
+</div>
+
+
+<div class="input-group">
+
+<span class="icon">🔒</span>
+
+<input id="password" type="password" placeholder="Password">
+
+<span class="toggle" onclick="togglePassword()">👁</span>
+
+</div>
+
+
+<button onclick="login()">
+
+<span id="btnText">Login</span>
+
+<div class="loader" id="loader"></div>
+
+</button>
+
+<p id="msg"></p>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* ENTER KEY LOGIN */
+
+document.addEventListener("keypress",function(e){
+
+if(e.key==="Enter"){
+login();
+}
+
+});
+
+
+function togglePassword(){
+
+const p = document.getElementById("password");
+
+if(p.type==="password"){
+p.type="text";
+}else{
+p.type="password";
+}
+
+}
+
+
+async function login(){
+
+const email = document.getElementById("email").value;
+const password = document.getElementById("password").value;
+
+document.getElementById("btnText").style.display="none";
+document.getElementById("loader").style.display="block";
+
+const res = await fetch("http://localhost:3000/api/auth/login",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+email:email,
+password:password
+})
+});
+
+const data = await res.json();
+
+document.getElementById("loader").style.display="none";
+document.getElementById("btnText").style.display="block";
+
+if(data.token){
+
+localStorage.setItem("token",data.token);
+localStorage.setItem("role",data.user.role);
+
+console.log("User role:",data.user.role);
+
+document.getElementById("msg").innerText="Login success";
+
+redirectUser(data.user.role);
+
+}
+else{
+
+document.getElementById("msg").innerText=data.message;
+
+}
+
+}
+
+
+function redirectUser(role){
+
+if(role==="organizer"){
+window.location.href="/organizer.html";
+}
+
+else if(role==="student"){
+window.location.href="/student.html";
+}
+
+else if(role==="hod"){
+window.location.href="/hod.html";
+}
+
+else if(role==="super_admin"){
+window.location.href="/admin.html";
+}
+
+}
+
+</script>
+
+</body>
+</html>
+```

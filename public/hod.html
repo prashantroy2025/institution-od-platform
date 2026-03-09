@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>HOD Dashboard</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI, Arial;
+}
+
+body{
+display:flex;
+height:100vh;
+background:#f1f5f9;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+
+width:230px;
+background:#1e293b;
+color:white;
+padding:25px;
+
+}
+
+.sidebar h2{
+margin-bottom:30px;
+}
+
+.sidebar button{
+
+width:100%;
+margin-bottom:12px;
+padding:10px;
+
+border:none;
+border-radius:6px;
+
+background:#334155;
+color:white;
+
+cursor:pointer;
+transition:0.2s;
+
+}
+
+.sidebar button:hover{
+background:#475569;
+}
+
+/* MAIN */
+
+.main{
+
+flex:1;
+padding:25px;
+overflow:auto;
+
+}
+
+/* HEADER */
+
+.header{
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+
+}
+
+.header h1{
+font-size:24px;
+}
+
+/* EVENT GRID */
+
+.grid{
+
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+gap:20px;
+
+}
+
+/* CARD */
+
+.card{
+
+background:white;
+padding:20px;
+border-radius:10px;
+
+box-shadow:0 4px 10px rgba(0,0,0,0.08);
+
+transition:0.2s;
+
+}
+
+.card:hover{
+transform:translateY(-3px);
+}
+
+/* STATUS BADGE */
+
+.badge{
+
+display:inline-block;
+
+padding:4px 10px;
+
+border-radius:5px;
+
+background:#fbbf24;
+
+color:white;
+
+font-size:12px;
+
+margin-bottom:10px;
+
+}
+
+/* BUTTONS */
+
+.btn{
+
+padding:8px 14px;
+
+border:none;
+border-radius:6px;
+
+cursor:pointer;
+
+font-size:14px;
+
+margin-right:6px;
+
+}
+
+.approve{
+
+background:#10b981;
+color:white;
+
+}
+
+.reject{
+
+background:#ef4444;
+color:white;
+
+}
+
+.btn:hover{
+opacity:0.9;
+}
+
+/* EMPTY */
+
+.empty{
+
+color:#64748b;
+font-size:18px;
+margin-top:20px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+<!-- SIDEBAR -->
+
+<div class="sidebar">
+
+<h2>OD System</h2>
+
+<button onclick="loadEvents()">Pending Events</button>
+<button onclick="logout()">Logout</button>
+
+</div>
+
+
+<!-- MAIN -->
+
+<div class="main">
+
+<div class="header">
+
+<h1>HOD Dashboard</h1>
+
+<button class="btn approve" onclick="loadEvents()">Refresh</button>
+
+</div>
+
+<div class="grid" id="events"></div>
+
+</div>
+
+
+<script>
+
+const role = localStorage.getItem("role")
+
+if(role !== "hod"){
+alert("Access denied")
+window.location = "login.html"
+}
+
+const token = localStorage.getItem("token")
+
+
+async function loadEvents(){
+
+const res = await fetch("http://localhost:3000/api/events/pending",{
+
+headers:{
+"Authorization":"Bearer "+token
+}
+
+})
+
+const data = await res.json()
+
+const container=document.getElementById("events")
+
+container.innerHTML=""
+
+if(data.length===0){
+
+container.innerHTML="<p class='empty'>No pending events</p>"
+return
+
+}
+
+data.forEach(event=>{
+
+const div=document.createElement("div")
+
+div.className="card"
+
+div.innerHTML=`
+
+<span class="badge">Pending Approval</span>
+
+<h3>${event.title}</h3>
+
+<p><b>Date:</b> ${event.from_date}</p>
+
+<p><b>Department:</b> ${event.department_id}</p>
+
+<br>
+
+<button class="btn approve" onclick="approve(${event.id})">Approve</button>
+
+<button class="btn reject" onclick="reject(${event.id})">Reject</button>
+
+`
+
+container.appendChild(div)
+
+})
+
+}
+
+
+async function approve(id){
+
+await fetch("http://localhost:3000/api/events/approve",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+
+body:JSON.stringify({event_id:id})
+
+})
+
+loadEvents()
+
+}
+
+
+async function reject(id){
+
+await fetch("http://localhost:3000/api/events/reject",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+
+body:JSON.stringify({event_id:id})
+
+})
+
+loadEvents()
+
+}
+
+
+function logout(){
+
+localStorage.clear()
+
+window.location="login.html"
+
+}
+
+
+loadEvents()
+
+</script>
+
+</body>
+</html>
+
