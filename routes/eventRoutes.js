@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const eventController = require('../controllers/eventController');
+const participantController = require('../controllers/participantController');
 const { verifyToken, allowRoles } = require('../middleware/authMiddleware');
 
 router.post(
@@ -9,6 +10,13 @@ router.post(
 verifyToken,
 allowRoles("organizer"),
 eventController.createEvent
+);
+
+router.get(
+"/my-events",
+verifyToken,
+allowRoles("organizer"),
+eventController.getMyEvents
 );
 
 router.get(
@@ -31,4 +39,41 @@ verifyToken,
 allowRoles("hod"),
 eventController.rejectEvent
 );
+
+router.get(
+"/find-event",
+verifyToken,
+allowRoles("organizer"),
+eventController.findEventByName
+);
+
+router.get(
+"/event/:id",
+verifyToken,
+allowRoles("organizer"),
+participantController.getParticipantsByEvent
+);
+
+router.delete(
+"/delete/:id",
+verifyToken,
+allowRoles("organizer"),
+eventController.deleteEvent
+)
+
+router.get(
+"/history",
+verifyToken,
+allowRoles("organizer"),
+eventController.getHistory
+)
+
+router.post(
+"/recover/:id",
+verifyToken,
+allowRoles("organizer"),
+eventController.recoverEvent
+)
+
+
 module.exports = router;

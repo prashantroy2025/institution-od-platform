@@ -3,26 +3,65 @@ const notificationService = require('../services/notificationService');
 
 exports.createEvent = (req, res) => {
 
-    const { club_id, title, department_id, from_date, to_date, is_full_day } = req.body;
+let {
+club_id,
+title,
+from_date,
+to_date,
+start_time,
+end_time,
+is_full_day
+} = req.body;
 
-    if (!club_id || !title || !department_id || !from_date || !to_date) {
+const department_id = req.user.department_id;
+
+if (!club_id || !title || !from_date || !to_date) {
         return res.status(400).json({ message: "Missing required fields" });
     }
 
+if (new Date(to_date) < new Date(from_date)) {
+return res.status(400).json({
+message: "To date cannot be earlier than from date"
+});
+}
+
+if (start_time && end_time && start_time > end_time) {
+return res.status(400).json({
+message: "End time must be after start time"
+});
+}
+
+if(is_full_day){
+start_time = null;
+end_time = null;
+}
+
     const proof_file = req.file ? req.file.filename : null;
 
-    db.query(
-    `INSERT INTO events 
-    (club_id, title, department_id, from_date, to_date, is_full_day, proof_file, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')`,
-    [club_id, title, department_id, from_date, to_date, is_full_day || 0, proof_file],
-        (err, result) => {
+db.query(
+`INSERT INTO events 
+(club_id, organizer_id, title, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')`,
+[
+club_id,
+req.user.id,
+title,
+department_id,
+from_date,
+to_date,
+start_time,
+end_time,
+is_full_day || 0,
+proof_file
+],
+(err, result) => {
 
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
+if (err) {
+return res.status(500).json({ error: err.message });
+}
 
-            const eventId = result.insertId;
+const eventId = result.insertId;
+
 
             // 🔔 Notify HOD
             db.query(
@@ -85,9 +124,11 @@ exports.approveEvent = (req, res) => {
     [event_id, req.user.department_id],
         (err, result) => {
 
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
+            if(result.affectedRows === 0){
+              return res.status(404).json({
+             message:"Event not found or unauthorized"
+              });
+          }
 
             res.json({
                 message: "Event approved successfully"
@@ -106,9 +147,11 @@ exports.rejectEvent = (req, res) => {
         [event_id, req.user.department_id],
         (err, result) => {
 
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
+            if(result.affectedRows === 0){
+               return res.status(404).json({
+                message:"Event not found or unauthorized"
+                 });
+         }
 
             res.json({
                 message: "Event rejected"
@@ -118,3 +161,122 @@ exports.rejectEvent = (req, res) => {
     );
 
 };
+
+exports.getMyEvents = (req,res)=>{
+
+const organizer_id = req.user.id;
+
+db.query(
+`SELECT id,title,from_date,to_date,start_time,end_time,status
+FROM events
+WHERE organizer_id=? AND is_deleted=0
+ORDER BY 
+CASE
+WHEN status='Pending' THEN 1
+WHEN status='Approved' THEN 2
+WHEN status='Rejected' THEN 3
+END,
+created_at DESC`,
+[organizer_id],
+(err,rows)=>{
+
+if(err){
+return res.status(500).json({error:err.message})
+}
+
+res.json(rows)
+
+})
+
+}
+
+
+exports.findEventByName=(req,res)=>{
+
+const title=req.query.title
+
+db.query(
+"SELECT id,title FROM events WHERE LOWER(title) LIKE LOWER(?) LIMIT 1",
+["%" + title + "%"],
+(err,rows)=>{
+
+if(err) return res.status(500).json(err)
+
+if(rows.length===0){
+return res.json({message:"Not found"})
+}
+
+res.json(rows[0])
+
+})
+
+}
+
+
+exports.deleteEvent = (req,res)=>{
+
+const eventId = req.params.id
+
+db.query(
+"UPDATE events SET is_deleted=1 WHERE id=? AND organizer_id=?",
+[eventId, req.user.id],
+(err,result)=>{
+
+if(err){
+return res.status(500).json({error:err.message})
+}
+
+// insert history
+db.query(
+"INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
+[req.user.id,"DELETE_EVENT","events",eventId]
+)
+
+res.json({message:"Event deleted successfully"})
+})
+
+}
+
+exports.getHistory = (req,res)=>{
+
+db.query(
+`SELECT a.action,a.entity,a.entity_id,a.created_at,u.name,e.title
+FROM audit_logs a
+JOIN users u ON a.user_id=u.id
+ORDER BY a.created_at DESC`,
+(err,rows)=>{
+
+if(err){
+return res.status(500).json(err)
+}
+
+res.json(rows)
+
+})
+
+}
+
+exports.recoverEvent = (req,res)=>{
+
+const eventId = req.params.id
+
+db.query(
+"UPDATE events SET is_deleted=0 WHERE id=?",
+[eventId],
+(err,result)=>{
+
+if(err){
+return res.status(500).json({error:err.message})
+}
+
+// history log
+db.query(
+"INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
+[req.user.id,"RECOVER_EVENT","events",eventId]
+)
+
+res.json({message:"Event recovered successfully"})
+
+})
+
+}

@@ -3,33 +3,29 @@ const db = require('../config/db');
 
 // ------------------ EVENT ANALYTICS ------------------
 
-exports.getEventAnalytics = (req, res) => {
+exports.getEventAnalytics = (req,res)=>{
 
-    const event_id = req.params.event_id;
+const eventId = req.params.eventId
 
-    const query = `
-        SELECT
-            (SELECT COUNT(*) FROM event_participants WHERE event_id = ?) AS participants,
-            (SELECT COUNT(*) FROM od_applications WHERE event_id = ?) AS od_requests,
-            (SELECT COUNT(*) FROM attendance a
-                JOIN od_applications o ON a.student_id = o.student_id
-                WHERE o.event_id = ? AND a.status = 'OD'
-            ) AS attendance_marked
-    `;
+db.query(
+`SELECT 
+COUNT(*) as total,
+MIN(scan_time) as first_scan,
+MAX(scan_time) as last_scan
+FROM event_participants
+WHERE event_id=?`,
+[eventId],
+(err,rows)=>{
 
-    db.query(query, [event_id, event_id, event_id], (err, rows) => {
+if(err){
+return res.status(500).json({error:err.message})
+}
 
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+res.json(rows[0])
 
-        res.json(rows[0]);
+})
 
-    });
-
-};
-
-
+}
 // ------------------ SYSTEM STATS ------------------
 
 exports.getSystemStats = (req, res) => {

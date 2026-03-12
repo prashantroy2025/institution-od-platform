@@ -6,21 +6,33 @@ const db = require('../config/db');
 
 exports.getQR = (req, res) => {
 
-    const { event_id } = req.body;
+const { event_id } = req.body;
 
-    qrService.generateQRToken(event_id, (err, token) => {
+if(!event_id){
+return res.status(400).json({
+message:"Event ID required"
+});
+}
 
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+qrService.generateQRToken(event_id,(err,token)=>{
 
-        const qrUrl = `http://192.168.0.116:3000/scan.html?token=${token}`;
+if(err){
+return res.status(500).json({error:err.message});
+}
 
-        res.json({
-            qr_data: qrUrl
-        });
+if(!token){
+return res.status(500).json({
+message:"QR token generation failed"
+});
+}
 
-    });
+const qrUrl = `${req.protocol}://${req.get("host")}/scan.html?token=${token}`;
+
+res.json({
+qr_data: qrUrl
+});
+
+});
 
 };
 

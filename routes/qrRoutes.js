@@ -38,4 +38,18 @@ allowRoles("organizer"),
 qrController.getEventStats
 );
 
+router.post(
+"/start-attendance",
+verifyToken,
+allowRoles("organizer"),
+qrController.startAttendance
+)
+
+router.post(
+"/close-attendance",
+verifyToken,
+allowRoles("organizer"),
+qrController.closeAttendance
+);
+
 module.exports = router;
