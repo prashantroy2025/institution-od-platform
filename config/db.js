@@ -1,3 +1,4 @@
+/*
 const mysql = require("mysql2");
 
 const db = mysql.createConnection({
@@ -19,4 +20,22 @@ db.connect((err) => {
 module.exports = db;
 
 // hopper.proxy.rlwy.net:38034
-//mysql-production-a450.up.railway.app
+//mysql-production-a450.up.railway.app 
+
+*/
+
+const mysql = require("mysql2");
+
+const db = mysql.createPool({
+  host: process.env.MYSQLHOST,
+  port: process.env.MYSQLPORT,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  waitForConnections: true,
+  connectionLimit: 10
+});
+
+console.log("Database config loaded");
+
+module.exports = db.promise();
