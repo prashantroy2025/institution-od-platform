@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const rateLimit = require("express-rate-limit");
 const morgan = require("morgan")
+require("./config/db"); // initialize database connection
 
 const startTokenCleanup = require('./services/tokenCleanupService');
 
@@ -13,7 +14,8 @@ console.log("Server file loaded");
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+const path = require("path");
+app.use(express.static(path.join(__dirname, "public")));
 if(process.env.NODE_ENV !== "production"){
   app.use(morgan("dev"))
 }
@@ -41,6 +43,12 @@ app.use("/api/qr/scan", qrLimiter);
 
 app.get('/', (req, res) => {
  res.send('Institution OD Platform API Running 🚀');
+});
+
+/* ---------------- HEALTH CHECK ---------------- */
+
+app.get("/health", (req, res) => {
+ res.status(200).send("OK");
 });
 
 /* ---------------- ROUTES ---------------- */
