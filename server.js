@@ -48,7 +48,11 @@ app.get('/', (req, res) => {
 /* ---------------- HEALTH CHECK ---------------- */
 
 app.get("/health", (req, res) => {
- res.status(200).send("OK");
+ res.status(200).json({
+  status: "OK",
+  service: "OD Platform",
+  time: new Date()
+ });
 });
 
 /* ---------------- ROUTES ---------------- */
@@ -143,3 +147,13 @@ setInterval(()=>{
 /* ---------------- EVENT LIMIT ---------------- */
 
 require('events').EventEmitter.defaultMaxListeners = 20;
+
+/* ---------------- GLOBAL ERROR HANDLING ---------------- */
+
+process.on("uncaughtException", (err) => {
+ console.error("Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+ console.error("Unhandled Promise Rejection:", err);
+});
