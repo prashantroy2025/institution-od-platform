@@ -1,39 +1,40 @@
 const crypto = require('crypto');
 const db = require('../config/db');
 
-exports.generateQRToken = (event_id, callback) => {
+exports.generateQRToken = async (event_id) => {
 
-const token = crypto.randomBytes(16).toString("hex");
+  const token = crypto.randomBytes(16).toString("hex");
+  const expires = new Date(Date.now() + 20000);
 
-const expires = new Date(Date.now() + 20000);
+  try {
 
-db.query(
-"INSERT INTO event_qr_tokens (event_id, token, expires_at) VALUES (?, ?, ?)",
-[event_id, token, expires],
-(err,result)=>{
+    await db.query(
+      "INSERT INTO event_qr_tokens (event_id, token, expires_at) VALUES (?, ?, ?)",
+      [event_id, token, expires]
+    );
 
-if(err){
-return callback(err,null);
-}
+    return token;
 
-callback(null,token);
-
-}
-);
+  } catch (err) {
+    throw err;
+  }
 
 };
 
-exports.cleanExpiredTokens = () => {
+exports.cleanExpiredTokens = async () => {
 
-    db.query(
-        "DELETE FROM event_qr_tokens WHERE expires_at < NOW()",
-        (err) => {
-            if(err){
-                console.error("QR cleanup error:",err)
-            }else{
-                console.log("Expired QR tokens cleaned")
-            }
-        }
-    )
+  try {
 
-}
+    await db.query(
+      "DELETE FROM event_qr_tokens WHERE expires_at < NOW()"
+    );
+
+    console.log("Expired QR tokens cleaned");
+
+  } catch (err) {
+
+    console.error("QR cleanup error:", err);
+
+  }
+
+};
