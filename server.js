@@ -7,6 +7,7 @@ const morgan = require("morgan")
 const startTokenCleanup = require('./services/tokenCleanupService');
 
 const app = express();
+console.log("Server file loaded");
 
 /* ---------------- MIDDLEWARE ---------------- */
 

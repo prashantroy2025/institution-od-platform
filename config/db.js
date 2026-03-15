@@ -5,7 +5,7 @@ const db = mysql.createConnection({
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "PrashanT9009",
-  database: process.env.DB_DATABASE || "institution_od_platform"
+  database: process.env.DB_NAME || "institution_od_platform"
 });
 
 db.connect((err) => {
@@ -17,3 +17,6 @@ db.connect((err) => {
 });
 
 module.exports = db;
+
+// hopper.proxy.rlwy.net:38034
+//mysql-production-a450.up.railway.app
