@@ -75,7 +75,14 @@ exports.deleteUser = async (req,res,next)=>{
 
 try{
 
-await adminService.deleteUser(req.body.user_id)
+const { user_id } = req.body
+
+await adminService.deleteUser(user_id)
+
+db.query(
+"INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
+[req.user.id,"DELETE_USER","users",user_id]
+)
 
 res.json({
 message:"User deleted successfully"
@@ -86,8 +93,6 @@ next(err)
 }
 
 }
-
-
 
 // ---------------- EVENT PARTICIPANTS ----------------
 exports.getEventParticipants = async (req,res,next)=>{
@@ -369,4 +374,66 @@ res.setHeader("Content-Disposition","attachment; filename=audit_logs.csv")
 res.send(csv)
 
 })
+}
+
+/* ---------------- ADMIN HISTORY ---------------- */
+
+exports.getAdminHistory = (req,res)=>{
+
+db.query(
+`SELECT 
+a.id,
+a.action,
+a.entity,
+a.entity_id,
+a.created_at,
+u.name AS admin_name
+FROM audit_logs a
+LEFT JOIN users u ON a.user_id=u.id
+ORDER BY a.created_at DESC`,
+(err,rows)=>{
+
+if(err) return res.status(500).json(err)
+
+res.json(rows)
+
+})
+
+}
+/*---------------- RECOVER EVENT ---------------- */
+
+exports.recoverUser = (req,res)=>{
+
+const { user_id } = req.body
+
+db.query(
+"UPDATE users SET deleted=1 WHERE id=?",
+[user_id],
+(err,result)=>{
+
+if(err) return res.status(500).json(err)
+
+res.json({message:"User recovered"})
+
+})
+
+}
+
+/*---------------- RECOVER DEPARTMENT ---------------- */
+
+exports.recoverDepartment = (req,res)=>{
+
+const { department_id } = req.body
+
+db.query(
+"UPDATE departments SET deleted=0 WHERE id=?",
+[department_id],
+(err,result)=>{
+
+if(err) return res.status(500).json(err)
+
+res.json({message:"Department recovered"})
+
+})
+
 }

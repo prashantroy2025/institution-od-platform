@@ -372,7 +372,7 @@ const data = await res.json();
 
 document.getElementById("loader").style.display="none";
 document.getElementById("btnText").style.display="block";
-
+localStorage.setItem("club_name",data.user.club_name);
 if(data.token){
 
 localStorage.setItem("token",data.token);

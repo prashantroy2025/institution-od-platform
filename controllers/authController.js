@@ -70,8 +70,8 @@ exports.createUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         db.query(
-            "INSERT INTO users (college_id, name, email, password, role, department_id) VALUES (?, ?, ?, ?, ?, ?)",
-            [college_id, name, email, hashedPassword, role, department_id],
+            "INSERT INTO users (college_id,name,email,password,role,department_id,club_name) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [college_id, name, email, hashedPassword, role, department_id,club_name],
             (err, result) => {
                 if (err) return res.status(500).json({ error: err.message });
 

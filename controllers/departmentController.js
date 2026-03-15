@@ -63,6 +63,11 @@ try{
 
 const {department_id} = req.body
 
+db.query(
+"INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
+[req.user.id,"DELETE_DEPARTMENT","departments",department_id]
+)
+
 await departmentService.deleteDepartment(department_id)
 
 res.json({

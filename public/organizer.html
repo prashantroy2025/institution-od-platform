@@ -1189,16 +1189,23 @@ const data = await res.json()
 
 let html=""
 
+if(data.length === 0){
+document.getElementById("historyTable").innerHTML =
+"<tr><td colspan='5'>No history yet</td></tr>"
+return
+}
+
 data.forEach(h=>{
 
 html+=`
 <tr>
 <td>${h.action}</td>
 <td>${h.title || h.entity}</td>
-<td>${h.name}</td>
+<td>${h.name || "-"}</td>
 <td>${new Date(h.created_at).toLocaleString()}</td>
 <td>
-<button onclick="recoverEvent(${h.entity_id})">Recover</button></td>
+<button onclick="recoverEvent(${h.entity_id})">Recover</button>
+</td>
 </tr>
 `
 
@@ -1207,7 +1214,6 @@ html+=`
 document.getElementById("historyTable").innerHTML = html
 
 }
-
 /* recover event */
 
 async function recoverEvent(id){

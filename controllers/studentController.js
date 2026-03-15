@@ -60,13 +60,60 @@ exports.applyOD = (req, res) => {
     );
 
 };
+
+
 exports.getEvents = (req,res)=>{
 
+const student_id = req.user.id
+
 db.query(
-"SELECT id,title,from_date FROM events WHERE status='Approved'",
+`
+SELECT 
+e.id,
+e.title,
+e.from_date,
+CASE 
+WHEN ep.student_id IS NULL THEN 'Not Participated'
+ELSE 'Participated'
+END AS participation_status
+FROM events e
+LEFT JOIN event_participants ep
+ON e.id = ep.event_id AND ep.student_id = ?
+WHERE e.status='Approved'
+`,
+[student_id],
 (err,rows)=>{
 
 if(err) return res.status(500).json({error:err.message})
+
+res.json(rows)
+
+}
+)
+
+}
+
+
+
+exports.getMyOD = (req,res)=>{
+
+const student_id = req.user.id
+
+db.query(
+`
+SELECT 
+e.title,
+o.applied_date,
+o.status
+FROM od_applications o
+JOIN events e ON o.event_id = e.id
+WHERE o.student_id = ?
+ORDER BY o.id DESC
+`,
+[student_id],
+(err,rows)=>{
+
+if(err) return res.status(500).json(err)
 
 res.json(rows)
 

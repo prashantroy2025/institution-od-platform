@@ -164,6 +164,20 @@ color:white;
 opacity:0.9;
 }
 
+/* INPUTS */
+
+.actions{
+display:flex;
+gap:8px;
+margin-top:10px;
+flex-wrap:wrap;
+}
+
+.participants{
+background:#3b82f6;
+color:white;
+}
+
 /* EMPTY */
 
 .empty{
@@ -172,6 +186,13 @@ color:#64748b;
 font-size:18px;
 margin-top:20px;
 
+}
+
+input{
+padding:8px;
+border-radius:6px;
+border:1px solid #cbd5f5;
+width:250px;
 }
 
 </style>
@@ -188,8 +209,8 @@ margin-top:20px;
 <h2>OD System</h2>
 
 <button onclick="loadEvents()">Pending Events</button>
+<button onclick="showAttendancePanel()">Independent Attendance</button>
 <button onclick="logout()">Logout</button>
-
 </div>
 
 
@@ -198,17 +219,61 @@ margin-top:20px;
 <div class="main">
 
 <div class="header">
-
 <h1>HOD Dashboard</h1>
-
 <button class="btn approve" onclick="loadEvents()">Refresh</button>
-
 </div>
 
 <div class="grid" id="events"></div>
 
+<div id="attendancePanel" style="display:none;margin-top:20px;">
+
+<h2>Independent Attendance</h2>
+
+<br>
+
+<label>Event Title</label>
+<br>
+<input type="text" id="eventTitle" placeholder="Enter event name">
+
+<br><br>
+
+<label>From Date</label>
+<br>
+<input type="date" id="fromDate">
+
+<br><br>
+
+<label>To Date</label>
+<br>
+<input type="date" id="toDate">
+
+<br><br>
+
+<label>From Time</label>
+<br>
+<input type="time" id="fromTime">
+
+<br><br>
+
+<label>To Time</label>
+<br>
+<input type="time" id="toTime">
+
+<br><br>
+
+<label>Upload Student List (CSV)</label>
+<br>
+<input type="file" id="attendanceFile">
+
+<br><br>
+
+<button class="btn approve" onclick="uploadIndependentAttendance()">
+Upload Attendance
+</button>
+
 </div>
 
+</div>
 
 <script>
 
@@ -222,7 +287,7 @@ window.location = "login.html"
 const token = localStorage.getItem("token")
 
 
-async function loadEvents(){
+async function fetchEvents(){
 
 const res = await fetch("http://localhost:3000/api/events/pending",{
 
@@ -257,15 +322,30 @@ div.innerHTML=`
 
 <h3>${event.title}</h3>
 
-<p><b>Date:</b> ${event.from_date}</p>
+<p><b>Date:</b> ${new Date(event.from_date).toLocaleString('en-IN')}</p>
 
-<p><b>Department:</b> ${event.department_id}</p>
+<p><b>Club:</b> ${event.club_name || "Independent Event"}</p>
 
 <br>
 
-<button class="btn approve" onclick="approve(${event.id})">Approve</button>
+<div class="actions">
 
-<button class="btn reject" onclick="reject(${event.id})">Reject</button>
+<button class="btn approve" onclick="approve(${event.id})">
+Approve
+</button>
+
+<button class="btn reject" onclick="reject(${event.id})">
+Reject
+</button>
+
+<button class="btn participants" onclick="viewParticipants(${event.id})">
+Participants
+</button>
+
+</div>
+
+<br>
+
 
 `
 
@@ -312,6 +392,115 @@ body:JSON.stringify({event_id:id})
 })
 
 loadEvents()
+
+}
+
+async function viewParticipants(eventId){
+
+try{
+
+const res = await fetch(
+"http://localhost:3000/api/participants/event/"+eventId,
+{
+headers:{
+"Authorization":"Bearer "+token
+}
+})
+
+const data = await res.json()
+
+let html="<h2>Participants</h2>"
+
+html+="<table border='1' cellpadding='10'>"
+html+="<tr><th>Student ID</th><th>Scan Time</th></tr>"
+
+if(!Array.isArray(data) || data.length === 0){
+
+html+=`
+<tr>
+<td colspan="2">No participants yet</td>
+</tr>
+`
+
+}
+else{
+
+data.forEach(p=>{
+html+=`
+<tr>
+<td>${p.student_id}</td>
+<td>${new Date(p.scan_time).toLocaleString('en-IN')}</td>
+</tr>
+`
+})
+
+}
+
+html+="</table>"
+
+const win = window.open("", "_blank")
+win.document.write(html)
+
+}catch(err){
+
+console.error("Error loading participants:", err)
+alert("Failed to load participants")
+
+}
+
+}
+
+/* Attendance Upload */
+
+
+function showAttendancePanel(){
+
+document.getElementById("events").style.display="none"
+document.getElementById("attendancePanel").style.display="block"
+
+}
+
+function loadEvents(){
+
+document.getElementById("attendancePanel").style.display="none"
+document.getElementById("events").style.display="grid"
+
+fetchEvents()
+
+}
+
+
+async function uploadIndependentAttendance(){
+
+const title = document.getElementById("eventTitle").value
+const fromDate = document.getElementById("fromDate").value
+const toDate = document.getElementById("toDate").value
+const fromTime = document.getElementById("fromTime").value
+const toTime = document.getElementById("toTime").value
+const file = document.getElementById("attendanceFile").files[0]
+
+const formData = new FormData()
+
+formData.append("title",title)
+formData.append("from_date",fromDate)
+formData.append("to_date",toDate)
+formData.append("from_time",fromTime)
+formData.append("to_time",toTime)
+formData.append("file",file)
+
+const res = await fetch(
+"http://localhost:3000/api/hod/independent-attendance",
+{
+method:"POST",
+headers:{
+"Authorization":"Bearer "+token
+},
+body:formData
+})
+
+const data = await res.json()
+
+alert(data.message)
 
 }
 

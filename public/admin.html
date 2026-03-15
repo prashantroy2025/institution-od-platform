@@ -156,7 +156,7 @@ background:#64748b;
 <button onclick="setActive(this);attendanceAnalytics()">Attendance Analytics</button>
 
 <button onclick="setActive(this);loadAuditLogs()">Audit Logs</button>
-
+<button onclick="setActive(this);showHistory()">History</button>
 
 <button onclick="setActive(this);showExport()">Export</button>
 
@@ -229,7 +229,11 @@ Participants
 
 <h2>Create User</h2>
 
-<input id="college_id" placeholder="College ID"><br> <input id="name" placeholder="Name"><br> <input id="email" placeholder="Email"><br> <input id="password" placeholder="Password"><br>
+<input id="college_id" placeholder="College ID"><br> 
+<input id="name" placeholder="Name"><br> 
+<input id="club_name" placeholder="Club Name (for organizers)"><br>
+<input id="email" placeholder="Email"><br> 
+<input id="password" placeholder="Password"><br>
 
 <select id="role">
 <option value="student">Student</option>
@@ -239,7 +243,9 @@ Participants
 
 <br>
 
-<input id="department_id" placeholder="Department ID"><br>
+<label>Department</label>
+<select id="department_id"></select>
+<br>
 
 <button onclick="createUser()">Create User</button>
 
@@ -271,6 +277,29 @@ Participants
 </table>
 
 </div>
+
+
+<div class="card page" id="historyCard">
+
+<h3>System History</h3>
+
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Entity</th>
+<th>Admin</th>
+<th>Time</th>
+<th>Recover</th>
+</tr>
+</thead>
+
+<tbody id="historyTable"></tbody>
+
+</table>
+
+</div>
+
 
 <!-- PARTICIPANTS -->
 
@@ -359,7 +388,7 @@ document.getElementById("createUserCard").style.display="block"
 async function createUser(){
 
 const college_id=document.getElementById("college_id").value
-const name=document.getElementById("name").value
+const club_name=document.getElementById("club_name").value
 const email=document.getElementById("email").value
 const password=document.getElementById("password").value
 const role=document.getElementById("role").value
@@ -375,7 +404,7 @@ Authorization:"Bearer "+token
 },
 
 body:JSON.stringify({
-college_id,name,email,password,role,department_id
+college_id,name,email,password,role,department_id,club_name
 })
 
 })
@@ -452,7 +481,7 @@ const row=document.createElement("tr")
 
 row.innerHTML=`
 <td>${item.college_id || item.id}</td>
-<td>${item.name}</td>
+<td>${item.club_name || item.name}</td>
 <td>${item.email}</td>
 <td>${item.role}</td>
 <td>-</td>
@@ -538,6 +567,32 @@ Delete
 `
 
 table.appendChild(row)
+
+})
+
+}
+
+
+async function loadDepartmentDropdown(){
+
+const res = await fetch("/api/departments",{
+headers:{Authorization:"Bearer "+token}
+})
+
+const departments = await res.json()
+
+const select = document.getElementById("department_id")
+
+select.innerHTML = "<option value=''>Select Department</option>"
+
+departments.forEach(dep=>{
+
+const opt = document.createElement("option")
+
+opt.value = dep.id
+opt.textContent = dep.name
+
+select.appendChild(opt)
 
 })
 
@@ -784,6 +839,78 @@ loadDepartments()
 
 }
 
+/* HISTORY */
+
+async function loadAdminHistory(){
+
+const res = await fetch(
+"/api/admin/history",
+{headers:{Authorization:"Bearer "+token}}
+)
+
+const data = await res.json()
+
+let html=""
+
+if(data.length===0){
+html="<tr><td colspan='5'>No history yet</td></tr>"
+}
+
+data.forEach(h=>{
+
+html+=`
+<tr>
+<td>${h.action}</td>
+<td>${h.entity}</td>
+<td>${h.admin_name}</td>
+<td>${new Date(h.created_at).toLocaleString()}</td>
+<td>
+<button onclick="recoverEntity('${h.entity}',${h.entity_id})">
+Recover
+</button>
+</td>
+</tr>
+`
+
+})
+
+document.getElementById("historyTable").innerHTML=html
+
+}
+
+/* recover */
+
+async function recoverEntity(type,id){
+
+let url=""
+
+if(type==="users"){
+url="/api/admin/recover-user"
+}
+else if(type==="departments"){
+url="/api/admin/recover-department"
+}
+
+await fetch(url,{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
+},
+body:JSON.stringify({
+user_id:id,
+department_id:id
+})
+})
+
+alert("Recovered successfully")
+
+loadAdminHistory()
+
+}
+
+
+
 /* EXPORT FILES DOWNLOAD */
 
 function downloadFile(url,name){
@@ -846,9 +973,22 @@ document.getElementById("exportCard").style.display="block"
 
 }
 
-/* INIT */
+window.onload = () => {
 
+if(document.getElementById("stats")){
 loadStats()
+}
+
+if(document.getElementById("tableBody")){
+loadDepartments()
+}
+
+if(document.getElementById("department_id")){
+loadDepartmentDropdown()
+}
+
+}
+
 
 </script>
 

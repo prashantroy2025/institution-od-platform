@@ -17,4 +17,11 @@ allowRoles("student"),
 studentController.getEvents
 );
 
+router.get(
+"/my-od",
+verifyToken,
+allowRoles("student"),
+studentController.getMyOD
+)
+
 module.exports = router;

@@ -240,9 +240,12 @@ res.json({message:"Event deleted successfully"})
 exports.getHistory = (req,res)=>{
 
 db.query(
-`SELECT a.action,a.entity,a.entity_id,a.created_at,u.name,e.title
+`SELECT a.action,a.entity,a.entity_id,a.created_at,
+u.name,
+e.title
 FROM audit_logs a
-JOIN users u ON a.user_id=u.id
+LEFT JOIN users u ON a.user_id=u.id
+LEFT JOIN events e ON a.entity_id=e.id
 ORDER BY a.created_at DESC`,
 (err,rows)=>{
 

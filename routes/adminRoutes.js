@@ -126,5 +126,25 @@ allowRoles("super_admin"),
 adminController.exportAuditLogs
 )
 
+router.get(
+"/history",
+verifyToken,
+allowRoles("super_admin"),
+adminController.getAdminHistory
+)
+
+router.post(
+"/recover-user",
+verifyToken,
+allowRoles("super_admin"),
+adminController.recoverUser
+)
+
+router.post(
+"/recover-department",
+verifyToken,
+allowRoles("super_admin"),
+adminController.recoverDepartment
+)
 
 module.exports = router;
