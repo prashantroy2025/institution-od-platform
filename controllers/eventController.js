@@ -1,6 +1,8 @@
 const db = require('../config/db');
 const notificationService = require('../services/notificationService');
 
+/* ---------------- CREATE EVENT ---------------- */
+
 exports.createEvent = (req, res) => {
 
 let {
@@ -16,8 +18,8 @@ is_full_day
 const department_id = req.user.department_id;
 
 if (!club_id || !title || !from_date || !to_date) {
-        return res.status(400).json({ message: "Missing required fields" });
-    }
+return res.status(400).json({ message: "Missing required fields" });
+}
 
 if (new Date(to_date) < new Date(from_date)) {
 return res.status(400).json({
@@ -31,12 +33,12 @@ message: "End time must be after start time"
 });
 }
 
-if(is_full_day){
+if (is_full_day) {
 start_time = null;
 end_time = null;
 }
 
-    const proof_file = req.file ? req.file.filename : null;
+const proof_file = req.file ? req.file.filename : null;
 
 db.query(
 `INSERT INTO events 
@@ -62,107 +64,121 @@ return res.status(500).json({ error: err.message });
 
 const eventId = result.insertId;
 
+/* Notify HOD */
 
-            // 🔔 Notify HOD
-            db.query(
-                "SELECT id FROM users WHERE role='hod' AND department_id=? LIMIT 1",
-                [department_id],
-                (err, hodRows) => {
+db.query(
+"SELECT id FROM users WHERE role='hod' AND department_id=? LIMIT 1",
+[department_id],
+(err, hodRows) => {
 
-                    if (!err && hodRows.length > 0) {
+if (!err && hodRows.length > 0) {
 
-                        const hod_id = hodRows[0].id;
+const hod_id = hodRows[0].id;
 
-                        notificationService.sendNotification(
-                            hod_id,
-                            "New event requires approval: " + title
-                        );
+notificationService.sendNotification(
+hod_id,
+"New event requires approval: " + title
+);
 
-                    }
+}
 
-                }
-            );
+}
+);
 
-            // 🔹 Audit Log
-            db.query(
-                "INSERT INTO audit_logs (user_id, action, entity, entity_id) VALUES (?, ?, ?, ?)",
-                [req.user.id, "CREATE_EVENT", "events", eventId]
-            );
+/* Audit Log */
 
-            res.json({
-                message: "Event created successfully",
-                event_id: eventId
-            });
+db.query(
+"INSERT INTO audit_logs (user_id, action, entity, entity_id) VALUES (?, ?, ?, ?)",
+[req.user.id, "CREATE_EVENT", "events", eventId]
+);
 
-        }
-    );
+res.json({
+message: "Event created successfully",
+event_id: eventId
+});
+
+}
+);
+
 };
+
+/* ---------------- GET PENDING EVENTS ---------------- */
+
 exports.getPendingEvents = (req, res) => {
 
-    const department_id = req.user.department_id;
+const department_id = req.user.department_id;
 
-    db.query(
-        "SELECT * FROM events WHERE status='Pending' AND department_id=?",
-        [department_id],
-        (err, rows) => {
+db.query(
+"SELECT * FROM events WHERE status='Pending' AND department_id=?",
+[department_id],
+(err, rows) => {
 
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
+if (err) {
+return res.status(500).json({ error: err.message });
+}
 
-            res.json(rows);
-        }
-    );
+res.json(rows);
+
+}
+);
 
 };
+
+/* ---------------- APPROVE EVENT ---------------- */
+
 exports.approveEvent = (req, res) => {
 
-    const { event_id } = req.body;
+const { event_id } = req.body;
 
-    db.query(
-    "UPDATE events SET status='Approved' WHERE id=? AND department_id=?",
-    [event_id, req.user.department_id],
-        (err, result) => {
+db.query(
+"UPDATE events SET status='Approved' WHERE id=? AND department_id=?",
+[event_id, req.user.department_id],
+(err, result) => {
 
-            if(result.affectedRows === 0){
-              return res.status(404).json({
-             message:"Event not found or unauthorized"
-              });
-          }
+if (result.affectedRows === 0) {
+return res.status(404).json({
+message: "Event not found or unauthorized"
+});
+}
 
-            res.json({
-                message: "Event approved successfully"
-            });
+res.json({
+message: "Event approved successfully"
+});
 
-        }
-    );
+}
+);
 
 };
+
+/* ---------------- REJECT EVENT ---------------- */
+
 exports.rejectEvent = (req, res) => {
 
-    const { event_id } = req.body;
+const { event_id } = req.body;
 
-    db.query(
-        "UPDATE events SET status='Rejected' WHERE id=? AND department_id=?",
-        [event_id, req.user.department_id],
-        (err, result) => {
+db.query(
+"UPDATE events SET status='Rejected' WHERE id=? AND department_id=?",
+[event_id, req.user.department_id],
+(err, result) => {
 
-            if(result.affectedRows === 0){
-               return res.status(404).json({
-                message:"Event not found or unauthorized"
-                 });
-         }
+if (result.affectedRows === 0) {
+return res.status(404).json({
+message: "Event not found or unauthorized"
+});
+}
 
-            res.json({
-                message: "Event rejected"
-            });
+res.json({
+message: "Event rejected"
+});
 
-        }
-    );
+}
+);
 
 };
 
-exports.getMyEvents = (req,res)=>{
+/* ---------------- MY EVENTS ---------------- */
+
+exports.getMyEvents = (req, res) => {
 
 const organizer_id = req.user.id;
 
@@ -178,66 +194,77 @@ WHEN status='Rejected' THEN 3
 END,
 created_at DESC`,
 [organizer_id],
-(err,rows)=>{
+(err, rows) => {
 
-if(err){
-return res.status(500).json({error:err.message})
+if (err) {
+return res.status(500).json({ error: err.message });
 }
 
-res.json(rows)
-
-})
+res.json(rows);
 
 }
+);
 
+};
 
-exports.findEventByName=(req,res)=>{
+/* ---------------- FIND EVENT ---------------- */
 
-const title=req.query.title
+exports.findEventByName = (req, res) => {
+
+const title = req.query.title;
 
 db.query(
 "SELECT id,title FROM events WHERE LOWER(title) LIKE LOWER(?) LIMIT 1",
 ["%" + title + "%"],
-(err,rows)=>{
+(err, rows) => {
 
-if(err) return res.status(500).json(err)
+if (err) return res.status(500).json(err);
 
-if(rows.length===0){
-return res.json({message:"Not found"})
+if (rows.length === 0) {
+return res.json({ message: "Not found" });
 }
 
-res.json(rows[0])
-
-})
+res.json(rows[0]);
 
 }
+);
 
+};
 
-exports.deleteEvent = (req,res)=>{
+/* ---------------- DELETE EVENT ---------------- */
 
-const eventId = req.params.id
+exports.deleteEvent = (req, res) => {
+
+const eventId = req.params.id;
 
 db.query(
 "UPDATE events SET is_deleted=1 WHERE id=? AND organizer_id=?",
 [eventId, req.user.id],
-(err,result)=>{
+(err) => {
 
-if(err){
-return res.status(500).json({error:err.message})
+if (err) {
+return res.status(500).json({ error: err.message });
 }
 
-// insert history
+/* History */
+
 db.query(
 "INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
-[req.user.id,"DELETE_EVENT","events",eventId]
-)
+[req.user.id, "DELETE_EVENT", "events", eventId]
+);
 
-res.json({message:"Event deleted successfully"})
-})
+res.json({
+message: "Event deleted successfully"
+});
 
 }
+);
 
-exports.getHistory = (req,res)=>{
+};
+
+/* ---------------- HISTORY ---------------- */
+
+exports.getHistory = (req, res) => {
 
 db.query(
 `SELECT a.action,a.entity,a.entity_id,a.created_at,
@@ -247,39 +274,44 @@ FROM audit_logs a
 LEFT JOIN users u ON a.user_id=u.id
 LEFT JOIN events e ON a.entity_id=e.id
 ORDER BY a.created_at DESC`,
-(err,rows)=>{
+(err, rows) => {
 
-if(err){
-return res.status(500).json(err)
+if (err) {
+return res.status(500).json(err);
 }
 
-res.json(rows)
-
-})
+res.json(rows);
 
 }
+);
 
-exports.recoverEvent = (req,res)=>{
+};
 
-const eventId = req.params.id
+/* ---------------- RECOVER EVENT ---------------- */
+
+exports.recoverEvent = (req, res) => {
+
+const eventId = req.params.id;
 
 db.query(
 "UPDATE events SET is_deleted=0 WHERE id=?",
 [eventId],
-(err,result)=>{
+(err) => {
 
-if(err){
-return res.status(500).json({error:err.message})
+if (err) {
+return res.status(500).json({ error: err.message });
 }
 
-// history log
 db.query(
 "INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
-[req.user.id,"RECOVER_EVENT","events",eventId]
-)
+[req.user.id, "RECOVER_EVENT", "events", eventId]
+);
 
-res.json({message:"Event recovered successfully"})
-
-})
+res.json({
+message: "Event recovered successfully"
+});
 
 }
+);
+
+};

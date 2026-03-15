@@ -38,4 +38,4 @@ const db = mysql.createPool({
 
 console.log("Database config loaded");
 
-module.exports = db.promise();
+module.exports = db;
