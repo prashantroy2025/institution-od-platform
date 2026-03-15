@@ -344,7 +344,7 @@ const token = localStorage.getItem("token")
 
 async function loadEvents(){
 
-const res = await fetch("http://localhost:3000/api/student/events",{
+const res = await fetch("/api/student/events",{
 headers:{ "Authorization":"Bearer "+token }
 })
 
@@ -412,7 +412,7 @@ async function applyOD(eventId){
 const date=prompt("Enter event date (YYYY-MM-DD)")
 if(!date) return
 
-const res=await fetch("http://localhost:3000/api/student/apply-od",{
+const res=await fetch("/api/student/apply-od",{
 
 method:"POST",
 headers:{
@@ -437,7 +437,7 @@ alert(data.message)
 
 async function loadMyOD(){
 
-const res=await fetch("http://localhost:3000/api/student/my-od",{
+const res=await fetch("/api/student/my-od",{
 headers:{ "Authorization":"Bearer "+token }
 })
 
@@ -478,7 +478,7 @@ container.appendChild(div)
 
 async function loadNotifications(){
 
-const res=await fetch("http://localhost:3000/api/notifications/my-notifications",{
+const res=await fetch("/api/notifications/my-notifications",{
 headers:{ "Authorization":"Bearer "+token }
 })
 

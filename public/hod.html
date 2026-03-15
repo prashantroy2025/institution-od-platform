@@ -289,7 +289,7 @@ const token = localStorage.getItem("token")
 
 async function fetchEvents(){
 
-const res = await fetch("http://localhost:3000/api/events/pending",{
+const res = await fetch("/api/events/pending",{
 
 headers:{
 "Authorization":"Bearer "+token
@@ -358,7 +358,7 @@ container.appendChild(div)
 
 async function approve(id){
 
-await fetch("http://localhost:3000/api/events/approve",{
+await fetch("/api/events/approve",{
 
 method:"POST",
 
@@ -378,7 +378,7 @@ loadEvents()
 
 async function reject(id){
 
-await fetch("http://localhost:3000/api/events/reject",{
+await fetch("/api/events/reject",{
 
 method:"POST",
 
@@ -400,7 +400,7 @@ async function viewParticipants(eventId){
 try{
 
 const res = await fetch(
-"http://localhost:3000/api/participants/event/"+eventId,
+"/api/api/participants/event/"+eventId,
 {
 headers:{
 "Authorization":"Bearer "+token
@@ -489,7 +489,7 @@ formData.append("to_time",toTime)
 formData.append("file",file)
 
 const res = await fetch(
-"http://localhost:3000/api/hod/independent-attendance",
+"/api/api/hod/independent-attendance",
 {
 method:"POST",
 headers:{
