@@ -13,7 +13,15 @@ console.log("Server file loaded");
 
 /* ---------------- MIDDLEWARE ---------------- */
 
-app.use(cors());
+app.use(cors({
+ origin: [
+  "https://od-platform.vercel.app",
+  "http://localhost:3000"
+ ],
+ credentials: true
+}));
+
+
 app.use(express.json());
 const path = require("path");
 app.use(express.static(path.join(__dirname, "public")));
