@@ -8,6 +8,7 @@ require("./config/db"); // initialize database connection
 const startTokenCleanup = require('./services/tokenCleanupService');
 
 const app = express();
+app.set("trust proxy", 1);
 console.log("Server file loaded");
 
 /* ---------------- MIDDLEWARE ---------------- */
