@@ -147,11 +147,6 @@ server.listen(PORT, () => {
 
 startTokenCleanup();
 
-const qrService = require('./services/qrService');
-
-setInterval(()=>{
- qrService.cleanExpiredTokens();
-},60000);
 
 /* ---------------- EVENT LIMIT ---------------- */
 
@@ -165,4 +160,14 @@ process.on("uncaughtException", (err) => {
 
 process.on("unhandledRejection", (err) => {
  console.error("Unhandled Promise Rejection:", err);
+});
+
+/* ---------------- GRACEFUL SHUTDOWN ---------------- */
+
+process.on("SIGTERM", () => {
+ console.log("SIGTERM received. Shutting down gracefully.");
+ server.close(() => {
+   console.log("Server closed");
+   process.exit(0);
+ });
 });
