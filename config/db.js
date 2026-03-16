@@ -34,17 +34,15 @@ const db = mysql.createPool({
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
   waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+  connectionLimit: 10
 });
 
-// Test connection once at startup
-db.getConnection((err, connection) => {
+db.getConnection((err, conn) => {
   if (err) {
     console.error("❌ MySQL connection failed:", err);
   } else {
     console.log("✅ MySQL connected");
-    connection.release();
+    conn.release();
   }
 });
 
