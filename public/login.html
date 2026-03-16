@@ -349,6 +349,7 @@ p.type="password";
 
 }
 
+/* LOGIN FUNCTION */
 
 async function login(){
 
@@ -357,6 +358,8 @@ const password = document.getElementById("password").value;
 
 document.getElementById("btnText").style.display="none";
 document.getElementById("loader").style.display="block";
+
+try{
 
 const res = await fetch(API_BASE + "/api/auth/login",{
 method:"POST",
@@ -373,27 +376,37 @@ const data = await res.json();
 
 document.getElementById("loader").style.display="none";
 document.getElementById("btnText").style.display="block";
-localStorage.setItem("club_name",data.user.club_name);
+
 if(data.token){
 
 localStorage.setItem("token",data.token);
 localStorage.setItem("role",data.user.role);
-
-console.log("User role:",data.user.role);
+localStorage.setItem("club_name",data.user.club_name);
 
 document.getElementById("msg").innerText="Login success";
 
 redirectUser(data.user.role);
 
-}
-else{
+}else{
 
-document.getElementById("msg").innerText=data.message;
-
-}
+document.getElementById("msg").innerText=data.message || "Login failed";
 
 }
 
+}catch(err){
+
+document.getElementById("loader").style.display="none";
+document.getElementById("btnText").style.display="block";
+
+document.getElementById("msg").innerText="Server error";
+
+console.error(err);
+
+}
+
+}
+
+/* REDIRECT USER BASED ON ROLE */
 
 function redirectUser(role){
 
