@@ -171,3 +171,10 @@ process.on("SIGTERM", () => {
    process.exit(0);
  });
 });
+
+/* ---------------- ENV CHECK ---------------- */
+
+if(!process.env.JWT_SECRET){
+ console.error("JWT_SECRET missing!");
+ process.exit(1);
+}
