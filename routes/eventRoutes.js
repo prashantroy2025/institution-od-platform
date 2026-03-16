@@ -75,5 +75,10 @@ allowRoles("organizer"),
 eventController.recoverEvent
 )
 
+router.get("/", (req,res)=>{
+ res.json({
+  message:"Events API working"
+ })
+});
 
 module.exports = router;
