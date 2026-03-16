@@ -4,6 +4,7 @@
 <head>
 
 <title>Super Admin Dashboard</title>
+<script src="config.js"></script>
 
 <style>
 
@@ -394,7 +395,7 @@ const password=document.getElementById("password").value
 const role=document.getElementById("role").value
 const department_id=document.getElementById("department_id").value
 
-const res=await fetch("/api/auth/create-user",{
+const res=await fetch(API_BASE + "/api/auth/create-user",{
 
 method:"POST",
 
@@ -420,7 +421,7 @@ document.getElementById("createMsg").innerText=data.message || data.error
 
 async function loadStats(){
 
-const res=await fetch("/api/admin/stats",{
+const res=await fetch(API_BASE + "/api/admin/stats",{
 headers:{Authorization:"Bearer "+token}
 })
 
@@ -506,7 +507,7 @@ resetUI()
 
 document.getElementById("searchCard").style.display="block"
 
-const res=await fetch("/api/admin/users/student",{headers:{Authorization:"Bearer "+token}})
+const res=await fetch(API_BASE + "/api/admin/users/student",{headers:{Authorization:"Bearer "+token}})
 renderUsers(await res.json())
 
 }
@@ -517,7 +518,7 @@ resetUI()
 
 document.getElementById("searchCard").style.display="block"
 
-const res=await fetch("/api/admin/users/organizer",{headers:{Authorization:"Bearer "+token}})
+const res=await fetch(API_BASE + "/api/admin/users/organizer",{headers:{Authorization:"Bearer "+token}})
 renderUsers(await res.json())
 
 
@@ -529,7 +530,7 @@ resetUI()
 
 document.getElementById("searchCard").style.display="block"
 
-const res=await fetch("/api/admin/users/hod",{headers:{Authorization:"Bearer "+token}})
+const res=await fetch(API_BASE + "/api/admin/users/hod",{headers:{Authorization:"Bearer "+token}})
 renderUsers(await res.json())
 
 }
@@ -543,7 +544,7 @@ resetUI()
 
 document.getElementById("searchCard").style.display="block"
 
-const res=await fetch("/api/departments",{headers:{Authorization:"Bearer "+token}})
+const res=await fetch(API_BASE + "/api/departments",{headers:{Authorization:"Bearer "+token}})
 const data=await res.json()
 
 const table=document.getElementById("tableBody")
@@ -575,7 +576,7 @@ table.appendChild(row)
 
 async function loadDepartmentDropdown(){
 
-const res = await fetch("/api/departments",{
+const res = await fetch(API_BASE + "/api/departments",{
 headers:{Authorization:"Bearer "+token}
 })
 
@@ -607,7 +608,7 @@ resetUI()
 
 document.getElementById("searchCard").style.display="block"
 
-const res=await fetch("/api/admin/events",{headers:{Authorization:"Bearer "+token}})
+const res=await fetch(API_BASE + "/api/admin/events",{headers:{Authorization:"Bearer "+token}})
 const data=await res.json()
 
 const table=document.getElementById("tableBody")
@@ -672,7 +673,7 @@ document.getElementById("participantsCard").style.display="block"
 
 async function attendanceAnalytics(){
 
-const res=await fetch("/api/admin/attendance-analytics",{
+const res=await fetch(API_BASE + "/api/admin/attendance-analytics",{
 headers:{Authorization:"Bearer "+token}
 })
 
@@ -692,7 +693,7 @@ async function loadAuditLogs(){
 
 resetUI()
 
-const res=await fetch("/api/admin/audit-logs",{
+const res=await fetch(API_BASE + "/api/admin/audit-logs",{
 headers:{Authorization:"Bearer "+token}
 })
 
@@ -731,7 +732,7 @@ table.appendChild(row)
 
 async function deactivate(id){
 
-await fetch("/api/admin/deactivate",{
+await fetch(API_BASE + "/api/admin/deactivate",{
 method:"POST",
 headers:{
 "Content-Type":"application/json",
@@ -748,7 +749,7 @@ async function deleteUser(id){
 
 if(!confirm("Delete this user permanently?")) return
 
-await fetch("/api/admin/delete-user",{
+await fetch(API_BASE + "/api/admin/delete-user",{
 method:"POST",
 headers:{
 "Content-Type":"application/json",
@@ -797,7 +798,7 @@ async function createDepartment(){
 
 const name=document.getElementById("departmentName").value
 
-const res=await fetch("/api/departments/create",{
+const res=await fetch(API_BASE + "/api/departments/create",{
 
 method:"POST",
 
@@ -822,7 +823,7 @@ async function deleteDepartment(id){
 
 if(!confirm("Delete this department?")) return
 
-await fetch("/api/departments/delete",{
+await fetch(API_BASE + "/api/departments/delete",{
 
 method:"POST",
 

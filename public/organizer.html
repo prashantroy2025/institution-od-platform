@@ -4,6 +4,7 @@
 <head>
 
 <title>Organizer Dashboard</title>
+<script src="config.js"></script>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
@@ -494,7 +495,7 @@ async function loadEvents(){
 
 try{
 
-const res = await fetch("/api/events/my-events",{
+const res = await fetch(API_BASE + "/api/events/my-events",{
 headers:{Authorization:"Bearer "+token}
 })
 
@@ -625,7 +626,7 @@ alert("Please fill all fields")
 return
 }
 
-const res=await fetch("/api/events/create",{
+const res=await fetch(API_BASE + "/api/events/create",{
 
 method:"POST",
 headers:{
@@ -661,7 +662,7 @@ alert("Select event first")
 return
 }
 
-await fetch("/api/qr/start-attendance",{
+await fetch(API_BASE + "/api/qr/start-attendance",{
 
 method:"POST",
 headers:{
@@ -683,7 +684,7 @@ alert("Select event first")
 return
 }
 
-await fetch("/api/qr/close-attendance",{
+await fetch(API_BASE + "/api/qr/close-attendance",{
 
 method:"POST",
 headers:{
@@ -715,7 +716,7 @@ loadQR(eventId)
 
 async function loadQR(eventId){
 
-const res=await fetch("/api/qr/generate",{
+const res=await fetch(API_BASE + "/api/qr/generate",{
 
 method:"POST",
 headers:{

@@ -9,6 +9,7 @@ Year: 2026
 <html>
 <head>
 <title>College OD System</title>
+<script src="config.js"></script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -357,7 +358,7 @@ const password = document.getElementById("password").value;
 document.getElementById("btnText").style.display="none";
 document.getElementById("loader").style.display="block";
 
-const res = await fetch("/api/auth/login",{
+const res = await fetch(API_BASE + "/api/auth/login",{
 method:"POST",
 headers:{
 "Content-Type":"application/json"

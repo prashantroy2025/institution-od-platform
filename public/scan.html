@@ -4,6 +4,7 @@
 <head>
 
 <title>QR Attendance</title>
+<script src="config.js"></script>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -145,7 +146,7 @@ return
 
 try{
 
-const res = await fetch("/api/qr/scan",{
+const res = await fetch(API_BASE + "/api/qr/scan",{
 
 method:"POST",
 

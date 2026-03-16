@@ -25,17 +25,17 @@ exports.generateQRToken = (event_id, callback) => {
 
 exports.cleanExpiredTokens = () => {
 
-    db.query(
-        "DELETE FROM event_qr_tokens WHERE expires_at < NOW()",
-        (err) => {
+ db.query(
+  "DELETE FROM event_qr_tokens WHERE expires_at < NOW()",
+  (err,result)=>{
+   if(err){
+    console.error("QR cleanup error:",err)
+   }else{
+    if(result.affectedRows > 0){
+     console.log("Expired QR tokens cleaned:", result.affectedRows)
+    }
+   }
+  }
+ )
 
-            if (err) {
-                console.error("QR cleanup error:", err);
-            } else {
-                console.log("Expired QR tokens cleaned");
-            }
-
-        }
-    );
-
-};
+}
