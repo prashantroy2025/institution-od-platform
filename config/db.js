@@ -22,6 +22,7 @@ module.exports = db;
 // hopper.proxy.rlwy.net:38034
 //mysql-production-a450.up.railway.app 
 
+
 */
 
 const mysql = require("mysql2");
@@ -33,9 +34,17 @@ const db = mysql.createPool({
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
   waitForConnections: true,
-  connectionLimit: 10
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-console.log("Database config loaded");
+db.getConnection((err, connection) => {
+  if (err) {
+    console.error("Database connection failed:", err);
+  } else {
+    console.log("MySQL connected successfully");
+    connection.release();
+  }
+});
 
 module.exports = db;
