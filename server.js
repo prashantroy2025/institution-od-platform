@@ -1,6 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+
+if(!process.env.JWT_SECRET){
+ console.error("JWT_SECRET missing!");
+ process.exit(1);
+}
+
+
 const rateLimit = require("express-rate-limit");
 const morgan = require("morgan")
 require("./config/db"); // initialize database connection
@@ -16,7 +23,9 @@ console.log("Server file loaded");
 app.use(cors({
  origin: [
   "https://od-platform.vercel.app",
-  "http://localhost:3000"
+  "http://localhost:3000",
+  "http://127.0.0.1:5500"
+  
  ],
  credentials: true
 }));
@@ -177,9 +186,3 @@ process.on("SIGTERM", () => {
  });
 });
 
-/* ---------------- ENV CHECK ---------------- */
-
-if(!process.env.JWT_SECRET){
- console.error("JWT_SECRET missing!");
- process.exit(1);
-}

@@ -1,4 +1,5 @@
 const departmentService = require('../services/departmentService')
+const db = require('../config/db')
 
 // GET ALL
 exports.getDepartments = async (req,res,next)=>{
@@ -63,7 +64,7 @@ try{
 
 const {department_id} = req.body
 
-db.query(
+await db.query(
 "INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
 [req.user.id,"DELETE_DEPARTMENT","departments",department_id]
 )

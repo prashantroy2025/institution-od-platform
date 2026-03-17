@@ -5,81 +5,97 @@ const jwt = require('jsonwebtoken');
 
 // ------------------ LOGIN ------------------
 
-exports.login = (req, res) => {
-    const { email, password } = req.body;
+exports.login = async (req, res) => {
+    try {
 
-    db.query(
-        "SELECT * FROM users WHERE email = ? AND is_active = 1",
-        [email],
-        async (err, results) => {
-            if (err) return res.status(500).json({ error: err.message });
+        const { email, password } = req.body;
 
-            if (results.length === 0) {
-                return res.status(401).json({ message: "Invalid credentials" });
-            }
+        const [results] = await db.query(
+            "SELECT * FROM users WHERE email = ? AND is_active = 1",
+            [email]
+        );
 
-            const user = results[0];
-
-            // Compare hashed password
-            let isMatch = false;
-
-          // If password is bcrypt hashed
-            if (user.password.startsWith("$2b$")) {
-                isMatch = await bcrypt.compare(password, user.password);
-            } 
-          // If password is plain text (old users)
-            else {
-                isMatch = password === user.password;
-            }
-
-            if (!isMatch) {
-              return res.status(401).json({ message: "Invalid credentials" });
-            }
-
-            const token = jwt.sign(
-                { id: user.id, role: user.role, department_id: user.department_id },
-                process.env.JWT_SECRET,
-                { expiresIn: "8h" }
-            );
-
-            res.json({
-                message: "Login successful",
-                token,
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    role: user.role,
-                    department_id: user.department_id
-                }
-            });
+        if (results.length === 0) {
+            return res.status(401).json({ message: "Invalid credentials" });
         }
-    );
+
+        const user = results[0];
+
+        let isMatch = false;
+
+        if (user.password && user.password.startsWith("$2b$")) {
+            isMatch = await bcrypt.compare(password, user.password);
+        } else {
+            isMatch = password === user.password;
+        }
+
+        if (!isMatch) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        const token = jwt.sign(
+            { id: user.id, role: user.role, department_id: user.department_id },
+            process.env.JWT_SECRET,
+            { expiresIn: "8h" }
+        );
+
+        res.json({
+            message: "Login successful",
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                role: user.role,
+                department_id: user.department_id
+            }
+        });
+
+    } catch (err) {
+        console.error("LOGIN ERROR:", err);
+        res.status(500).json({ message: "Server error", error: err.message });
+    }
 };
 
 
 // ------------------ CREATE USER (SUPER ADMIN ONLY) ------------------
 
 exports.createUser = async (req, res) => {
-    const { college_id, name, email, password, role, department_id } = req.body;
-
-    if (!college_id || !name || !email || !password || !role || !department_id) {
-        return res.status(400).json({ message: "All fields are required" });
-    }
-
     try {
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const { college_id, name, email, password, role, department_id } = req.body;
 
-        db.query(
-            "INSERT INTO users (college_id,name,email,password,role,department_id,club_name) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [college_id, name, email, hashedPassword, role, department_id,club_name],
-            (err, result) => {
-                if (err) return res.status(500).json({ error: err.message });
+        if (!college_id || !name || !email || !password || !role || !department_id) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
 
-                res.json({ message: "User created successfully" });
-            }
+        const [existing] = await db.query(
+            "SELECT id FROM users WHERE email = ?",
+            [email]
         );
 
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+        if(existing.length > 0){
+            return res.status(400).json({ message: "Email already exists" });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const club_name = name;
+
+        await db.query(
+            "INSERT INTO users (college_id, name, email, password, role, department_id, club_name) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [
+                college_id,
+                name,
+                email,
+                hashedPassword,
+                role,
+                department_id,
+                club_name
+            ]
+        );
+
+        res.json({ message: "User created successfully" });
+
+    } catch (err) {
+        console.error("CREATE USER ERROR:", err);
+        res.status(500).json({ error: err.message });
     }
 };

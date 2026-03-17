@@ -5,11 +5,13 @@ const csv = require("csv-parser");
 const fs = require("fs");
 
 // Get pending events for HOD department
-exports.getPendingEvents = (req, res) => {
+exports.getPendingEvents = async (req, res) => {
+
+try{
 
 const department_id = req.user.department_id;
 
-db.query(
+const [results] = await db.query(
 `SELECT 
 events.id,
 events.title,
@@ -19,74 +21,85 @@ FROM events
 LEFT JOIN clubs ON events.club_id = clubs.id
 WHERE events.department_id = ? 
 AND events.status = 'Pending'`,
-[department_id],
-
-(err, results) => {
-
-if (err) return res.status(500).json({ error: err.message });
+[department_id]
+);
 
 res.json(results);
 
-});
+}catch(err){
+res.status(500).json({ error: err.message });
+}
+
 };
 
 
 // Approve event
-exports.approveEvent = (req, res) => {
+exports.approveEvent = async (req, res) => {
 
-    const { event_id } = req.body;
+try{
 
-    db.query(
-        "UPDATE events SET status='Approved' WHERE id=?",
-        [event_id],
-        (err, result) => {
+const { event_id } = req.body;
 
-            if (err) return res.status(500).json({ error: err.message });
+await db.query(
+"UPDATE events SET status='Approved' WHERE id=?",
+[event_id]
+);
 
-            res.json({ message: "Event Approved" });
-        }
-    );
+res.json({ message: "Event Approved" });
+
+}catch(err){
+res.status(500).json({ error: err.message });
+}
+
 };
 
 
 // Reject event
-exports.rejectEvent = (req, res) => {
+exports.rejectEvent = async (req, res) => {
 
-    const { event_id } = req.body;
+try{
 
-    db.query(
-        "UPDATE events SET status='Rejected' WHERE id=?",
-        [event_id],
-        (err, result) => {
+const { event_id } = req.body;
 
-            if (err) return res.status(500).json({ error: err.message });
+await db.query(
+"UPDATE events SET status='Rejected' WHERE id=?",
+[event_id]
+);
 
-            res.json({ message: "Event Rejected" });
-        }
-    );
+res.json({ message: "Event Rejected" });
+
+}catch(err){
+res.status(500).json({ error: err.message });
+}
+
 };
 
 
-exports.getParticipants = (req,res)=>{
+exports.getParticipants = async (req,res)=>{
+
+try{
 
 const {event_id} = req.params;
 
-db.query(
+const [rows] = await db.query(
 "SELECT student_name, roll_no, department FROM event_participants WHERE event_id=?",
-[event_id],
-(err,rows)=>{
-
-if(err) return res.status(500).json(err);
+[event_id]
+);
 
 res.json(rows);
 
-});
+}catch(err){
+res.status(500).json(err);
+}
 
 }
 
+
 /* upload independent attendance */
 
-exports.uploadIndependentAttendance = (req,res)=>{
+exports.uploadIndependentAttendance = async (req,res)=>{
+
+try{
 
 const {title,from_date,to_date,from_time,to_time} = req.body
 const file = req.file
@@ -96,14 +109,12 @@ return res.status(400).json({message:"File missing"})
 }
 
 // Create event
-db.query(
+const [result] = await db.query(
 `INSERT INTO events 
 (title,from_date,to_date,from_time,to_time,status,created_by) 
 VALUES (?,?,?,?,?,'Approved','hod')`,
-[title,from_date,to_date,from_time,to_time],
-(err,result)=>{
-
-if(err) return res.status(500).json(err)
+[title,from_date,to_date,from_time,to_time]
+)
 
 const event_id = result.insertId
 
@@ -115,19 +126,19 @@ fs.createReadStream(file.path)
 .on("data",(row)=>{
 students.push(row)
 })
-.on("end",()=>{
+.on("end",async ()=>{
 
 // Insert participants
-students.forEach(student=>{
+for(const student of students){
 
-db.query(
+await db.query(
 `INSERT INTO participants 
 (event_id,student_id,source) 
 VALUES (?,?, 'hod')`,
 [event_id,student.student_id]
 )
 
-})
+}
 
 res.json({
 message:"Attendance uploaded successfully",
@@ -136,6 +147,8 @@ total_students:students.length
 
 })
 
-})
+}catch(err){
+res.status(500).json(err);
+}
 
 }

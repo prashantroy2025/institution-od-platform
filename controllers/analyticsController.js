@@ -3,49 +3,51 @@ const db = require('../config/db');
 
 // ------------------ EVENT ANALYTICS ------------------
 
-exports.getEventAnalytics = (req,res)=>{
+exports.getEventAnalytics = async (req,res)=>{
 
-const eventId = req.params.eventId
+try{
 
-db.query(
+const eventId = req.params.eventId;
+
+const [rows] = await db.query(
 `SELECT 
 COUNT(*) as total,
 MIN(scan_time) as first_scan,
 MAX(scan_time) as last_scan
 FROM event_participants
 WHERE event_id=?`,
-[eventId],
-(err,rows)=>{
+[eventId]
+);
 
-if(err){
-return res.status(500).json({error:err.message})
+res.json(rows[0]);
+
+}catch(err){
+res.status(500).json({error:err.message});
 }
 
-res.json(rows[0])
-
-})
-
 }
+
+
 // ------------------ SYSTEM STATS ------------------
 
-exports.getSystemStats = (req, res) => {
+exports.getSystemStats = async (req, res) => {
 
-    const query = `
-        SELECT
-            (SELECT COUNT(*) FROM events) AS total_events,
-            (SELECT COUNT(*) FROM event_participants) AS total_participants,
-            (SELECT COUNT(*) FROM od_applications) AS total_od_requests,
-            (SELECT COUNT(*) FROM users WHERE role='student') AS total_students
-    `;
+try{
 
-    db.query(query, (err, rows) => {
+const query = `
+    SELECT
+        (SELECT COUNT(*) FROM events) AS total_events,
+        (SELECT COUNT(*) FROM event_participants) AS total_participants,
+        (SELECT COUNT(*) FROM od_applications) AS total_od_requests,
+        (SELECT COUNT(*) FROM users WHERE role='student') AS total_students
+`;
 
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+const [rows] = await db.query(query);
 
-        res.json(rows[0]);
+res.json(rows[0]);
 
-    });
+}catch(err){
+res.status(500).json({ error: err.message });
+}
 
 };

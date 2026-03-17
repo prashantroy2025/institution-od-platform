@@ -1,7 +1,9 @@
 const db = require('../config/db');
 const attendanceService = require('../services/attendanceService');
 
-exports.applyOD = (req, res) => {
+exports.applyOD = async (req, res) => {
+
+    try{
 
     console.log("OD Controller reached");
 
@@ -13,60 +15,56 @@ exports.applyOD = (req, res) => {
     }
 
     // Step 1: Check if student participated in event
-    db.query(
+    const [rows] = await db.query(
         "SELECT * FROM event_participants WHERE event_id=? AND student_id=?",
-        [event_id, student_id],
-        (err, rows) => {
-
-            if (err) return res.status(500).json({ error: err.message });
-
-            // Student not in participant list
-            if (rows.length === 0) {
-
-                db.query(
-                    "INSERT INTO od_applications (student_id,event_id,applied_date,status) VALUES (?,?,?,?)",
-                    [student_id,event_id,applied_date,"Rejected"]
-                );
-
-                return res.json({
-                    message: "OD Rejected - Student not in participant list"
-                });
-
-            }
-
-            // Student participated → Approve
-            db.query(
-                "INSERT INTO od_applications (student_id,event_id,applied_date,status) VALUES (?,?,?,?)",
-                [student_id,event_id,applied_date,"Auto Approved"],
-                (err,result)=>{
-
-                    if (err) return res.status(500).json({ error: err.message });
-
-                    attendanceService.markAttendanceForOD(
-                        student_id,
-                        event_id,
-                        applied_date
-                    );
-
-                    res.json({
-                        message:"OD Auto Approved",
-                        od_id: result.insertId
-                    });
-
-                }
-            );
-
-        }
+        [event_id, student_id]
     );
+
+    // Student not in participant list
+    if (rows.length === 0) {
+
+        await db.query(
+            "INSERT INTO od_applications (student_id,event_id,applied_date,status) VALUES (?,?,?,?)",
+            [student_id,event_id,applied_date,"Rejected"]
+        );
+
+        return res.json({
+            message: "OD Rejected - Student not in participant list"
+        });
+
+    }
+
+    // Student participated → Approve
+    const [result] = await db.query(
+        "INSERT INTO od_applications (student_id,event_id,applied_date,status) VALUES (?,?,?,?)",
+        [student_id,event_id,applied_date,"Auto Approved"]
+    );
+
+    attendanceService.markAttendanceForOD(
+        student_id,
+        event_id,
+        applied_date
+    );
+
+    res.json({
+        message:"OD Auto Approved",
+        od_id: result.insertId
+    });
+
+    }catch(err){
+        res.status(500).json({ error: err.message });
+    }
 
 };
 
 
-exports.getEvents = (req,res)=>{
+exports.getEvents = async (req,res)=>{
 
-const student_id = req.user.id
+try{
 
-db.query(
+const student_id = req.user.id;
+
+const [rows] = await db.query(
 `
 SELECT 
 e.id,
@@ -81,25 +79,25 @@ LEFT JOIN event_participants ep
 ON e.id = ep.event_id AND ep.student_id = ?
 WHERE e.status='Approved'
 `,
-[student_id],
-(err,rows)=>{
+[student_id]
+);
 
-if(err) return res.status(500).json({error:err.message})
+res.json(rows);
 
-res.json(rows)
-
-}
-)
-
+}catch(err){
+res.status(500).json({error:err.message});
 }
 
+};
 
 
-exports.getMyOD = (req,res)=>{
+exports.getMyOD = async (req,res)=>{
 
-const student_id = req.user.id
+try{
 
-db.query(
+const student_id = req.user.id;
+
+const [rows] = await db.query(
 `
 SELECT 
 e.title,
@@ -110,14 +108,13 @@ JOIN events e ON o.event_id = e.id
 WHERE o.student_id = ?
 ORDER BY o.id DESC
 `,
-[student_id],
-(err,rows)=>{
+[student_id]
+);
 
-if(err) return res.status(500).json(err)
+res.json(rows);
 
-res.json(rows)
-
+}catch(err){
+res.status(500).json(err);
 }
-)
 
-}
+};

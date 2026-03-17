@@ -1287,15 +1287,25 @@ password:password
 })
 });
 
-const data = await res.json();
+// ✅ Handle non-JSON safely
+let data;
+try{
+  data = await res.json();
+}catch(e){
+  const text = await res.text();
+  console.error("Invalid JSON:", text);
+  throw new Error("Invalid server response");
+}
 
 console.log("STATUS:", res.status);
 console.log("FULL RESPONSE:", data);
 
+// ✅ Restore button
 document.getElementById("loader").style.display="none";
 document.getElementById("btnText").style.display="block";
 
-if(data.token){
+// ✅ Handle response
+if(res.ok && data.token){
 
 localStorage.setItem("token",data.token);
 localStorage.setItem("role",data.user.role);
@@ -1304,24 +1314,30 @@ document.getElementById("msg").innerText="Login success";
 
 redirectUser(data.user.role);
 
-}
-else{
-document.getElementById("msg").innerText=data.message;
+}else{
+document.getElementById("msg").innerText = data.message || "Login failed";
 }
 
 } catch(err){
 
 console.error("LOGIN ERROR:", err);
 
+// ✅ Better error handling (your addition integrated)
+if(err.message.includes("Failed to fetch")){
+  document.getElementById("msg").innerText = "Server unreachable. Try again.";
+}else if(err.message.includes("Invalid server response")){
+  document.getElementById("msg").innerText = "Server error (bad response)";
+}else{
+  document.getElementById("msg").innerText = "Server error";
+}
+
+// ✅ Restore button
 document.getElementById("loader").style.display="none";
 document.getElementById("btnText").style.display="block";
 
-document.getElementById("msg").innerText="Server error";
-
 }
 
 }
-
 
 /* LOGOUT */
 

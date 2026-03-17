@@ -27,45 +27,27 @@ exports.uploadParticipants = async (req, res) => {
 
                 for (const row of results) {
 
-                    const users = await new Promise((resolve, reject) => {
-
-                        db.query(
-                            "SELECT id FROM users WHERE college_id=? AND role='student'",
-                            [row.college_id],
-                            (err, result) => {
-                                if (err) reject(err);
-                                else resolve(result);
-                            }
-                        );
-
-                    });
+                    const [users] = await db.query(
+                        "SELECT id FROM users WHERE college_id=? AND role='student'",
+                        [row.college_id]
+                    );
 
                     if (users.length > 0) {
 
-                        await new Promise((resolve, reject) => {
+                        await db.query(
+                            "INSERT IGNORE INTO event_participants (event_id, student_id) VALUES (?,?)",
+                            [event_id, users[0].id]
+                        );
 
-                            db.query(
-                                "INSERT IGNORE INTO event_participants (event_id, student_id) VALUES (?,?)",
-                                [event_id, users[0].id],
-                                (err) => {
-                                    if (err) reject(err);
-                                    else {
-                                        inserted++;
-                                        resolve();
-                                    }
-                                }
-                            );
-
-                        });
-
+                        inserted++;
                     }
 
                 }
                  
-                db.query(
+                await db.query(
                  "UPDATE events SET attendance_status='submitted' WHERE id=?",
                   [event_id]
-                )
+                );
 
                 res.json({
                     message: "Participants uploaded successfully",
@@ -87,129 +69,132 @@ exports.uploadParticipants = async (req, res) => {
 
 };
 
-exports.getParticipantsByEvent = (req,res)=>{
 
-const event_id = req.params.id
+exports.getParticipantsByEvent = async (req,res)=>{
 
-db.query(
+try{
+
+const event_id = req.params.id;
+
+const [rows] = await db.query(
 "SELECT student_id, scan_time FROM event_participants WHERE event_id=?",
-[event_id],
-(err,rows)=>{
+[event_id]
+);
 
-if(err){
-console.error("Participant query error:", err)
-return res.status(500).json({error: err.message})
+res.json(rows);
+
+}catch(err){
+console.error("Participant query error:", err);
+res.status(500).json({error: err.message});
 }
 
-res.json(rows)
+};
 
-})
 
-}
+exports.getParticipantCount = async (req,res)=>{
 
-exports.getParticipantCount = (req,res)=>{
+try{
 
-const eventId = req.params.eventId
+const eventId = req.params.eventId;
 
-db.query(
+const [rows] = await db.query(
 "SELECT COUNT(*) as total FROM event_participants WHERE event_id=?",
-[eventId],
-(err,rows)=>{
+[eventId]
+);
 
-if(err){
-return res.status(500).json({error:err.message})
+res.json({total: rows[0].total});
+
+}catch(err){
+res.status(500).json({error:err.message});
 }
 
-res.json({total: rows[0].total})
+};
 
-})
 
-}
+exports.addParticipant = async (req,res)=>{
 
-exports.addParticipant = (req,res)=>{
+try{
 
-const {event_id, student_id} = req.body
+const {event_id, student_id} = req.body;
 
-db.query(
+await db.query(
 "INSERT INTO event_participants(event_id,student_id) VALUES(?,?)",
-[event_id,student_id],
-(err)=>{
-
-if(err){
-return res.status(500).json({error:err.message})
-}
+[event_id,student_id]
+);
 
 // history log
-db.query(
+await db.query(
 "INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
 [req.user.id,"ADD_PARTICIPANT","event_participants",event_id]
-)
+);
 
-res.json({message:"Participant added"})
+res.json({message:"Participant added"});
 
-})
+}catch(err){
+res.status(500).json({error:err.message});
 }
 
-exports.removeParticipant = (req,res)=>{
+};
 
-const {event_id, student_id} = req.body
 
-db.query(
+exports.removeParticipant = async (req,res)=>{
+
+try{
+
+const {event_id, student_id} = req.body;
+
+await db.query(
 "DELETE FROM event_participants WHERE event_id=? AND student_id=?",
-[event_id,student_id],
-(err)=>{
-
-if(err){
-return res.status(500).json({error:err.message})
-}
+[event_id,student_id]
+);
 
 // history log
-db.query(
+await db.query(
 "INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
 [req.user.id,"REMOVE_PARTICIPANT","event_participants",event_id]
-)
+);
 
-res.json({message:"Participant removed"})
+res.json({message:"Participant removed"});
 
-})
+}catch(err){
+res.status(500).json({error:err.message});
 }
 
+};
 
-exports.reuploadParticipants = (req,res)=>{
 
-const {event_id} = req.body
+exports.reuploadParticipants = async (req,res)=>{
+
+try{
+
+const {event_id} = req.body;
 
 if(!req.file){
-return res.status(400).json({message:"File required"})
+return res.status(400).json({message:"File required"});
 }
-
-const file = req.file.path
 
 // delete old participants
-db.query(
+await db.query(
 "DELETE FROM event_participants WHERE event_id=?",
-[event_id],
-(err)=>{
+[event_id]
+);
 
-if(err){
-return res.status(500).json(err)
-}
-
-// process file again
-// (reuse your CSV parser here)
-
-db.query(
+// update status
+await db.query(
 "UPDATE events SET attendance_status='resubmitted' WHERE id=?",
 [event_id]
-)
+);
 
-db.query(
+// audit log
+await db.query(
 "INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
 [req.user.id,"REUPLOAD_ATTENDANCE","events",event_id]
-)
+);
 
-res.json({message:"Attendance re-submitted"})
+res.json({message:"Attendance re-submitted"});
 
-})
-
+}catch(err){
+res.status(500).json(err);
 }
+
+};

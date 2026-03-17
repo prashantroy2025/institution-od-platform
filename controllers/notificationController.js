@@ -1,57 +1,62 @@
 const db = require('../config/db');
 
-exports.getNotifications = (req, res) => {
+exports.getNotifications = async (req, res) => {
 
-    const user_id = req.user.id;
+try{
 
-    db.query(
-        "SELECT * FROM notifications WHERE user_id=? ORDER BY created_at DESC",
-        [user_id],
-        (err, results) => {
+const user_id = req.user.id;
 
-            if (err) return res.status(500).json({ error: err.message });
+const [results] = await db.query(
+"SELECT * FROM notifications WHERE user_id=? ORDER BY created_at DESC",
+[user_id]
+);
 
-            res.json(results);
+res.json(results);
 
-        }
-    );
-
-};
-exports.markAsRead = (req, res) => {
-
-    const { id } = req.body;
-
-    db.query(
-        "UPDATE notifications SET is_read=1 WHERE id=?",
-        [id],
-        (err) => {
-
-            if (err) return res.status(500).json({ error: err.message });
-
-            res.json({ message: "Notification marked as read" });
-
-        }
-    );
+}catch(err){
+res.status(500).json({ error: err.message });
+}
 
 };
-exports.getUnreadCount = (req, res) => {
 
-    const user_id = req.user.id;
 
-    db.query(
-        "SELECT COUNT(*) AS unread FROM notifications WHERE user_id=? AND is_read=0",
-        [user_id],
-        (err, result) => {
+exports.markAsRead = async (req, res) => {
 
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
+try{
 
-            res.json({
-                unread_notifications: result[0].unread
-            });
+const { id } = req.body;
 
-        }
-    );
+await db.query(
+"UPDATE notifications SET is_read=1 WHERE id=?",
+[id]
+);
+
+res.json({ message: "Notification marked as read" });
+
+}catch(err){
+res.status(500).json({ error: err.message });
+}
+
+};
+
+
+exports.getUnreadCount = async (req, res) => {
+
+try{
+
+const user_id = req.user.id;
+
+const [result] = await db.query(
+"SELECT COUNT(*) AS unread FROM notifications WHERE user_id=? AND is_read=0",
+[user_id]
+);
+
+res.json({
+unread_notifications: result[0].unread
+});
+
+}catch(err){
+res.status(500).json({ error: err.message });
+}
 
 };
