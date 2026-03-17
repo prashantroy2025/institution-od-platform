@@ -786,7 +786,7 @@ return
 document.getElementById("stats").innerText = "Loading..."
 
 const res = await fetch(
-"/api/api/events/find-event?title="+title,
+"/api/events/find-event?title="+title,
 {headers:{Authorization:"Bearer "+token}}
 )
 
@@ -800,7 +800,7 @@ return
 const eventId = event.id
 
 const statsRes = await fetch(
-"/api/api/analytics/event/"+eventId,
+"/api/analytics/event/"+eventId,
 {headers:{Authorization:"Bearer "+token}}
 )
 
@@ -855,7 +855,7 @@ formData.append("file",file)
 formData.append("event_id",currentEvent)
 
 const res=await fetch(
-"/api/api/events/upload-participants",
+"/api/events/upload-participants",
 {
 method:"POST",
 headers:{Authorization:"Bearer "+token},
@@ -993,7 +993,7 @@ async function viewParticipants(eventId){
 try{
 
 const res = await fetch(
-"/api/api/participants/event/"+eventId,
+"/api/participants/event/"+eventId,
 {
 headers:{Authorization:"Bearer "+token}
 })
@@ -1059,7 +1059,7 @@ for(const e of events){
 try{
 
 const res = await fetch(
-"/api/api/participants/count/"+e.id,
+"/api/participants/count/"+e.id,
 {headers:{Authorization:"Bearer "+token}}
 )
 
@@ -1086,7 +1086,7 @@ async function deleteEvent(id){
 if(!confirm("Are you sure you want to delete this event?")) return
 
 await fetch(
-"/api/api/events/delete/"+id,
+"/api/events/delete/"+id,
 {
 method:"DELETE",
 headers:{Authorization:"Bearer "+token}
@@ -1103,7 +1103,7 @@ async function removeParticipant(eventId,studentId){
 if(!confirm("Remove this participant?")) return
 
 await fetch(
-"/api/api/participants/remove",
+"/api/participants/remove",
 {
 method:"POST",
 headers:{
@@ -1132,7 +1132,7 @@ return
 }
 
 await fetch(
-"/api/api/participants/add",
+"/api/participants/add",
 {
 method:"POST",
 headers:{
@@ -1166,7 +1166,7 @@ formData.append("file",file)
 formData.append("event_id",currentEvent)
 
 await fetch(
-"/api/api/participants/reupload",
+"/api/participants/reupload",
 {
 method:"POST",
 headers:{Authorization:"Bearer "+token},
@@ -1182,11 +1182,18 @@ alert("Attendance re-submitted for approval")
 async function loadHistory(){
 
 const res = await fetch(
-"/api/api/events/history",
+"/api/events/history",
 {headers:{Authorization:"Bearer "+token}}
 )
 
 const data = await res.json()
+
+if(!Array.isArray(data)){
+  console.error("Invalid response:", data)
+  document.getElementById("historyTable").innerHTML =
+  "<tr><td colspan='5'>Error loading history</td></tr>"
+  return
+}
 
 let html=""
 
