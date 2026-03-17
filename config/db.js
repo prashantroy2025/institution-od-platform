@@ -1,19 +1,22 @@
-
 const mysql = require("mysql2");
 
-const db = mysql.createConnection({
-  host: process.env.DB_HOST || "localhost",
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "PrashanT9009",
-  database: process.env.DB_NAME || "institution_od_platform"
+const db = mysql.createPool({
+  host: process.env.MYSQLHOST || "localhost",
+  user: process.env.MYSQLUSER || "root",
+  password: process.env.MYSQLPASSWORD || "",
+  database: process.env.MYSQLDATABASE || "od_platform",
+  port: process.env.MYSQLPORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10
 });
 
-db.connect((err) => {
+// TEST CONNECTION
+db.getConnection((err, conn) => {
   if (err) {
-    console.error("Database connection failed:", err);
+    console.error("❌ MySQL connection failed:", err);
   } else {
-    console.log("MySQL connected");
+    console.log("✅ MySQL connected");
+    conn.release();
   }
 });
 
