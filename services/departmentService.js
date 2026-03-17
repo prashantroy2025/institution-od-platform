@@ -1,79 +1,51 @@
 const db = require('../config/db')
 
 // CREATE DEPARTMENT
-exports.createDepartment = (name) => {
+exports.createDepartment = async (name) => {
 
-return new Promise((resolve,reject)=>{
-
-db.query(
+const [result] = await db.query(
 "INSERT INTO departments (name) VALUES (?)",
-[name],
-(err,result)=>{
+[name]
+)
 
-if(err) reject(err)
-else resolve(result)
-
-})
-
-})
+return result
 
 }
 
 
 // GET ALL DEPARTMENTS
-exports.getDepartments = () => {
+exports.getDepartments = async () => {
 
-return new Promise((resolve,reject)=>{
+const [rows] = await db.query(
+"SELECT * FROM departments"
+)
 
-db.query(
-"SELECT * FROM departments",
-(err,rows)=>{
-
-if(err) reject(err)
-else resolve(rows)
-
-})
-
-})
+return rows
 
 }
 
 
 // ASSIGN HOD
-exports.assignHOD = (department_id,hod_id) => {
+exports.assignHOD = async (department_id,hod_id) => {
 
-return new Promise((resolve,reject)=>{
-
-db.query(
+const [result] = await db.query(
 "UPDATE departments SET hod_id=? WHERE id=?",
-[hod_id,department_id],
-(err,result)=>{
+[hod_id,department_id]
+)
 
-if(err) reject(err)
-else resolve(result)
-
-})
-
-})
+return result
 
 }
 
 
 // DELETE DEPARTMENT
-exports.deleteDepartment = (department_id) => {
+exports.deleteDepartment = async (department_id) => {
 
-return new Promise((resolve,reject)=>{
-
-db.query(
+const [result] = await db.query(
 "DELETE FROM departments WHERE id=?",
-[department_id],
-(err,result)=>{
+[department_id]
+)
 
-if(err) reject(err)
-else resolve(result)
-
-})
-
-})
+return result
 
 }
