@@ -47,3 +47,10 @@ db.getConnection((err, conn) => {
 });
 
 module.exports = db;
+
+
+///.  vercel --prod
+
+/* git add .
+git commit -m "fix club id thing"
+git push  */

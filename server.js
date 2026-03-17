@@ -181,5 +181,5 @@ if(!process.env.JWT_SECRET){
 
 /* ---------------- ROUTE IMPORTS ---------------- */
 
-const clubRoutes = require("./routes/clubRoutes");
-app.use("/api/clubs", clubRoutes);
+const organizerRoutes = require('./routes/organizerRoutes');
+app.use('/api/organizers', organizerRoutes);

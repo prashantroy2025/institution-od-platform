@@ -1239,25 +1239,22 @@ loadEvents()
 
 async function loadClubs() {
     try {
-        const res = await fetch(API_BASE + "/api/clubs");
-        const clubs = await res.json();
-
-        console.log("Clubs:", clubs); // DEBUG
+        const res = await fetch(API_BASE + "/api/organizers");
+        const data = await res.json();
 
         const select = document.getElementById("club_id");
 
-        select.innerHTML = "<option value=''>Select Club</option>";
+        select.innerHTML = "<option value=''>Select Organizer</option>";
 
-        clubs.forEach(club => {
-            select.innerHTML += `
-                <option value="${club.id}">
-                    ${club.name}
-                </option>
-            `;
+        data.forEach(item => {
+            const option = document.createElement("option");
+            option.value = item.id;     // still sending ID
+            option.textContent = item.name; // showing name
+            select.appendChild(option);
         });
 
     } catch (err) {
-        console.error("Error loading clubs:", err);
+        console.error(err);
     }
 }
 
