@@ -785,7 +785,7 @@ return
 
 document.getElementById("stats").innerText = "Loading..."
 
-const res = await fetch(
+const res = await fetch(API_BASE +
 "/api/events/find-event?title="+title,
 {headers:{Authorization:"Bearer "+token}}
 )
@@ -799,7 +799,7 @@ return
 
 const eventId = event.id
 
-const statsRes = await fetch(
+const statsRes = await fetch(API_BASE +
 "/api/analytics/event/"+eventId,
 {headers:{Authorization:"Bearer "+token}}
 )
@@ -854,7 +854,7 @@ const formData=new FormData()
 formData.append("file",file)
 formData.append("event_id",currentEvent)
 
-const res=await fetch(
+const res=await fetch(API_BASE +
 "/api/events/upload-participants",
 {
 method:"POST",
@@ -992,7 +992,7 @@ async function viewParticipants(eventId){
 
 try{
 
-const res = await fetch(
+const res = await fetch(API_BASE +
 "/api/participants/event/"+eventId,
 {
 headers:{Authorization:"Bearer "+token}
@@ -1058,7 +1058,7 @@ for(const e of events){
 
 try{
 
-const res = await fetch(
+const res = await fetch(API_BASE +
 "/api/participants/count/"+e.id,
 {headers:{Authorization:"Bearer "+token}}
 )
@@ -1085,7 +1085,7 @@ async function deleteEvent(id){
 
 if(!confirm("Are you sure you want to delete this event?")) return
 
-await fetch(
+await fetch(API_BASE +
 "/api/events/delete/"+id,
 {
 method:"DELETE",
@@ -1102,7 +1102,7 @@ async function removeParticipant(eventId,studentId){
 
 if(!confirm("Remove this participant?")) return
 
-await fetch(
+await fetch(API_BASE +
 "/api/participants/remove",
 {
 method:"POST",
@@ -1131,7 +1131,7 @@ alert("Enter student ID")
 return
 }
 
-await fetch(
+await fetch(API_BASE +
 "/api/participants/add",
 {
 method:"POST",
@@ -1165,7 +1165,7 @@ const formData=new FormData()
 formData.append("file",file)
 formData.append("event_id",currentEvent)
 
-await fetch(
+await fetch(API_BASE +
 "/api/participants/reupload",
 {
 method:"POST",
@@ -1181,8 +1181,7 @@ alert("Attendance re-submitted for approval")
 
 async function loadHistory(){
 
-const res = await fetch(
-"/api/events/history",
+const res = await ffetch(API_BASE + "/api/events/history",
 {headers:{Authorization:"Bearer "+token}}
 )
 
@@ -1228,7 +1227,7 @@ async function recoverEvent(id){
 
 if(!confirm("Recover this event?")) return
 
-await fetch(
+await fetch(API_BASE +
 "/api/events/recover/"+id,
 {
 method:"POST",
