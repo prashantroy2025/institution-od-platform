@@ -461,7 +461,7 @@ window.location="login.html"
 }
 
 const token = localStorage.getItem("token")
-const socket = io("/api")
+const socket = io(API_BASE);
 
 let chart
 let currentEvent=null

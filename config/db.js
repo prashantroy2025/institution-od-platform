@@ -1,4 +1,4 @@
-/*
+
 const mysql = require("mysql2");
 
 const db = mysql.createConnection({
@@ -23,7 +23,7 @@ module.exports = db;
 //mysql-production-a450.up.railway.app 
 
 
-*/
+/*
 
 const mysql = require("mysql2");
 
@@ -46,8 +46,19 @@ db.getConnection((err, conn) => {
   }
 });
 
-module.exports = db;
+module.exports = db;  */
 
+/*
+
+const dbConfig = {
+    host: process.env.MYSQLHOST || "localhost",
+    user: process.env.MYSQLUSER || "root",
+    password: process.env.MYSQLPASSWORD || "your_local_password",
+    database: process.env.MYSQLDATABASE || "od_platform",
+    port: process.env.MYSQLPORT || 3306
+};
+
+const db = mysql.createPool(dbConfig); */
 
 ///.  vercel --prod
 
