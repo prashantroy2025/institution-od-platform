@@ -96,6 +96,18 @@ app.use('/api/analytics', analyticsRoutes);
 const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
 
+
+const organizerRoutes = require('./routes/organizerRoutes');
+app.use('/api/organizers', organizerRoutes);
+
+/* ---------------- 404 HANDLER ---------------- */
+
+app.use((req,res)=>{
+ res.status(404).json({
+  message:"Route not found"
+ });
+});
+
 /* ---------------- ADMIN TEST ---------------- */
 
 const { verifyToken, allowRoles } = require('./middleware/authMiddleware');
@@ -109,13 +121,6 @@ app.get(
  }
 );
 
-/* ---------------- 404 HANDLER ---------------- */
-
-app.use((req,res)=>{
- res.status(404).json({
-  message:"Route not found"
- });
-});
 
 /* ---------------- ERROR HANDLER ---------------- */
 
@@ -178,8 +183,3 @@ if(!process.env.JWT_SECRET){
  console.error("JWT_SECRET missing!");
  process.exit(1);
 }
-
-/* ---------------- ROUTE IMPORTS ---------------- */
-
-const organizerRoutes = require('./routes/organizerRoutes');
-app.use('/api/organizers', organizerRoutes);
