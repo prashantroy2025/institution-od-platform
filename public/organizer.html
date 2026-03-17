@@ -308,7 +308,7 @@ justify-content:center;
 <h3>Create Event</h3>
 
 <input id="title" placeholder="Event Title">
-<input id="club_id" placeholder="Club ID">
+<select id="club_id"></select>
 <input type="date" id="from_date">
 <input type="date" id="to_date">
 <input type="time" id="start_time">
@@ -1234,6 +1234,28 @@ loadHistory()
 loadEvents()
 
 }
+
+/* LOAD CLUBS */
+
+async function loadClubs() {
+    const res = await fetch(API_BASE + "/api/clubs");
+    const clubs = await res.json();
+
+    const select = document.getElementById("club_id");
+
+    select.innerHTML = "<option value=''>Select Club</option>";
+
+    clubs.forEach(club => {
+        select.innerHTML += `
+            <option value="${club.id}">
+                ${club.name}
+            </option>
+        `;
+    });
+}
+
+window.onload = loadClubs;
+
 
 /* LOGOUT */
 

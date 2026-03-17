@@ -178,3 +178,8 @@ if(!process.env.JWT_SECRET){
  console.error("JWT_SECRET missing!");
  process.exit(1);
 }
+
+/* ---------------- ROUTE IMPORTS ---------------- */
+
+const clubRoutes = require("./routes/clubRoutes");
+app.use("/api/clubs", clubRoutes);
