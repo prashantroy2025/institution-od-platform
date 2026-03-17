@@ -1222,7 +1222,7 @@ async function recoverEvent(id){
 if(!confirm("Recover this event?")) return
 
 await fetch(
-"/api/api/events/recover/"+id,
+"/api/events/recover/"+id,
 {
 method:"POST",
 headers:{Authorization:"Bearer "+token}
@@ -1330,6 +1330,7 @@ window.location="login.html"
 
 window.onload=()=>{
 loadEvents()
+loadClubs() 
 openPage("events")
 loadHistory()
 document.querySelector(".sidebar button").classList.add("active")

@@ -3,22 +3,15 @@ const db = require('../config/db');
 
 const startTokenCleanup = () => {
 
-    // Run every minute
-    cron.schedule('* * * * *', () => {
-
-        db.query(
-            "DELETE FROM event_qr_tokens WHERE expires_at < NOW()",
-            (err) => {
-
-                if (err) {
-                    console.error("Token cleanup error:", err);
-                } else {
-                    console.log("Expired QR tokens cleaned");
-                }
-
-            }
-        );
-
+    cron.schedule('* * * * *', async () => {
+        try {
+            await db.query(
+                "DELETE FROM event_qr_tokens WHERE expires_at < NOW()"
+            );
+            console.log("Expired QR tokens cleaned");
+        } catch (err) {
+            console.error("Token cleanup error:", err);
+        }
     });
 
 };
