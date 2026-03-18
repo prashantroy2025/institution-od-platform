@@ -53,10 +53,9 @@ const proof_file = req.file ? req.file.filename : null;
 const [result] = await db.query(
 `INSERT INTO events 
 (organizer_id, title, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')`,
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 [
-req.user.id,  // ✅ use organizer as club
-req.user.id,  // organizer_id
+req.user.id,
 title,
 department_id,
 from_date,
@@ -64,7 +63,8 @@ to_date,
 start_time,
 end_time,
 is_full_day || 0,
-proof_file
+proof_file,
+"Pending"
 ]
 );
 

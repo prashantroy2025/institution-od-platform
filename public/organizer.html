@@ -642,19 +642,9 @@ is_full_day:0
 
 })
 
-let data;
+const data=await res.json()
 
-try{
-  data = await res.json();
-}catch(e){
-  const text = await res.text();
-  console.log("RAW ERROR:", text);
-  document.getElementById("eventMsg").innerText = "Server error";
-  return;
-}
-
-document.getElementById("eventMsg").innerText =
-  data.message || data.error || "Something went wrong";
+document.getElementById("eventMsg").innerText = data.message || data.error;
 
 loadEvents()
 
@@ -1248,28 +1238,6 @@ loadEvents()
 
 }
 
-/* LOAD CLUBS */
-
-async function loadClubs() {
-    try {
-        const res = await fetch(API_BASE + "/api/organizers");
-        const data = await res.json();
-
-        const select = document.getElementById("club_id");
-
-        select.innerHTML = "<option value=''>Select Organizer</option>";
-
-        data.forEach(item => {
-            const option = document.createElement("option");
-            option.value = item.id;     // still sending ID
-            option.textContent = item.name; // showing name
-            select.appendChild(option);
-        });
-
-    } catch (err) {
-        console.error(err);
-    }
-}
 
 /* LOGIN */
 
