@@ -20,7 +20,7 @@ end_time,
 is_full_day
 } = req.body;
 
-const club_id = req.user.id;
+
 const department_id = req.user.department_id;
 
 if (!title || !from_date || !to_date) {
@@ -55,8 +55,8 @@ const [result] = await db.query(
 (club_id, organizer_id, title, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')`,
 [
-club_id,
-req.user.id,
+req.user.id,  // ✅ use organizer as club
+req.user.id,  // organizer_id
 title,
 department_id,
 from_date,
