@@ -52,7 +52,7 @@ const proof_file = req.file ? req.file.filename : null;
 
 const [result] = await db.query(
 `INSERT INTO events 
-(club_id, organizer_id, title, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status)
+(organizer_id, title, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')`,
 [
 req.user.id,  // ✅ use organizer as club
