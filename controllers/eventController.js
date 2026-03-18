@@ -7,8 +7,11 @@ exports.createEvent = async (req, res) => {
 
 try{
 
+if (!req.user) {
+ return res.status(401).json({ message: "Unauthorized" });
+}
+
 let {
-club_id,
 title,
 from_date,
 to_date,
@@ -17,9 +20,10 @@ end_time,
 is_full_day
 } = req.body;
 
+const club_id = req.user.id;
 const department_id = req.user.department_id;
 
-if (!club_id || !title || !from_date || !to_date) {
+if (!title || !from_date || !to_date) {
 return res.status(400).json({ message: "Missing required fields" });
 }
 
@@ -29,7 +33,11 @@ message: "To date cannot be earlier than from date"
 });
 }
 
-if (start_time && end_time && start_time > end_time) {
+if (
+start_time &&
+end_time &&
+new Date(`1970-01-01T${start_time}`) > new Date(`1970-01-01T${end_time}`)
+) {
 return res.status(400).json({
 message: "End time must be after start time"
 });
@@ -61,6 +69,7 @@ proof_file
 );
 
 const eventId = result.insertId;
+
 
 /* Notify HOD */
 
