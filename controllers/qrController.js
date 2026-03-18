@@ -113,10 +113,12 @@ exports.scanQR = (req, res) => {
 
 // ------------------ START ATTENDANCE ------------------
 
-console.log("📥 BODY:", req.body);
-console.log("👤 USER:", req.user);
+
 
 exports.startAttendance = async (req, res) => {
+
+console.log("📥 BODY:", req.body);
+console.log("👤 USER:", req.user);
 
     try{
 
