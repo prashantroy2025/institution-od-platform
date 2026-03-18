@@ -615,7 +615,6 @@ document.getElementById("list").innerHTML=""
 async function createNewEvent(){
 
 const title=document.getElementById("title").value
-const club_id = localStorage.getItem("user_id");
 const from_date=document.getElementById("from_date").value
 const to_date=document.getElementById("to_date").value
 const start_time=document.getElementById("start_time").value
@@ -635,7 +634,6 @@ Authorization:"Bearer "+token
 },
 body:JSON.stringify({
 title,
-club_id,
 from_date,
 to_date,
 start_time,
@@ -647,7 +645,7 @@ is_full_day:0
 
 const data=await res.json()
 
-document.getElementById("eventMsg").innerText=data.message
+document.getElementById("eventMsg").innerText = data.message || data.error;
 
 loadEvents()
 
@@ -1181,7 +1179,7 @@ alert("Attendance re-submitted for approval")
 
 async function loadHistory(){
 
-const res = await ffetch(API_BASE + "/api/events/history",
+const res = await fetch(API_BASE + "/api/events/history",
 {headers:{Authorization:"Bearer "+token}}
 )
 
