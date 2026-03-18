@@ -100,7 +100,12 @@ event_id: eventId
 });
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("DB ERROR:", err);
+
+res.status(500).json({
+error: err.message,
+sql: err.sqlMessage
+});
 }
 
 };
@@ -122,7 +127,12 @@ const [rows] = await db.query(
 res.json(rows);
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("DB ERROR:", err);
+
+res.status(500).json({
+error: err.message,
+sql: err.sqlMessage
+});
 }
 
 };
@@ -152,7 +162,12 @@ message: "Event approved successfully"
 });
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("DB ERROR:", err);
+
+res.status(500).json({
+error: err.message,
+sql: err.sqlMessage
+});
 }
 
 };
@@ -182,7 +197,12 @@ message: "Event rejected"
 });
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("DB ERROR:", err);
+
+res.status(500).json({
+error: err.message,
+sql: err.sqlMessage
+});
 }
 
 };
@@ -213,7 +233,12 @@ created_at DESC`,
 res.json(rows);
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("DB ERROR:", err);
+
+res.status(500).json({
+error: err.message,
+sql: err.sqlMessage
+});
 }
 
 };
@@ -270,7 +295,12 @@ message: "Event deleted successfully"
 });
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("DB ERROR:", err);
+
+res.status(500).json({
+error: err.message,
+sql: err.sqlMessage
+});
 }
 
 };
@@ -324,7 +354,12 @@ message: "Event recovered successfully"
 });
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("DB ERROR:", err);
+
+res.status(500).json({
+error: err.message,
+sql: err.sqlMessage
+});
 }
 
 };

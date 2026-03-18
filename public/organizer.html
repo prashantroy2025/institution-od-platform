@@ -258,6 +258,15 @@ justify-content:center;
 
 <body>
 
+<div id="debug" style="
+background:black;
+color:lime;
+padding:10px;
+font-size:12px;
+height:150px;
+overflow:auto;">
+</div>
+
 <!-- SIDEBAR -->
 
 <div class="sidebar">
@@ -449,6 +458,53 @@ Analyze participation statistics for your events.
 </div>
 
 <script>
+
+/* ERROR HANDLING */
+
+window.onerror = function(message, source, lineno){
+console.error("🔥 JS ERROR:", message, "at", source+":"+lineno);
+alert("Error: " + message);
+};
+
+function debug(msg){
+const d = document.getElementById("debug");
+if(d){
+d.innerHTML += "<br>" + msg;
+}
+}
+
+
+async function apiCall(url, options = {}) {
+try {
+
+console.log("➡️ API:", url);
+console.log("OPTIONS:", options);
+
+const res = await fetch(url, options);
+
+let data;
+
+try{
+data = await res.json();
+}catch{
+const text = await res.text();
+throw new Error("Invalid JSON: " + text);
+}
+
+console.log("⬅️ RESPONSE:", data);
+
+if(!res.ok){
+throw new Error(data.message || data.error || "Unknown error");
+}
+
+return data;
+
+}catch(err){
+console.error("❌ ERROR:", err.message);
+alert(err.message);
+throw err;
+}
+}
 
 /* AUTH CHECK */
 
@@ -654,24 +710,24 @@ loadEvents()
 
 async function startAttendance(){
 
+console.log("🚀 Start Attendance clicked");
+console.log("Event:", currentEvent);
+
 if(!currentEvent){
 alert("Select event first")
 return
 }
 
-await fetch(API_BASE + "/api/qr/start-attendance",{
-
+await apiCall(API_BASE + "/api/qr/start-attendance",{
 method:"POST",
 headers:{
 "Content-Type":"application/json",
 Authorization:"Bearer "+token
 },
 body:JSON.stringify({event_id:currentEvent})
+});
 
-})
-
-generateQR(currentEvent)
-
+generateQR(currentEvent);
 }
 
 async function closeAttendance(){

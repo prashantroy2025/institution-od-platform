@@ -149,14 +149,6 @@ const io = new Server(server, {
 
 app.set("io", io);
 
-/* ---------------- SERVER START ---------------- */
-
-const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, () => {
- console.log(`Server running on port ${PORT}`);
-});
-
 /* ---------------- SERVICES ---------------- */
 
 startTokenCleanup();
@@ -186,3 +178,19 @@ process.on("SIGTERM", () => {
  });
 });
 
+app.use((err, req, res, next) => {
+console.error("🔥 SERVER ERROR:", err);
+
+res.status(500).json({
+error: err.message,
+stack: process.env.NODE_ENV === "development" ? err.stack : undefined
+});
+});
+
+/* ---------------- SERVER START ---------------- */
+
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+ console.log(`Server running on port ${PORT}`);
+});
