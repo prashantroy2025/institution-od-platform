@@ -308,7 +308,6 @@ justify-content:center;
 <h3>Create Event</h3>
 
 <input id="title" placeholder="Event Title">
-<select id="club_id"></select>
 <input type="date" id="from_date">
 <input type="date" id="to_date">
 <input type="time" id="start_time">
@@ -643,9 +642,19 @@ is_full_day:0
 
 })
 
-const data=await res.json()
+let data;
 
-document.getElementById("eventMsg").innerText = data.message || data.error;
+try{
+  data = await res.json();
+}catch(e){
+  const text = await res.text();
+  console.log("RAW ERROR:", text);
+  document.getElementById("eventMsg").innerText = "Server error";
+  return;
+}
+
+document.getElementById("eventMsg").innerText =
+  data.message || data.error || "Something went wrong";
 
 loadEvents()
 
@@ -1351,7 +1360,6 @@ window.location="login.html"
 
 window.onload=()=>{
 loadEvents()
-loadClubs() 
 openPage("events")
 loadHistory()
 document.querySelector(".sidebar button").classList.add("active")
