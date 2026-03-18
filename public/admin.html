@@ -230,9 +230,10 @@ Participants
 
 <h2>Create User</h2>
 
+
 <input id="college_id" placeholder="College ID"><br> 
 <input id="name" placeholder="Name"><br> 
-<input id="club_name" placeholder="Club Name (for organizers)"><br>
+<input type="text" id="club_name" placeholder="Club Name (for organizers)" style="display:none;"><br>
 <input id="email" placeholder="Email"><br> 
 <input id="password" placeholder="Password"><br>
 
@@ -251,6 +252,19 @@ Participants
 <button onclick="createUser()">Create User</button>
 
 <p id="createMsg"></p>
+
+<script>
+const roleSelect = document.getElementById("role");
+const clubInput = document.getElementById("club_name");
+
+roleSelect.addEventListener("change", () => {
+    if(roleSelect.value === "organizer"){
+        clubInput.style.display = "none"; // hide for organizer
+    } else {
+        clubInput.style.display = "none"; // still hidden (you can change if needed)
+    }
+});
+</script>
 
 </div>
 
@@ -388,14 +402,23 @@ document.getElementById("createUserCard").style.display="block"
 
 async function createUser(){
 
-const college_id=document.getElementById("college_id").value
-const club_name=document.getElementById("club_name").value
-const email=document.getElementById("email").value
-const password=document.getElementById("password").value
-const role=document.getElementById("role").value
-const department_id=document.getElementById("department_id").value
+const college_id = document.getElementById("college_id").value;
+const name = document.getElementById("name").value;
+const email = document.getElementById("email").value;
+const password = document.getElementById("password").value;
+const role = document.getElementById("role").value;
+const department_id = document.getElementById("department_id").value;
 
-const res=await fetch(API_BASE + "/api/auth/create-user",{
+// 🔥 AUTO CLUB LOGIC
+let club_name = "";
+
+if(role === "organizer"){
+    club_name = name; // auto assign
+} else {
+    club_name = document.getElementById("club_name").value;
+}
+
+const res = await fetch(API_BASE + "/api/auth/create-user",{
 
 method:"POST",
 
@@ -405,14 +428,20 @@ Authorization:"Bearer "+token
 },
 
 body:JSON.stringify({
-college_id,name,email,password,role,department_id,club_name
+college_id,
+name,
+email,
+password,
+role,
+department_id,
+club_name
 })
 
 })
 
-const data=await res.json()
+const data = await res.json();
 
-document.getElementById("createMsg").innerText=data.message || data.error
+document.getElementById("createMsg").innerText = data.message || data.error;
 
 }
 
