@@ -46,12 +46,7 @@ exports.scanQR = async (req, res) => {
         const student_id = req.user.id;
         const ip_address = req.ip;
 
-        console.log("📥 TOKEN RECEIVED:", token);
-        console.log("USER:", req.user);
-
         const tokenRow = await qrService.validateQRToken(token);
-
-        console.log("🧾 TOKEN ROW:", tokenRow);
 
         if (!tokenRow) {
             return res.status(400).json({
@@ -122,9 +117,6 @@ exports.scanQR = async (req, res) => {
 
 
 exports.startAttendance = async (req, res) => {
-
-console.log("📥 BODY:", req.body);
-console.log("👤 USER:", req.user);
 
     try{
 
