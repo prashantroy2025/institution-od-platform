@@ -4,7 +4,7 @@
 <head>
 <title>Student Dashboard</title>
 <script src="config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 
@@ -325,9 +325,9 @@ transform:translateY(0);
 
 </div>
 
-<div id="qrScannerBox" style="display:none; text-align:center; margin-top:20px;">
+<div id="qrScannerBox" style="display:none;">
     <h3>Scan QR Code</h3>
-    <video id="qrVideo" width="250" autoplay></video>
+    <div id="reader" style="width:250px;margin:auto;"></div>
     <p id="qrStatus"></p>
 </div>
 
@@ -514,55 +514,28 @@ container.appendChild(div)
 
 /* QR SCANNER */
 
-async function openQRScanner(){
+function openQRScanner(){
 
     document.getElementById("qrScannerBox").style.display = "block";
 
-    const video = document.getElementById("qrVideo");
+    const html5QrCode = new Html5Qrcode("reader");
 
-    try{
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" }
-        });
+    html5QrCode.start(
+        { facingMode: "environment" },
+        {
+            fps: 10,
+            qrbox: 250
+        },
+        (decodedText) => {
+            // SUCCESS
+            html5QrCode.stop();
 
-        video.srcObject = stream;
-
-        scanLoop(video);
-
-    }catch(err){
-        alert("Camera not supported");
-    }
-}
-
-/* QR SCAN LOOP */
-
-function scanLoop(video){
-
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    const interval = setInterval(() => {
-
-        if(video.readyState === video.HAVE_ENOUGH_DATA){
-
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-            const code = jsQR(imageData.data, canvas.width, canvas.height);
-
-            if(code){
-
-                clearInterval(interval);
-
-                handleQRResult(code.data);
-            }
+            handleQRResult(decodedText);
+        },
+        (errorMessage) => {
+            // ignore scan errors (normal)
         }
-
-    }, 500);
+    );
 }
 
 /* HANDLE QR RESULT */
@@ -570,11 +543,9 @@ function scanLoop(video){
 async function handleQRResult(qrData){
 
     document.getElementById("qrStatus").innerText = "Processing...";
-    video.srcObject.getTracks().forEach(track => track.stop());
 
     try{
 
-        // extract token from URL
         const url = new URL(qrData);
         const token = url.searchParams.get("token");
 
