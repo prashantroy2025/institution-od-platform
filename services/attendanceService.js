@@ -32,7 +32,12 @@ exports.markAttendanceForOD = async (student_id, event_id, date) => {
 
  for(const p of periods){
 
-  if(p.start < eventEnd && p.end > eventStart){
+const eventStartTime = new Date(`1970-01-01T${eventStart}`);
+const eventEndTime = new Date(`1970-01-01T${eventEnd}`);
+const pStart = new Date(`1970-01-01T${p.start}`);
+const pEnd = new Date(`1970-01-01T${p.end}`);
+
+if(pStart < eventEndTime && pEnd > eventStartTime){
 
    const [rows] = await db.query(
     "SELECT * FROM attendance WHERE student_id=? AND attendance_date=? AND period_number=?",
@@ -47,13 +52,17 @@ exports.markAttendanceForOD = async (student_id, event_id, date) => {
     );
 
     console.log("Syncing attendance:",student_id,p.period);
-
-    collegeSyncService.syncAttendance(
-     student_id,
-     date,
-     p.period,
-     "Present"
+   
+    try {
+    await collegeSyncService.syncAttendance(
+        student_id,
+        date,
+        p.period,
+        "Present"
     );
+    } catch (err) {
+    console.error("❌ Sync failed:", err);
+    }
 
    } 
    else if(rows[0].status === "Absent"){
@@ -65,12 +74,16 @@ exports.markAttendanceForOD = async (student_id, event_id, date) => {
 
     console.log("Updating and syncing attendance:",student_id,p.period);
 
-    collegeSyncService.syncAttendance(
-     student_id,
-     date,
-     p.period,
-     "Present"
+   try {
+    await collegeSyncService.syncAttendance(
+        student_id,
+        date,
+        p.period,
+        "Present"
     );
+    } catch (err) {
+    console.error("❌ Sync failed:", err);
+    }
 
    }
 

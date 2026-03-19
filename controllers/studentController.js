@@ -40,7 +40,7 @@ exports.applyOD = async (req, res) => {
         [student_id,event_id,applied_date,"Auto Approved"]
     );
 
-    attendanceService.markAttendanceForOD(
+    await attendanceService.markAttendanceForOD(
         student_id,
         event_id,
         applied_date

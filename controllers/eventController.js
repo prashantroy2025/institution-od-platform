@@ -278,10 +278,14 @@ try{
 
 const eventId = req.params.id;
 
-await db.query(
-"UPDATE events SET is_deleted=1 WHERE id=? AND organizer_id=?",
-[eventId, req.user.id]
+const [result] = await db.query(
+    "UPDATE events SET is_deleted=1 WHERE id=? AND organizer_id=?",
+    [eventId, req.user.id]
 );
+
+if (result.affectedRows === 0) {
+    return res.status(404).json({ message: "Event not found or unauthorized" });
+}
 
 /* History */
 
