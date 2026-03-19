@@ -18,19 +18,6 @@ router.post(
     qrController.scanQR
 );
 
-router.post(
- "/start",
- verifyToken,
- allowRoles('organizer'),
- qrController.startAttendance
-);
-
-router.post(
- "/close",
- verifyToken,
- allowRoles('organizer'),
- qrController.closeAttendance
-);
 router.get(
 "/stats/:event_id",
 verifyToken,
