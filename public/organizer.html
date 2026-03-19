@@ -826,10 +826,9 @@ count.innerText=parseInt(count.innerText)+1
 const row=document.createElement("tr")
 
 row.innerHTML=`
-<td>${data.student_id}</td>
+<td>${data.college_id} - ${data.name}</td>
 <td>${new Date().toLocaleTimeString()}</td>
 `
-
 const table=document.getElementById("list")
 
 table.appendChild(row)
@@ -849,8 +848,13 @@ async function loadStats(){
 const title = document.getElementById("eventNameAnalytics").value
 
 if(!title){
-alert("Enter event name")
-return
+
+    if(currentEvent){
+        // use event ID directly
+        return loadStatsById(currentEvent)
+    }
+
+    return
 }
 
 document.getElementById("stats").innerText = "Loading..."
@@ -877,6 +881,49 @@ const statsRes = await fetch(API_BASE +
 const data = await statsRes.json()
 
 document.getElementById("stats").innerText = data.total
+
+/* chart */
+
+async function loadStatsById(eventId){
+
+    try{
+
+        document.getElementById("stats").innerText = "Loading..."
+
+        const res = await fetch(API_BASE +
+        "/api/analytics/event/" + eventId,
+        {headers:{Authorization:"Bearer "+token}}
+        )
+
+        const data = await res.json()
+
+        document.getElementById("stats").innerText = data.total
+
+        // chart
+        const ctx = document.getElementById("attendanceChart")
+
+        if(chart){
+            chart.destroy()
+        }
+
+        chart = new Chart(ctx,{
+            type:"line",
+            data:{
+                labels:["Start","Mid","End"],
+                datasets:[{
+                    label:"Participants",
+                    data:[0, Math.floor(data.total/2), data.total],
+                    borderColor:"#3b82f6",
+                    fill:false
+                }]
+            },
+            options:{responsive:true}
+        })
+
+    }catch(err){
+        console.error("Stats error:", err)
+    }
+}
 
 /* Chart */
 

@@ -91,9 +91,19 @@ exports.scanQR = async (req, res) => {
 
         const io = req.app.get("io");
 
+       // get student details
+       const [userRows] = await db.query(
+       "SELECT name, college_id FROM users WHERE id=?",
+        [student_id]
+        );
+
+        const student = userRows[0];
+
         io.emit("attendance_update", {
-            event_id,
-            student_id
+         event_id,
+         student_id: student_id,
+         college_id: student.college_id,
+         name: student.name
         });
 
         res.json({
