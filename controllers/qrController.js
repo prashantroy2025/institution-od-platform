@@ -38,27 +38,27 @@ exports.getQR = async (req, res) => {
 
 // ------------------ SCAN QR ------------------
 
-exports.scanQR = (req, res) => {
+exports.scanQR = async (req, res) => {
 
-    const { token } = req.body;
-    const student_id = req.user.id;
-    const ip_address = req.ip;
+    try {
 
-    qrService.validateQRToken(token, async (err, tokenRow) => {
+        const { token } = req.body;
+        const student_id = req.user.id;
+        const ip_address = req.ip;
 
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+        console.log("📥 TOKEN RECEIVED:", token);
+
+        const tokenRow = await qrService.validateQRToken(token);
+
+        console.log("🧾 TOKEN ROW:", tokenRow);
 
         if (!tokenRow) {
             return res.status(400).json({
-                message: "QR code expired. Scan again."
+                message: "QR code expired or invalid"
             });
         }
 
         const event_id = tokenRow.event_id;
-
-        try{
 
         const [eventRows] = await db.query(
             "SELECT attendance_active FROM events WHERE id=?",
@@ -91,23 +91,20 @@ exports.scanQR = (req, res) => {
         const io = req.app.get("io");
 
         io.emit("attendance_update", {
-            event_id: event_id,
-            student_id: student_id
+            event_id,
+            student_id
         });
 
         res.json({
             message: "Attendance recorded successfully"
         });
 
-        }catch(err){
-            res.status(500).json({ error: err.message });
-        }
-
-    });
+    } catch (err) {
+        console.error("❌ SCAN ERROR:", err);
+        res.status(500).json({ error: err.message });
+    }
 
 };
-
-
 
 // ------------------ START ATTENDANCE ------------------
 
