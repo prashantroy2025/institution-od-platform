@@ -16,7 +16,7 @@ router.post(
 router.get(
 "/event/:id",
 verifyToken,
-allowRoles("organizer"),
+allowRoles("organizer", "hod"),
 participantController.getParticipantsByEvent
 );
 
@@ -29,21 +29,21 @@ participantController.getParticipantCount
 router.post(
 "/add",
 verifyToken,
-allowRoles("organizer"),
+allowRoles("organizer", "hod"),
 participantController.addParticipant
 )
 
 router.post(
 "/remove",
 verifyToken,
-allowRoles("organizer"),
+allowRoles("organizer", "hod"),
 participantController.removeParticipant
 )
 
 router.post(
 "/reupload",
 verifyToken,
-allowRoles("organizer"),
+allowRoles("organizer", "hod"),
 upload.single("file"),
 participantController.reuploadParticipants
 )

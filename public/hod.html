@@ -289,7 +289,7 @@ const token = localStorage.getItem("token")
 
 async function fetchEvents(){
 
-const res = await fetch(API_BASE + "/api/events/pending",{
+const res = await fetch(API_BASE + "/events/pending",{
 
 headers:{
 "Authorization":"Bearer "+token
@@ -358,7 +358,7 @@ container.appendChild(div)
 
 async function approve(id){
 
-await fetch(API_BASE + "/api/events/approve",{
+await fetch(API_BASE + "/events/approve",{
 
 method:"POST",
 
@@ -378,7 +378,7 @@ loadEvents()
 
 async function reject(id){
 
-await fetch(API_BASE + "/api/events/reject",{
+await fetch(API_BASE + "/events/reject",{
 
 method:"POST",
 
@@ -400,7 +400,7 @@ async function viewParticipants(eventId){
 try{
 
 const res = await fetch(
-"/api/api/participants/event/"+eventId,
+"/api/participants/event/"+eventId,
 {
 headers:{
 "Authorization":"Bearer "+token
