@@ -757,6 +757,8 @@ alert("Attendance closed")
 
 async function generateQR(eventId){
 
+console.log("📡 generateQR called");
+
 if(qrInterval) clearInterval(qrInterval)
 
 await loadQR(eventId)
@@ -767,22 +769,31 @@ loadQR(eventId)
 
 }
 
+
 async function loadQR(eventId){
 
-const res=await fetch(API_BASE + "/api/qr/generate",{
+try{
 
+console.log("🚀 Loading QR for event:", eventId);
+
+const res = await fetch(API_BASE + "/api/qr/generate",{
 method:"POST",
 headers:{
 "Content-Type":"application/json",
 Authorization:"Bearer "+token
 },
 body:JSON.stringify({event_id:eventId})
-
 })
 
-const data=await res.json()
+const data = await res.json();
 
-document.getElementById("qrcode").innerHTML=""
+console.log("📦 QR RESPONSE:", data);
+
+document.getElementById("qrcode").innerHTML="";
+
+if(!data.qr_data){
+throw new Error("QR data missing from backend");
+}
 
 new QRCode(document.getElementById("qrcode"),{
 text:data.qr_data,
@@ -790,7 +801,13 @@ width:280,
 height:280
 })
 
+}catch(err){
+console.error("❌ QR ERROR:", err);
+alert("QR Failed: " + err.message);
 }
+
+}
+
 
 function stopQR(){
 
