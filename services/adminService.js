@@ -112,3 +112,28 @@ exports.getEventParticipants = async (event_id) => {
  }
 
 }
+
+// GET ALL USERS
+exports.getUsers = async () => {
+  try {
+    const [rows] = await db.query(
+      "SELECT id, college_id, name, email, role, is_active, department_id FROM users"
+    );
+    return rows;
+  } catch (err) {
+    throw err;
+  }
+};
+
+// DEACTIVATE USER
+exports.deactivateUser = async (user_id) => {
+  try {
+    const [result] = await db.query(
+      "UPDATE users SET is_active=0 WHERE id=?",
+      [user_id]
+    );
+    return result;
+  } catch (err) {
+    throw err;
+  }
+};

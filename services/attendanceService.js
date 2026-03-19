@@ -12,87 +12,65 @@ const periods = [
 ];
 
 exports.markAttendanceForOD = async (student_id, event_id, date) => {
+  console.log("Running smart attendance automation");
 
- console.log("Running smart attendance automation");
-
- try{
-
- const [eventRows] = await db.query(
-  "SELECT start_time,end_time FROM events WHERE id=?",
-  [event_id]
- );
-
- if(!eventRows || eventRows.length === 0){
-  console.error("Event not found");
-  return;
- }
-
- const eventStart = eventRows[0].start_time;
- const eventEnd = eventRows[0].end_time;
-
- for(const p of periods){
-
-const eventStartTime = new Date(`1970-01-01T${eventStart}`);
-const eventEndTime = new Date(`1970-01-01T${eventEnd}`);
-const pStart = new Date(`1970-01-01T${p.start}`);
-const pEnd = new Date(`1970-01-01T${p.end}`);
-
-if(pStart < eventEndTime && pEnd > eventStartTime){
-
-   const [rows] = await db.query(
-    "SELECT * FROM attendance WHERE student_id=? AND attendance_date=? AND period_number=?",
-    [student_id,date,p.period]
-   );
-
-   if(rows.length === 0){
-
-    await db.query(
-     "INSERT INTO attendance (student_id,attendance_date,period_number,status) VALUES (?,?,?,?)",
-     [student_id,date,p.period,"OD"]
+  try {
+    const [eventRows] = await db.query(
+      "SELECT start_time, end_time, is_full_day FROM events WHERE id=?",
+      [event_id]
     );
 
-    console.log("Syncing attendance:",student_id,p.period);
-   
-    try {
-    await collegeSyncService.syncAttendance(
-        student_id,
-        date,
-        p.period,
-        "Present"
-    );
-    } catch (err) {
-    console.error("❌ Sync failed:", err);
+    if (!eventRows || eventRows.length === 0) {
+      console.error("Event not found");
+      return;
     }
 
-   } 
-   else if(rows[0].status === "Absent"){
+    const { start_time, end_time, is_full_day } = eventRows[0];
 
-    await db.query(
-     "UPDATE attendance SET status='OD' WHERE student_id=? AND attendance_date=? AND period_number=?",
-     [student_id,date,p.period]
-    );
+    for (const p of periods) {
+      // For full-day events, mark all periods. For timed events, check overlap.
+      let overlaps = false;
 
-    console.log("Updating and syncing attendance:",student_id,p.period);
+      if (is_full_day) {
+        overlaps = true;
+      } else if (start_time && end_time) {
+        const eventStartTime = new Date(`1970-01-01T${start_time}`);
+        const eventEndTime = new Date(`1970-01-01T${end_time}`);
+        const pStart = new Date(`1970-01-01T${p.start}`);
+        const pEnd = new Date(`1970-01-01T${p.end}`);
+        overlaps = pStart < eventEndTime && pEnd > eventStartTime;
+      }
 
-   try {
-    await collegeSyncService.syncAttendance(
-        student_id,
-        date,
-        p.period,
-        "Present"
-    );
-    } catch (err) {
-    console.error("❌ Sync failed:", err);
+      if (!overlaps) continue;
+
+      const [rows] = await db.query(
+        "SELECT * FROM attendance WHERE student_id=? AND attendance_date=? AND period_number=?",
+        [student_id, date, p.period]
+      );
+
+      if (rows.length === 0) {
+        await db.query(
+          "INSERT INTO attendance (student_id,attendance_date,period_number,status) VALUES (?,?,?,?)",
+          [student_id, date, p.period, "OD"]
+        );
+        try {
+          await collegeSyncService.syncAttendance(student_id, date, p.period, "Present");
+        } catch (err) {
+          console.error("❌ Sync failed:", err);
+        }
+      } else if (rows[0].status === "Absent") {
+        await db.query(
+          "UPDATE attendance SET status='OD' WHERE student_id=? AND attendance_date=? AND period_number=?",
+          [student_id, date, p.period]
+        );
+        try {
+          await collegeSyncService.syncAttendance(student_id, date, p.period, "Present");
+        } catch (err) {
+          console.error("❌ Sync failed:", err);
+        }
+      }
     }
-
-   }
-
+  } catch (err) {
+    console.error(err);
   }
-
- }
-
- }catch(err){
-  console.error(err);
- }
-
 };

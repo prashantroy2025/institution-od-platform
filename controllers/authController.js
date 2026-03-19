@@ -21,13 +21,7 @@ exports.login = async (req, res) => {
 
         const user = results[0];
 
-        let isMatch = false;
-
-        if (user.password && user.password.startsWith("$2b$")) {
-            isMatch = await bcrypt.compare(password, user.password);
-        } else {
-            isMatch = password === user.password;
-        }
+        const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid credentials" });
@@ -67,6 +61,11 @@ exports.createUser = async (req, res) => {
             return res.status(400).json({ message: "All fields are required" });
         }
 
+        const ALLOWED_ROLES = ['student', 'organizer', 'hod'];
+         if (!ALLOWED_ROLES.includes(role)) {
+         return res.status(400).json({ message: "Invalid role. Allowed: student, organizer, hod" });
+        }
+
         const [existing] = await db.query(
             "SELECT id FROM users WHERE email = ?",
             [email]
@@ -77,7 +76,7 @@ exports.createUser = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const club_name = name;
+        const club_name = req.body.club_name || null;
 
         await db.query(
             "INSERT INTO users (college_id, name, email, password, role, department_id, club_name) VALUES (?, ?, ?, ?, ?, ?, ?)",

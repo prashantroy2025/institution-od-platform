@@ -1,6 +1,15 @@
 const adminService = require('../services/adminService');
 const db = require('../config/db');
 
+function csvEscape(value) {
+  if (value === null || value === undefined) return '';
+  const str = String(value);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return '"' + str.replace(/"/g, '""') + '"';
+  }
+  return str;
+}
+
 /* ---------------- SYSTEM STATS ---------------- */
 exports.getSystemStats = async (req,res,next)=>{
 try{
@@ -154,7 +163,7 @@ WHERE event_participants.event_id=?`,
 let csv = "Name,CollegeID\n";
 
 rows.forEach(r=>{
-csv += `${r.name},${r.college_id}\n`;
+csv += `${csvEscape(r.name)},${csvEscape(r.college_id)}\n`;
 });
 
 res.setHeader("Content-Type","text/csv");
@@ -162,8 +171,9 @@ res.setHeader("Content-Disposition","attachment; filename=participants.csv");
 
 res.send(csv);
 
-}catch(err){
-res.status(500).json({error:err.message});
+} catch(err) {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
 }
 };
 
@@ -188,6 +198,7 @@ LIMIT 100
 res.json(rows);
 
 }catch(err){
+    console.error(err);
 res.status(500).json({error:"Failed to load audit logs"});
 }
 };
@@ -204,7 +215,9 @@ const [rows] = await db.query(
 let csv = "ID,CollegeID,Name,Email,Role,Department,Active\n";
 
 rows.forEach(user=>{
-csv += `${user.id},${user.college_id || ""},${user.name},${user.email},${user.role},${user.department_id || ""},${user.is_active}\n`;
+csv += `${csvEscape(user.id)},${csvEscape(user.college_id) || ""},${csvEscape(user.name)},
+${csvEscape(user.email)},${csvEscape(user.role)},${csvEscape(user.department_id) || ""},
+${csvEscape(user.is_active)}\n`;
 });
 
 res.setHeader("Content-Type","text/csv");
@@ -213,6 +226,7 @@ res.setHeader("Content-Disposition","attachment; filename=users.csv");
 res.send(csv);
 
 }catch(err){
+    console.error(err);
 res.status(500).json({error:"Export failed"});
 }
 };
@@ -229,7 +243,7 @@ const [rows] = await db.query(
 let csv="ID,Title,Status,FromDate,ToDate\n";
 
 rows.forEach(e=>{
-csv+=`${e.id},${e.title},${e.status},${e.from_date},${e.to_date}\n`;
+csv+=`${csvEscape(e.id)},${csvEscape(e.title)},${csvEscape(e.status)},${csvEscape(e.from_date)},${csvEscape(e.to_date)}\n`;
 });
 
 res.setHeader("Content-Type","text/csv");
@@ -238,6 +252,7 @@ res.setHeader("Content-Disposition","attachment; filename=events.csv");
 res.send(csv);
 
 }catch(err){
+    console.error(err);
 res.status(500).json({error:"Export failed"});
 }
 };
@@ -261,7 +276,8 @@ LEFT JOIN users ON attendance.student_id=users.id
 let csv="StudentID,Name,Date,Period,Status\n";
 
 rows.forEach(a=>{
-csv+=`${a.student_id},${a.name},${a.attendance_date},${a.period_number},${a.status}\n`;
+csv+=`${csvEscape(a.student_id)},${csvEscape(a.name)},
+${csvEscape(a.attendance_date)},${csvEscape(a.period_number)},${csvEscape(a.status)}\n`;
 });
 
 res.setHeader("Content-Type","text/csv");
@@ -270,6 +286,7 @@ res.setHeader("Content-Disposition","attachment; filename=attendance.csv");
 res.send(csv);
 
 }catch(err){
+    console.error(err);
 res.status(500).json({error:"Export failed"});
 }
 };
@@ -291,7 +308,7 @@ LEFT JOIN users ON event_participants.student_id=users.id
 let csv="EventID,StudentName,CollegeID\n";
 
 rows.forEach(p=>{
-csv+=`${p.event_id},${p.name},${p.college_id}\n`;
+csv+=`${csvEscape(p.event_id)},${csvEscape(p.name)},${csvEscape(p.college_id)}\n`;
 });
 
 res.setHeader("Content-Type","text/csv");
@@ -300,6 +317,7 @@ res.setHeader("Content-Disposition","attachment; filename=participants.csv");
 res.send(csv);
 
 }catch(err){
+    console.error(err);
 res.status(500).json({error:"Export failed"});
 }
 };
@@ -322,7 +340,7 @@ LEFT JOIN users ON audit_logs.user_id=users.id
 let csv="ID,User,Action,Date\n";
 
 rows.forEach(l=>{
-csv+=`${l.id},${l.name},${l.action},${l.created_at}\n`;
+csv+=`${csvEscape(l.id)},${csvEscape(l.name)},${csvEscape(l.action)},${csvEscape(l.created_at)}\n`;
 });
 
 res.setHeader("Content-Type","text/csv");
@@ -331,6 +349,7 @@ res.setHeader("Content-Disposition","attachment; filename=audit_logs.csv");
 res.send(csv);
 
 }catch(err){
+    console.error(err);
 res.status(500).json({error:"Export failed"});
 }
 };
@@ -355,8 +374,9 @@ ORDER BY a.created_at DESC
 
 res.json(rows);
 
-}catch(err){
-res.status(500).json(err);
+} catch(err) {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
 }
 };
 
@@ -374,8 +394,9 @@ await db.query(
 
 res.json({message:"User recovered"});
 
-}catch(err){
-res.status(500).json(err);
+} catch(err) {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
 }
 };
 
@@ -393,7 +414,8 @@ await db.query(
 
 res.json({message:"Department recovered"});
 
-}catch(err){
-res.status(500).json(err);
+} catch(err) {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
 }
 };

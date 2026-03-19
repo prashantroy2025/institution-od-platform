@@ -55,6 +55,8 @@ exports.uploadParticipants = async (req, res) => {
                     inserted: inserted
                 });
 
+            fs.unlink(req.file.path, () => {});    
+
             } catch (error) {
 
                 console.error(error);
@@ -163,38 +165,60 @@ res.status(500).json({error:err.message});
 };
 
 
-exports.reuploadParticipants = async (req,res)=>{
+exports.reuploadParticipants = async (req, res) => {
+  try {
+    const { event_id } = req.body;
 
-try{
+    if (!req.file) {
+      return res.status(400).json({ message: "File required" });
+    }
 
-const {event_id} = req.body;
+    // Delete old participants
+    await db.query("DELETE FROM event_participants WHERE event_id=?", [event_id]);
 
-if(!req.file){
-return res.status(400).json({message:"File required"});
-}
+    // Parse new CSV
+    const results = [];
+    fs.createReadStream(req.file.path)
+      .pipe(csv())
+      .on("data", (row) => results.push(row))
+      .on("end", async () => {
+        try {
+          let inserted = 0;
 
-// delete old participants
-await db.query(
-"DELETE FROM event_participants WHERE event_id=?",
-[event_id]
-);
+          for (const row of results) {
+            const [users] = await db.query(
+              "SELECT id FROM users WHERE college_id=? AND role='student'",
+              [row.college_id]
+            );
 
-// update status
-await db.query(
-"UPDATE events SET attendance_status='resubmitted' WHERE id=?",
-[event_id]
-);
+            if (users.length > 0) {
+              await db.query(
+                "INSERT IGNORE INTO event_participants (event_id, student_id) VALUES (?,?)",
+                [event_id, users[0].id]
+              );
+              inserted++;
+            }
+          }
 
-// audit log
-await db.query(
-"INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
-[req.user.id,"REUPLOAD_ATTENDANCE","events",event_id]
-);
+          // Cleanup temp file
+          fs.unlink(req.file.path, () => {});
 
-res.json({message:"Attendance re-submitted"});
+          await db.query(
+            "UPDATE events SET attendance_status='resubmitted' WHERE id=?",
+            [event_id]
+          );
 
-}catch(err){
-res.status(500).json(err);
-}
+          await db.query(
+            "INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
+            [req.user.id, "REUPLOAD_ATTENDANCE", "events", event_id]
+          );
 
+          res.json({ message: "Attendance re-submitted", inserted });
+        } catch (err) {
+          res.status(500).json({ error: err.message });
+        }
+      });
+  } catch (err) {
+    res.status(500).json(err);
+  }
 };

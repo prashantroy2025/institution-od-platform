@@ -4,13 +4,6 @@ const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { verifyToken, allowRoles } = require('../middleware/authMiddleware');
 
-
-// -------- DEBUG (REMOVE LATER) --------
-console.log("Admin Controller:", adminController);
-console.log("verifyToken:", verifyToken);
-console.log("allowRoles:", allowRoles);
-// -------------------------------------
-
 // SYSTEM STATS
 router.get(
 "/stats",

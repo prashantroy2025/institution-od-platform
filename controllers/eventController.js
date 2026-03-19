@@ -263,8 +263,9 @@ return res.json({ message: "Not found" });
 
 res.json(rows[0]);
 
-}catch(err){
-res.status(500).json(err);
+} catch(err) {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
 }
 
 };
@@ -316,20 +317,25 @@ exports.getHistory = async (req, res) => {
 
 try{
 
+const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+const offset = parseInt(req.query.offset) || 0;
+
 const [rows] = await db.query(
-`SELECT a.action,a.entity,a.entity_id,a.created_at,
-u.name,
-e.title
-FROM audit_logs a
-LEFT JOIN users u ON a.user_id=u.id
-LEFT JOIN events e ON a.entity_id=e.id
-ORDER BY a.created_at DESC`
+  `SELECT a.action, a.entity, a.entity_id, a.created_at,
+   u.name, e.title
+   FROM audit_logs a
+   LEFT JOIN users u ON a.user_id = u.id
+   LEFT JOIN events e ON a.entity_id = e.id
+   ORDER BY a.created_at DESC
+   LIMIT ? OFFSET ?`,
+  [limit, offset]
 );
 
 res.json(rows);
 
-}catch(err){
-res.status(500).json(err);
+} catch(err) {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
 }
 
 };

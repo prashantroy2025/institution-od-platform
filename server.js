@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+require('events').EventEmitter.defaultMaxListeners = 20;
 
 if(!process.env.JWT_SECRET){
  console.error("JWT_SECRET missing!");
@@ -109,13 +110,6 @@ app.use('/api/admin', adminRoutes);
 const organizerRoutes = require('./routes/organizerRoutes');
 app.use('/api/organizers', organizerRoutes);
 
-/* ---------------- 404 HANDLER ---------------- */
-
-app.use((req,res)=>{
- res.status(404).json({
-  message:"Route not found"
- });
-});
 
 /* ---------------- ADMIN TEST ---------------- */
 
@@ -130,6 +124,13 @@ app.get(
  }
 );
 
+/* ---------------- 404 HANDLER ---------------- */
+
+app.use((req,res)=>{
+ res.status(404).json({
+  message:"Route not found"
+ });
+});
 
 /* ---------------- ERROR HANDLER ---------------- */
 
@@ -144,7 +145,14 @@ const { Server } = require('socket.io');
 const server = http.createServer(app);
 
 const io = new Server(server, {
- cors: { origin: "*" }
+  cors: {
+    origin: [
+      "https://od-platform.vercel.app",
+      "http://localhost:3000",
+      "http://127.0.0.1:5500"
+    ],
+    credentials: true
+  }
 });
 
 app.set("io", io);
@@ -176,15 +184,6 @@ process.on("SIGTERM", () => {
    console.log("Server closed");
    process.exit(0);
  });
-});
-
-app.use((err, req, res, next) => {
-console.error("🔥 SERVER ERROR:", err);
-
-res.status(500).json({
-error: err.message,
-stack: process.env.NODE_ENV === "development" ? err.stack : undefined
-});
 });
 
 /* ---------------- SERVER START ---------------- */

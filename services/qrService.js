@@ -3,7 +3,13 @@ const db = require('../config/db');
 
 exports.generateQRToken = async (event_id) => {
     const token = crypto.randomBytes(16).toString("hex");
-    const expires = new Date(Date.now() + 140000);
+    const QR_TOKEN_TTL_MS = parseInt(process.env.QR_TOKEN_TTL_MS) || 5 * 60 * 1000; // 5 minutes default
+    const expires = new Date(Date.now() + QR_TOKEN_TTL_MS);
+    ```
+
+Add to `.env` if you want to configure it:
+```
+QR_TOKEN_TTL_MS=300000
 
     await db.query(
         "INSERT INTO event_qr_tokens (event_id, token, expires_at) VALUES (?, ?, ?)",

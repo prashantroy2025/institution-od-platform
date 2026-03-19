@@ -40,10 +40,14 @@ try{
 
 const { event_id } = req.body;
 
-await db.query(
-"UPDATE events SET status='Approved' WHERE id=?",
-[event_id]
+const [result] = await db.query(
+  "UPDATE events SET status='Approved' WHERE id=? AND department_id=?",
+  [event_id, req.user.department_id]
 );
+
+if (result.affectedRows === 0) {
+  return res.status(403).json({ message: "Event not found or not in your department" });
+}
 
 res.json({ message: "Event Approved" });
 
@@ -61,10 +65,14 @@ try{
 
 const { event_id } = req.body;
 
-await db.query(
-"UPDATE events SET status='Rejected' WHERE id=?",
-[event_id]
+const [result] = await db.query(
+  "UPDATE events SET status='Rejected' WHERE id=? AND department_id=?",
+  [event_id, req.user.department_id]
 );
+
+if (result.affectedRows === 0) {
+  return res.status(403).json({ message: "Event not found or not in your department" });
+}
 
 res.json({ message: "Event Rejected" });
 
@@ -82,7 +90,10 @@ try{
 const {event_id} = req.params;
 
 const [rows] = await db.query(
-"SELECT student_name, roll_no, department FROM event_participants WHERE event_id=?",
+`SELECT users.name, users.college_id, users.email, event_participants.scan_time
+ FROM event_participants
+ JOIN users ON event_participants.student_id = users.id
+ WHERE event_participants.event_id = ?`,
 [event_id]
 );
 
@@ -132,11 +143,9 @@ students.push(row)
 for(const student of students){
 
 await db.query(
-`INSERT INTO participants 
-(event_id,student_id,source) 
-VALUES (?,?, 'hod')`,
-[event_id,student.student_id]
-)
+  "INSERT IGNORE INTO event_participants (event_id, student_id) VALUES (?, ?)",
+  [event_id, student.student_id]
+);
 
 }
 
