@@ -4,36 +4,34 @@ const db = require('../config/db');
 
 // ------------------ GENERATE QR ------------------
 
-exports.getQR = (req, res) => {
+exports.getQR = async (req, res) => {
+    try {
+        const { event_id } = req.body;
 
-const { event_id } = req.body;
+        if (!event_id) {
+            return res.status(400).json({
+                message: "Event ID required"
+            });
+        }
 
-if(!event_id){
-return res.status(400).json({
-message:"Event ID required"
-});
-}
+        const token = await qrService.generateQRToken(event_id);
 
-qrService.generateQRToken(event_id,(err,token)=>{
+        if (!token) {
+            return res.status(500).json({
+                message: "QR token generation failed"
+            });
+        }
 
-if(err){
-return res.status(500).json({error:err.message});
-}
+        const qrUrl = `${req.protocol}://${req.get("host")}/scan.html?token=${token}`;
 
-if(!token){
-return res.status(500).json({
-message:"QR token generation failed"
-});
-}
+        res.json({
+            qr_data: qrUrl
+        });
 
-const qrUrl = `${req.protocol}://${req.get("host")}/scan.html?token=${token}`;
-
-res.json({
-qr_data: qrUrl
-});
-
-});
-
+    } catch (err) {
+        console.error("QR ERROR:", err);
+        res.status(500).json({ error: err.message });
+    }
 };
 
 
