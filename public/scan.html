@@ -124,11 +124,20 @@ font-weight:bold;
 
 <script>
 
+
 const urlParams = new URLSearchParams(window.location.search)
 
 const qrToken = urlParams.get("token")
 
 const studentToken = localStorage.getItem("token")
+
+if(!studentToken){
+    document.getElementById("status").innerText = "Please login first";
+    document.getElementById("status").className = "error";
+    document.getElementById("loader").style.display = "none";
+     window.location = "login.html";
+    return;
+}
 
 
 async function markAttendance(){

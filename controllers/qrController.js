@@ -47,6 +47,7 @@ exports.scanQR = async (req, res) => {
         const ip_address = req.ip;
 
         console.log("📥 TOKEN RECEIVED:", token);
+        console.log("USER:", req.user);
 
         const tokenRow = await qrService.validateQRToken(token);
 
