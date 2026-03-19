@@ -400,7 +400,7 @@ async function viewParticipants(eventId){
 try{
 
 const res = await fetch(
-API_BASE + "/participants/event/" + eventId,
+API_BASE + "/api/participants/event/" + eventId,
 {
 headers:{
 "Authorization":"Bearer "+token
