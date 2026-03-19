@@ -4,8 +4,6 @@ const authController = require('../controllers/authController');
 
 router.post('/login', authController.login);
 
-module.exports = router;
-
 const { verifyToken, allowRoles } = require('../middleware/authMiddleware');
 
 router.post(
@@ -14,3 +12,5 @@ router.post(
     allowRoles('super_admin'),
     authController.createUser
 );
+
+module.exports = router;
