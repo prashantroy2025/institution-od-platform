@@ -1,1 +1,1 @@
-const API_BASE = "https://institution-od-platform-production.up.railway.app";
+const API_BASE = "https://institution-od-platform-production.up.railway.app/api";
