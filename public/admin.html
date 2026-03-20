@@ -293,8 +293,7 @@ roleSelect.addEventListener("change", () => {
 
 </div>
 
-
-<div class="card page" id="historyCard">
+<div class="card page" id="historyCard" style="display:none">
 
 <h3>System History</h3>
 
@@ -377,7 +376,7 @@ document.getElementById("participantsCard").style.display="none"
 document.getElementById("createDepartmentCard").style.display="none"
 document.getElementById("exportCard").style.display="none"
 document.getElementById("searchCard").style.display="none"
-
+document.getElementById("historyCard").style.display="none"
 document.getElementById("tableBody").innerHTML=""
 
 }
@@ -385,8 +384,9 @@ document.getElementById("tableBody").innerHTML=""
 
 /* DASHBOARD */
 
-function showDashboard(){
-resetUI()
+function showDashboard() {
+    resetUI();
+    loadStats();  // refresh stats when clicking Dashboard button
 }
 
 
@@ -672,7 +672,7 @@ table.appendChild(row)
 
 async function viewParticipants(event_id){
 
-const res = await fetch(`/api/admin/participants/${event_id}`,{
+const res = await fetch(API_BASE + `/api/admin/participants/${event_id}`, {
 headers:{Authorization:"Bearer "+token}
 })
 
@@ -938,7 +938,11 @@ loadAdminHistory()
 
 }
 
-
+function showHistory() {
+    resetUI();
+    document.getElementById("historyCard").style.display = "block";
+    loadAdminHistory();
+}
 
 /* EXPORT FILES DOWNLOAD */
 
@@ -1003,20 +1007,10 @@ document.getElementById("exportCard").style.display="block"
 }
 
 window.onload = () => {
-
-if(document.getElementById("stats")){
-loadStats()
-}
-
-if(document.getElementById("tableBody")){
-loadDepartments()
-}
-
-if(document.getElementById("department_id")){
-loadDepartmentDropdown()
-}
-
-}
+    loadStats();                // show stats on startup
+    loadDepartmentDropdown();  // populate department dropdown for Create User
+    // Do NOT call loadDepartments() here
+};
 
 
 </script>

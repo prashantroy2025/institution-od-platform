@@ -124,27 +124,18 @@ sql: err.sqlMessage
 /* ---------------- GET PENDING EVENTS ---------------- */
 
 exports.getPendingEvents = async (req, res) => {
-
-try{
-
-const department_id = req.user.department_id;
-
-const [rows] = await db.query(
-"SELECT * FROM events WHERE status='Pending' AND department_id=?",
-[department_id]
-);
-
-res.json(rows);
-
-}catch(err){
-console.error("DB ERROR:", err);
-
-res.status(500).json({
-error: err.message,
-sql: err.sqlMessage
-});
-}
-
+    try {
+        const department_id = req.user.department_id;
+        const hod_id = req.user.id;
+        const [rows] = await db.query(
+            `SELECT * FROM events WHERE status='Pending'
+             AND (target_hod_id = ? OR (target_hod_id IS NULL AND department_id = ?))`,
+            [hod_id, department_id]
+        );
+        res.json(rows);
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
 };
 
 

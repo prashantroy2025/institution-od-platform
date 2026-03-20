@@ -260,10 +260,21 @@ transform:translateY(0);
 
 <h2>OD System</h2>
 
-<button onclick="showEvents()" class="active">Available Events</button>
-<button onclick="showMyOD()">My OD Applications</button>
-<button class="btn" onclick="openQRScanner()">Scan QR</button>
-<button onclick="showNotifications()">Notifications</button>
+<button onclick="showSection(this, 'eventsSection')" class="active">
+    Available Events
+</button>
+
+<button onclick="showSection(this, 'myodSection')">
+    My OD Applications
+</button>
+
+<button class="btn" onclick="showSection(this, 'qrScannerBox')">
+    Scan QR
+</button>
+
+<button onclick="showSection(this, 'notificationsSection')">
+    Notifications
+</button>
 
 <button onclick="logout()">Logout</button>
 
@@ -403,6 +414,7 @@ function renderEvents(data, container) {
 }
 
 function updateStats(data) {
+    document.getElementById("totalEvents").textContent = data.length;  // ADD THIS
     const applied = data.filter(e => e.od_status).length;
     const approved = data.filter(e => e.od_status === "HOD Approved" || e.od_status === "Auto Approved").length;
     document.getElementById("odApplied").textContent = applied;
@@ -566,56 +578,38 @@ async function handleQRResult(qrData){
 
 /* NAVIGATION */
 
-function setActive(btn){
-document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"))
-btn.classList.add("active")
-}
-
-function showEvents(){
-setActive(event.target)
-document.getElementById("eventsSection").style.display="block"
-document.getElementById("myodSection").style.display="none"
-document.getElementById("notificationsSection").style.display="none"
-loadEvents()
-}
-
-async function showMyOD() {
+function showSection(btn, sectionId) {
+    // Hide all sections
     document.getElementById("eventsSection").style.display = "none";
-    document.getElementById("myodSection").style.display = "block";
+    document.getElementById("myodSection").style.display = "none";
+    document.getElementById("notificationsSection").style.display = "none";
+    document.getElementById("qrScannerBox").style.display = "none";
 
-    const res = await fetch(API_BASE + "/api/student/my-od", {
-        headers: { "Authorization": "Bearer " + token }
+    // Show selected section
+    document.getElementById(sectionId).style.display = "block";
+
+    // Active button highlight
+    document.querySelectorAll(".sidebar button").forEach(b => {
+        b.classList.remove("active");
     });
-    const data = await res.json();
-    const container = document.getElementById("myod");
-    container.innerHTML = "";
+    btn.classList.add("active");
 
-    if (!data.length) {
-        container.innerHTML = "<p class='empty'>No OD applications yet</p>";
-        return;
+    // Load data based on section
+    if (sectionId === "eventsSection") {
+        loadEvents();
     }
 
-    data.forEach(od => {
-        const statusColor = (od.status === "HOD Approved" || od.status === "Auto Approved") ? "#16a34a"
-            : od.status === "Pending" ? "#d97706" : "#dc2626";
-        const div = document.createElement("div");
-        div.className = "od-card";
-        div.innerHTML = `
-            <h3>${od.title}</h3>
-            <p><b>Event Date:</b> ${new Date(od.from_date).toLocaleDateString()}</p>
-            <p><b>Applied Date:</b> ${od.applied_date}</p>
-            <p style="color:${statusColor};font-weight:600;">Status: ${od.status}</p>
-        `;
-        container.appendChild(div);
-    });
-}
+    if (sectionId === "myodSection") {
+        loadMyOD();
+    }
 
-function showNotifications(){
-setActive(event.target)
-document.getElementById("eventsSection").style.display="none"
-document.getElementById("myodSection").style.display="none"
-document.getElementById("notificationsSection").style.display="block"
-loadNotifications()
+    if (sectionId === "notificationsSection") {
+        loadNotifications();
+    }
+
+    if (sectionId === "qrScannerBox") {
+        openQRScanner();
+    }
 }
 
 /* LOGOUT */
@@ -627,7 +621,9 @@ window.location="login.html"
 
 /* DEFAULT */
 
-showEvents()
+window.onload = () => {
+    document.querySelector(".sidebar button").click();
+};
 
 </script>
 

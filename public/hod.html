@@ -294,7 +294,7 @@ const token = localStorage.getItem("token")
 
 async function fetchEvents(){
 
-const res = await fetch(API_BASE + "/api/events/pending",{
+const res = await fetch(API_BASE + "/api/hod/events/pending", {
 
 headers:{
 "Authorization":"Bearer "+token

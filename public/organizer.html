@@ -269,7 +269,7 @@ justify-content:center;
 <button onclick="setActive(this);openPage('upload')">Submit Attendance</button> 
 <button onclick="setActive(this);openPage('attendance')">Take Attendance</button>
  <button onclick="setActive(this);openPage('analytics')">Analytics</button> 
- <button onclick="setActive(this);openPage('history')">History</button>
+<button onclick="setActive(this);openPage('history');loadHistory()">History</button>
  <button onclick="logout()">Logout</button>
 
 </div>
@@ -338,7 +338,6 @@ Start a QR session so students can scan and mark attendance.
   <option value="">Loading HODs...</option>
 </select>
 
-<select id="attendanceEvent" onchange="setAttendanceEvent()"></select>
 
 <div class="attendance-grid">
 
@@ -397,7 +396,6 @@ Students who scan the QR code will appear here in real time.
   <option value="">Loading HODs...</option>
 </select>
 
-<select id="uploadEvent" onchange="setUploadEvent()"></select>
 
 <div class="event-bar" id="uploadEventDetails">
 <p><b>Date:</b> -</p>
@@ -552,37 +550,27 @@ btn.classList.add("active")
 
 function renderEvents(containerId, events) {
     const container = document.getElementById(containerId);
-    if (events.length === 0) {
+    if (!events.length) {
         container.innerHTML = "<p style='color:#64748b;margin-top:8px;'>No events</p>";
         return;
     }
-
     let html = `<table>
-    <tr>
-        <th>ID</th><th>Event</th><th>Dates</th>
-        <th>Participants</th><th>Status</th><th>Actions</th>
-    </tr>`;
-
+        <tr><th>ID</th><th>Event</th><th>Dates</th><th>Participants</th><th>Status</th><th>Actions</th></tr>`;
     events.forEach(e => {
-        html += `
-        <tr>
+        html += `<tr>
             <td>${e.id}</td>
             <td>${e.title}</td>
-            <td>
-                ${formatDate(e.from_date)}<br>
-                <span style="color:#64748b;font-size:13px">
-                    ${formatTime(e.start_time)} → ${formatTime(e.end_time)}
-                </span>
+            <td>${formatDate(e.from_date)}<br>
+                <span style="color:#64748b;font-size:13px">${formatTime(e.start_time)} → ${formatTime(e.end_time)}</span>
             </td>
             <td id="count-${e.id}">0</td>
-            <td class="status-${e.status.toLowerCase()}">${e.status}</td>
+            <td class="status-${(e.status||'').toLowerCase()}">${e.status}</td>
             <td>
-                <button class="btn" onclick="viewParticipants(${e.id})" style="margin-right:4px;">View</button>
-                <button style="background:#ef4444;color:white;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;" onclick="deleteEvent(${e.id})">Delete</button>
+                <button class="btn" onclick="viewParticipants(${e.id})">View</button>
+                <button style="background:#ef4444;color:white;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;margin-left:4px;" onclick="deleteEvent(${e.id})">Delete</button>
             </td>
         </tr>`;
     });
-
     html += "</table>";
     container.innerHTML = html;
 }
@@ -1399,7 +1387,6 @@ window.location="login.html"
 window.onload=()=>{
 loadEvents()
 openPage("events")
-loadHistory()
 document.querySelector(".sidebar button").classList.add("active")
 }
 

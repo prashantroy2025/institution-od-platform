@@ -8,14 +8,11 @@ exports.getEvents = async (req, res) => {
 
         const [rows] = await db.query(
     `SELECT 
-    e.id, e.title, e.from_date, e.to_date,
-    CASE 
-    WHEN ep.student_id IS NULL THEN 'Not Participated'
-    ELSE 'Participated'
-    END AS participation_status,
+    e.id, e.title, e.from_date, e.to_date, e.start_time, e.end_time,
+    CASE WHEN p.student_id IS NOT NULL THEN 'Participated' ELSE 'Not Participated' END AS participation_status,
     oa.status AS od_status
     FROM events e
-    LEFT JOIN event_participants ep ON e.id = ep.event_id AND ep.student_id = ?
+    LEFT JOIN participants p ON p.event_id = e.id AND p.student_id = ?
     LEFT JOIN od_applications oa ON oa.event_id = e.id AND oa.student_id = ?
     WHERE e.status = 'Approved' AND e.is_deleted = 0
     ORDER BY e.from_date DESC`,
