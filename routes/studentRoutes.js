@@ -24,4 +24,12 @@ allowRoles("student"),
 studentController.getMyOD
 )
 
+router.get(
+    "/search-events",
+    verifyToken,
+    allowRoles("student"),
+    studentController.searchEvents
+);
+
+
 module.exports = router;

@@ -11,17 +11,23 @@ try{
 
 const department_id = req.user.department_id;
 
+const hod_id = req.user.id;
+
 const [results] = await db.query(
 `SELECT 
 events.id,
 events.title,
 events.from_date,
-clubs.club_name
+events.to_date,
+events.start_time,
+events.end_time,
+events.is_full_day,
+users.name AS organizer_name
 FROM events
-LEFT JOIN clubs ON events.club_id = clubs.id
-WHERE events.department_id = ? 
-AND events.status = 'Pending'`,
-[department_id]
+LEFT JOIN users ON events.organizer_id = users.id
+WHERE events.status = 'Pending'
+AND (events.target_hod_id = ? OR (events.target_hod_id IS NULL AND events.department_id = ?))`,
+[hod_id, department_id]
 );
 
 res.json(results);
@@ -161,3 +167,128 @@ res.status(500).json(err);
 }
 
 }
+
+// Get all HODs (for organizer dropdown to select target HOD)
+exports.getHodList = async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT users.id, users.name, departments.name AS department_name
+             FROM users
+             JOIN departments ON users.department_id = departments.id
+             WHERE users.role = 'hod' AND users.is_active = 1
+             ORDER BY departments.name ASC`
+        );
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+// Get all OD applications pending for this HOD
+exports.getPendingODs = async (req, res) => {
+    try {
+        const hod_id = req.user.id;
+
+        const [rows] = await db.query(
+            `SELECT 
+            oa.id,
+            oa.applied_date,
+            oa.status,
+            u.name AS student_name,
+            u.college_id,
+            e.title AS event_title,
+            e.from_date,
+            e.to_date
+            FROM od_applications oa
+            JOIN users u ON oa.student_id = u.id
+            JOIN events e ON oa.event_id = e.id
+            WHERE oa.hod_id = ? AND oa.status = 'Pending'
+            ORDER BY oa.id DESC`,
+            [hod_id]
+        );
+
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+// HOD approves OD → triggers attendance automation
+exports.approveOD = async (req, res) => {
+    try {
+        const hod_id = req.user.id;
+        const { od_id } = req.body;
+
+        // Verify this OD belongs to this HOD
+        const [odRows] = await db.query(
+            "SELECT * FROM od_applications WHERE id=? AND hod_id=?",
+            [od_id, hod_id]
+        );
+
+        if (odRows.length === 0) {
+            return res.status(404).json({ message: "OD not found or not yours to approve" });
+        }
+
+        const od = odRows[0];
+
+        await db.query(
+            "UPDATE od_applications SET status='HOD Approved' WHERE id=?",
+            [od_id]
+        );
+
+        // Trigger attendance automation
+        const attendanceService = require('../services/attendanceService');
+        await attendanceService.markAttendanceForOD(od.student_id, od.event_id, od.applied_date);
+
+        // Notify student
+        const notificationService = require('../services/notificationService');
+        const [eventRows] = await db.query("SELECT title FROM events WHERE id=?", [od.event_id]);
+        notificationService.sendNotification(
+            od.student_id,
+            `Your OD for "${eventRows[0]?.title}" has been approved by HOD`
+        );
+
+        res.json({ message: "OD approved successfully" });
+    } catch (err) {
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+// HOD rejects OD
+exports.rejectOD = async (req, res) => {
+    try {
+        const hod_id = req.user.id;
+        const { od_id } = req.body;
+
+        const [odRows] = await db.query(
+            "SELECT * FROM od_applications WHERE id=? AND hod_id=?",
+            [od_id, hod_id]
+        );
+
+        if (odRows.length === 0) {
+            return res.status(404).json({ message: "OD not found or not yours to reject" });
+        }
+
+        const od = odRows[0];
+
+        await db.query(
+            "UPDATE od_applications SET status='Rejected' WHERE id=?",
+            [od_id]
+        );
+
+        // Notify student
+        const notificationService = require('../services/notificationService');
+        const [eventRows] = await db.query("SELECT title FROM events WHERE id=?", [od.event_id]);
+        notificationService.sendNotification(
+            od.student_id,
+            `Your OD for "${eventRows[0]?.title}" has been rejected by HOD`
+        );
+
+        res.json({ message: "OD rejected" });
+    } catch (err) {
+        res.status(500).json({ error: "Internal server error" });
+    }
+};

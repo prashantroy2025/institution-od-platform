@@ -338,6 +338,12 @@ Start a QR session so students can scan and mark attendance.
 </p>
 
 <label>Select Event</label>
+
+<label style="font-weight:600;display:block;margin-bottom:6px;">Select Target HOD</label>
+<select id="attendanceHodSelect" style="width:100%;padding:8px;margin-bottom:14px;border-radius:6px;border:1px solid #ddd;">
+  <option value="">Loading HODs...</option>
+</select>
+
 <select id="attendanceEvent" onchange="setAttendanceEvent()"></select>
 
 <div class="attendance-grid">
@@ -390,6 +396,12 @@ Students who scan the QR code will appear here in real time.
 <h3>Submit Attendance</h3>
 
 <label>Select Event</label>
+
+<label style="font-weight:600;display:block;margin-bottom:6px;">Select Target HOD</label>
+<select id="uploadHodSelect" style="width:100%;padding:8px;margin-bottom:14px;border-radius:6px;border:1px solid #ddd;">
+  <option value="">Loading HODs...</option>
+</select>
+
 <select id="uploadEvent" onchange="setUploadEvent()"></select>
 
 <div class="event-bar" id="uploadEventDetails">
@@ -546,45 +558,6 @@ btn.classList.add("active")
 
 /* EVENTS */
 
-async function loadEvents(){
-
-try{
-
-const res = await fetch(API_BASE + "/api/events/my-events",{
-headers:{Authorization:"Bearer "+token}
-})
-
-if(!res.ok){
-console.error("Failed to fetch events", res.status)
-return
-}
-
-const events = await res.json()
-
-console.log("Events received:", events)
-
-const pending=[]
-const approved=[]
-const rejected=[]
-
-events.forEach(e=>{
-if(e.status==="Pending") pending.push(e)
-else if(e.status==="Approved") approved.push(e)
-else if(e.status==="Rejected") rejected.push(e)
-})
-
-renderEvents("pendingEvents", pending)
-renderEvents("approvedEvents", approved)
-renderEvents("rejectedEvents", rejected)
-
-populateAttendanceEvents(events)
-loadParticipantCounts(events)
-
-}catch(err){
-console.error("Error loading events:", err)
-}
-
-}
 
 ///////////
 
@@ -970,6 +943,9 @@ const formData=new FormData()
 
 formData.append("file",file)
 formData.append("event_id",currentEvent)
+
+const selectedHod = document.getElementById("uploadHodSelect").value;
+if (selectedHod) formData.append("target_hod_id", selectedHod);
 
 const res=await fetch(API_BASE +
 "/api/events/upload-participants",
@@ -1434,6 +1410,21 @@ document.getElementById("btnText").style.display="block";
 }
 
 }
+
+// Load all HODs into dropdowns
+async function loadHodList() {
+    try {
+        const data = await apiCall(API_BASE + "/api/hod/list", { method: "GET" });
+        const options = data.map(h => `<option value="${h.id}">${h.name} — ${h.department_name}</option>`).join('');
+        const placeholder = `<option value="">Select HOD (optional)</option>`;
+        document.getElementById("uploadHodSelect").innerHTML = placeholder + options;
+        document.getElementById("attendanceHodSelect").innerHTML = placeholder + options;
+    } catch (e) {
+        console.error("Could not load HOD list:", e);
+    }
+}
+loadHodList();
+
 
 /* LOGOUT */
 

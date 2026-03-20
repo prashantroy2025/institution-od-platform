@@ -227,6 +227,12 @@ width:250px;
 
 <div id="attendancePanel" style="display:none;margin-top:20px;">
 
+    <!-- OD APPROVALS SECTION -->
+<div class="card" id="odSection" style="margin-top:24px;">
+  <h2>Pending OD Requests</h2>
+  <div id="odList"><p>Loading...</p></div>
+</div>
+
 <h2>Independent Attendance</h2>
 
 <br>
@@ -523,6 +529,63 @@ const data = await res.json()
 alert(data.message)
 
 }
+
+async function loadPendingODs() {
+    try {
+        const res = await fetch(API_BASE + "/api/hod/od/pending", {
+            headers: { "Authorization": "Bearer " + token }
+        });
+        const data = await res.json();
+        const container = document.getElementById("odList");
+        container.innerHTML = "";
+
+        if (!data.length) {
+            container.innerHTML = "<p>No pending OD requests</p>";
+            return;
+        }
+
+        data.forEach(od => {
+            const div = document.createElement("div");
+            div.style.cssText = "border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px;";
+            div.innerHTML = `
+                <p><b>${od.student_name}</b> (${od.college_id})</p>
+                <p>Event: <b>${od.event_title}</b></p>
+                <p>Date: ${od.from_date} to ${od.to_date}</p>
+                <p>Applied for: ${od.applied_date}</p>
+                <button onclick="approveOD(${od.id})" style="background:#16a34a;color:#fff;padding:6px 16px;border:none;border-radius:6px;cursor:pointer;margin-right:8px;">Approve</button>
+                <button onclick="rejectOD(${od.id})" style="background:#dc2626;color:#fff;padding:6px 16px;border:none;border-radius:6px;cursor:pointer;">Reject</button>
+            `;
+            container.appendChild(div);
+        });
+    } catch (e) {
+        document.getElementById("odList").innerHTML = "<p>Failed to load OD requests</p>";
+    }
+}
+
+async function approveOD(od_id) {
+    const res = await fetch(API_BASE + "/api/hod/od/approve", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({ od_id })
+    });
+    const data = await res.json();
+    alert(data.message);
+    loadPendingODs();
+}
+
+async function rejectOD(od_id) {
+    const res = await fetch(API_BASE + "/api/hod/od/reject", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({ od_id })
+    });
+    const data = await res.json();
+    alert(data.message);
+    loadPendingODs();
+}
+
+// Call on page load
+loadPendingODs();
 
 
 function logout(){

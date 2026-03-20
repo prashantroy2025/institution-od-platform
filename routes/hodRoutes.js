@@ -50,4 +50,34 @@ allowRoles('hod'),
 upload.single("file"),
 hodController.uploadIndependentAttendance
 );
+
+router.get(
+    "/list",
+    verifyToken,
+    allowRoles("organizer"),
+    hodController.getHodList
+);
+
+router.get(
+    "/od/pending",
+    verifyToken,
+    allowRoles("hod"),
+    hodController.getPendingODs
+);
+
+router.post(
+    "/od/approve",
+    verifyToken,
+    allowRoles("hod"),
+    hodController.approveOD
+);
+
+router.post(
+    "/od/reject",
+    verifyToken,
+    allowRoles("hod"),
+    hodController.rejectOD
+);
+
+
 module.exports = router;

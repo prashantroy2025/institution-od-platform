@@ -350,67 +350,63 @@ const token = localStorage.getItem("token")
 
 /* LOAD EVENTS */
 
-async function loadEvents(){
-
-const res = await fetch(API_BASE + "/api/student/events",{
-headers:{ "Authorization":"Bearer "+token }
-})
-
-const data = await res.json()
-
-document.getElementById("totalEvents").innerText=data.length
-
-const container=document.getElementById("events")
-container.innerHTML=""
-
-if(data.length===0){
-container.innerHTML="<p class='empty'>No events available</p>"
-return
+// Load events student participated in
+async function loadEvents() {
+    const res = await fetch(API_BASE + "/api/student/events", {
+        headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await res.json();
+    renderEvents(data, document.getElementById("events"));
+    updateStats(data);
 }
 
-data.forEach(event=>{
+// Search all approved events by name
+async function searchEvents() {
+    const keyword = document.getElementById("searchEvent").value.trim();
+    if (!keyword) { loadEvents(); return; }
 
-const div=document.createElement("div")
-div.className="event-card"
-
-div.innerHTML=`
-<h3>${event.title}</h3>
-<p><b>Date:</b> ${new Date(event.from_date).toLocaleDateString()}</p>
-
-<p style="color:${event.participation_status==="Participated"?"#16a34a":"#dc2626"}">
-${event.participation_status}
-</p>
-
-<button class="btn apply" onclick="applyOD(${event.id})">
-Apply OD
-</button>
-`
-
-container.appendChild(div)
-
-})
-
+    const res = await fetch(API_BASE + "/api/student/search-events?q=" + encodeURIComponent(keyword), {
+        headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await res.json();
+    renderEvents(data, document.getElementById("events"));
 }
 
-/* SEARCH */
-
-function searchEvents(){
-
-const keyword=document.getElementById("searchEvent").value.toLowerCase()
-const cards=document.querySelectorAll(".event-card")
-
-cards.forEach(card=>{
-
-const title=card.querySelector("h3").innerText.toLowerCase()
-
-if(title.includes(keyword)){
-card.style.display="block"
-}else{
-card.style.display="none"
+function renderEvents(data, container) {
+    container.innerHTML = "";
+    if (!data.length) {
+        container.innerHTML = "<p class='empty'>No events found</p>";
+        return;
+    }
+    data.forEach(event => {
+        const div = document.createElement("div");
+        div.className = "event-card";
+        const participated = event.participation_status === "Participated";
+        const odStatus = event.od_status;
+        let odBadge = "";
+        if (odStatus === "HOD Approved" || odStatus === "Auto Approved") {
+            odBadge = `<span style="color:#16a34a;font-weight:600;">✓ OD Approved</span>`;
+        } else if (odStatus === "Pending") {
+            odBadge = `<span style="color:#d97706;font-weight:600;">⏳ OD Pending</span>`;
+        } else if (odStatus === "Rejected") {
+            odBadge = `<span style="color:#dc2626;font-weight:600;">✗ OD Rejected</span>`;
+        }
+        div.innerHTML = `
+            <h3>${event.title}</h3>
+            <p><b>Date:</b> ${new Date(event.from_date).toLocaleDateString()}</p>
+            <p style="color:${participated ? '#16a34a' : '#dc2626'}">${event.participation_status}</p>
+            ${odBadge}
+            ${!odStatus ? `<button class="btn apply" onclick="applyOD(${event.id})">Apply OD</button>` : ""}
+        `;
+        container.appendChild(div);
+    });
 }
 
-})
-
+function updateStats(data) {
+    const applied = data.filter(e => e.od_status).length;
+    const approved = data.filter(e => e.od_status === "HOD Approved" || e.od_status === "Auto Approved").length;
+    document.getElementById("odApplied").textContent = applied;
+    document.getElementById("odApproved").textContent = approved;
 }
 
 /* APPLY OD */
@@ -584,12 +580,35 @@ document.getElementById("notificationsSection").style.display="none"
 loadEvents()
 }
 
-function showMyOD(){
-setActive(event.target)
-document.getElementById("eventsSection").style.display="none"
-document.getElementById("myodSection").style.display="block"
-document.getElementById("notificationsSection").style.display="none"
-loadMyOD()
+async function showMyOD() {
+    document.getElementById("eventsSection").style.display = "none";
+    document.getElementById("myodSection").style.display = "block";
+
+    const res = await fetch(API_BASE + "/api/student/my-od", {
+        headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await res.json();
+    const container = document.getElementById("myod");
+    container.innerHTML = "";
+
+    if (!data.length) {
+        container.innerHTML = "<p class='empty'>No OD applications yet</p>";
+        return;
+    }
+
+    data.forEach(od => {
+        const statusColor = (od.status === "HOD Approved" || od.status === "Auto Approved") ? "#16a34a"
+            : od.status === "Pending" ? "#d97706" : "#dc2626";
+        const div = document.createElement("div");
+        div.className = "od-card";
+        div.innerHTML = `
+            <h3>${od.title}</h3>
+            <p><b>Event Date:</b> ${new Date(od.from_date).toLocaleDateString()}</p>
+            <p><b>Applied Date:</b> ${od.applied_date}</p>
+            <p style="color:${statusColor};font-weight:600;">Status: ${od.status}</p>
+        `;
+        container.appendChild(div);
+    });
 }
 
 function showNotifications(){

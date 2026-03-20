@@ -1,15 +1,11 @@
 const crypto = require('crypto');
 const db = require('../config/db');
 
+const QR_TOKEN_TTL_MS = 40 * 1000; // 40 seconds
+
 exports.generateQRToken = async (event_id) => {
     const token = crypto.randomBytes(16).toString("hex");
-    const QR_TOKEN_TTL_MS = parseInt(process.env.QR_TOKEN_TTL_MS) || 5 * 60 * 1000; // 5 minutes default
     const expires = new Date(Date.now() + QR_TOKEN_TTL_MS);
-    ```
-
-    Add to `.env` if you want to configure it:
-     ```
-    QR_TOKEN_TTL_MS=300000
 
     await db.query(
         "INSERT INTO event_qr_tokens (event_id, token, expires_at) VALUES (?, ?, ?)",
@@ -25,9 +21,7 @@ exports.validateQRToken = async (token) => {
         [token]
     );
 
-    if (rows.length === 0) {
-        return null;
-    }
+    if (rows.length === 0) return null;
 
     const record = rows[0];
 
@@ -43,11 +37,9 @@ exports.cleanExpiredTokens = async () => {
         const [result] = await db.query(
             "DELETE FROM event_qr_tokens WHERE expires_at < NOW()"
         );
-
-        if(result.affectedRows > 0){
+        if (result.affectedRows > 0) {
             console.log("Expired QR tokens cleaned:", result.affectedRows);
         }
-
     } catch (err) {
         console.error("QR cleanup error:", err);
     }

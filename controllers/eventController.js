@@ -17,7 +17,8 @@ from_date,
 to_date,
 start_time,
 end_time,
-is_full_day
+is_full_day,
+target_hod_id
 } = req.body;
 
 
@@ -52,8 +53,8 @@ const proof_file = req.file ? req.file.filename : null;
 
 const [result] = await db.query(
 `INSERT INTO events 
-(organizer_id, title, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+(organizer_id, title, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status, target_hod_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 [
 req.user.id,
 title,
@@ -64,7 +65,8 @@ start_time,
 end_time,
 is_full_day || 0,
 proof_file,
-"Pending"
+"Pending",
+target_hod_id || null
 ]
 );
 
@@ -73,18 +75,26 @@ const eventId = result.insertId;
 
 /* Notify HOD */
 
-const [hodRows] = await db.query(
-"SELECT id FROM users WHERE role='hod' AND department_id=? LIMIT 1",
-[department_id]
-);
+/* Notify HOD — use target_hod_id if provided, else fallback to department HOD */
+let notify_hod_id = null;
 
-if (hodRows.length > 0) {
-const hod_id = hodRows[0].id;
+if (target_hod_id) {
+    notify_hod_id = target_hod_id;
+} else {
+    const [hodRows] = await db.query(
+        "SELECT id FROM users WHERE role='hod' AND department_id=? LIMIT 1",
+        [department_id]
+    );
+    if (hodRows.length > 0) {
+        notify_hod_id = hodRows[0].id;
+    }
+}
 
-notificationService.sendNotification(
-hod_id,
-"New event requires approval: " + title
-);
+if (notify_hod_id) {
+    notificationService.sendNotification(
+        notify_hod_id,
+        "New event requires approval: " + title
+    );
 }
 
 /* Audit Log */
