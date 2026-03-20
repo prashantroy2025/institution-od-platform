@@ -383,3 +383,24 @@ sql: err.sqlMessage
 }
 
 };
+
+/* ---------------- SET TARGET HOD ---------------- */
+exports.setTargetHod = async (req, res) => {
+    try {
+        const { event_id, target_hod_id } = req.body;
+
+        if (!event_id || !target_hod_id) {
+            return res.status(400).json({ message: "event_id and target_hod_id required" });
+        }
+
+        await db.query(
+            "UPDATE events SET target_hod_id=? WHERE id=? AND organizer_id=?",
+            [target_hod_id, event_id, req.user.id]
+        );
+
+        res.json({ message: "Target HOD updated" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};

@@ -81,4 +81,11 @@ router.get("/", (req,res)=>{
  })
 });
 
+router.post(
+    "/set-target-hod",
+    verifyToken,
+    allowRoles("organizer"),
+    eventController.setTargetHod
+);
+
 module.exports = router;

@@ -258,15 +258,6 @@ justify-content:center;
 
 <body>
 
-<div id="debug" style="
-background:black;
-color:lime;
-padding:10px;
-font-size:12px;
-height:150px;
-overflow:auto;">
-</div>
-
 <!-- SIDEBAR -->
 
 <div class="sidebar">
@@ -321,9 +312,11 @@ overflow:auto;">
 <input type="date" id="to_date">
 <input type="time" id="start_time">
 <input type="time" id="end_time">
-
+<label style="font-weight:600;display:block;margin-top:6px;margin-bottom:4px;">Target HOD (optional)</label>
+<select id="createHodSelect">
+  <option value="">Loading HODs...</option>
+</select>
 <button class="btn" onclick="createNewEvent()">Create Event</button>
-
 <p id="eventMsg"></p>
 
 </div>
@@ -478,13 +471,7 @@ console.error("🔥 JS ERROR:", message, "at", source+":"+lineno);
 alert("Error: " + message);
 };
 
-function debug(msg){
-const d = document.getElementById("debug");
-if(d){
-d.innerHTML += "<br>" + msg;
-}
-}
-
+/* API CALL */
 
 async function apiCall(url, options = {}) {
 try {
@@ -660,13 +647,14 @@ headers:{
 "Content-Type":"application/json",
 Authorization:"Bearer "+token
 },
-body:JSON.stringify({
-title,
-from_date,
-to_date,
-start_time,
-end_time,
-is_full_day:0
+body: JSON.stringify({
+    title,
+    from_date,
+    to_date,
+    start_time,
+    end_time,
+    is_full_day: 0,
+    target_hod_id: document.getElementById("createHodSelect").value || null
 })
 
 })
@@ -681,27 +669,42 @@ loadEvents()
 
 /* ATTENDANCE */
 
-async function startAttendance(){
+async function startAttendance() {
+    if (!currentEvent) {
+        alert("Select event first");
+        return;
+    }
 
-console.log("🚀 Start Attendance clicked");
-console.log("Event:", currentEvent);
+    const selectedHod = document.getElementById("attendanceHodSelect").value;
 
-if(!currentEvent){
-alert("Select event first")
-return
+    // Save target HOD on the event if selected
+    if (selectedHod) {
+        try {
+            await apiCall(API_BASE + "/api/events/set-target-hod", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + token
+                },
+                body: JSON.stringify({ event_id: currentEvent, target_hod_id: selectedHod })
+            });
+        } catch(e) {
+            console.error("Could not set target HOD:", e);
+        }
+    }
+
+    await apiCall(API_BASE + "/api/qr/start-attendance", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({ event_id: currentEvent })
+    });
+
+    generateQR(currentEvent);
 }
-
-await apiCall(API_BASE + "/api/qr/start-attendance",{
-method:"POST",
-headers:{
-"Content-Type":"application/json",
-Authorization:"Bearer "+token
-},
-body:JSON.stringify({event_id:currentEvent})
-});
-
-generateQR(currentEvent);
-}
+/* Close attendance */
 
 async function closeAttendance(){
 
@@ -736,9 +739,9 @@ if(qrInterval) clearInterval(qrInterval)
 
 await loadQR(eventId)
 
-qrInterval=setInterval(()=>{
-loadQR(eventId)
-},140000)
+qrInterval = setInterval(() => {
+    loadQR(eventId);
+}, 38000); // 38s — refreshes just before the 40s token expires
 
 }
 
@@ -816,86 +819,40 @@ loadStats()
 
 /* ANALYTICS */
 
-async function loadStats(){
-
-const title = document.getElementById("eventNameAnalytics").value
-
-if(!title){
-
-    if(currentEvent){
-        // use event ID directly
-        return loadStatsById(currentEvent)
-    }
-
-    return
-}
-
-document.getElementById("stats").innerText = "Loading..."
-
-const res = await fetch(API_BASE +
-"/api/events/find-event?title="+title,
-{headers:{Authorization:"Bearer "+token}}
-)
-
-const event = await res.json()
-
-if(!event.id){
-alert("Event not found")
-return
-}
-
-const eventId = event.id
-
-const statsRes = await fetch(API_BASE +
-"/api/analytics/event/"+eventId,
-{headers:{Authorization:"Bearer "+token}}
-)
-
-const data = await statsRes.json()
-
-document.getElementById("stats").innerText = data.total
-
-/* chart */
-
-async function loadStatsById(eventId){
-
-    try{
-
-        document.getElementById("stats").innerText = "Loading..."
-
-        const res = await fetch(API_BASE +
-        "/api/analytics/event/" + eventId,
-        {headers:{Authorization:"Bearer "+token}}
-        )
-
-        const data = await res.json()
-
-        document.getElementById("stats").innerText = data.total
-
-        // chart
-        const ctx = document.getElementById("attendanceChart")
-
-        if(chart){
-            chart.destroy()
-        }
-
-        chart = new Chart(ctx,{
-            type:"line",
-            data:{
-                labels:["Start","Mid","End"],
-                datasets:[{
-                    label:"Participants",
-                    data:[0, Math.floor(data.total/2), data.total],
-                    borderColor:"#3b82f6",
-                    fill:false
-                }]
+async function loadStatsById(eventId) {
+    try {
+        document.getElementById("stats").innerText = "Loading...";
+        const res = await fetch(API_BASE + "/api/analytics/event/" + eventId,
+            { headers: { Authorization: "Bearer " + token } }
+        );
+        const data = await res.json();
+        document.getElementById("stats").innerText = data.total;
+        const ctx = document.getElementById("attendanceChart");
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: ["Start", "Mid", "End"],
+                datasets: [{ label: "Participants", data: [0, Math.floor(data.total/2), data.total], borderColor: "#3b82f6", fill: false }]
             },
-            options:{responsive:true}
-        })
+            options: { responsive: true }
+        });
+    } catch(err) { console.error("Stats error:", err); }
+}
 
-    }catch(err){
-        console.error("Stats error:", err)
+async function loadStats() {
+    const title = document.getElementById("eventNameAnalytics").value;
+    if (!title) {
+        if (currentEvent) return loadStatsById(currentEvent);
+        return;
     }
+    document.getElementById("stats").innerText = "Loading...";
+    const res = await fetch(API_BASE + "/api/events/find-event?title=" + title,
+        { headers: { Authorization: "Bearer " + token } }
+    );
+    const event = await res.json();
+    if (!event.id) { alert("Event not found"); return; }
+    loadStatsById(event.id);
 }
 
 /* Chart */
@@ -922,7 +879,7 @@ responsive:true
 }
 })
 
-}
+
 /* UPLOAD */
 
 async function uploadFile(){
@@ -1334,6 +1291,30 @@ loadEvents()
 
 }
 
+async function loadEvents() {
+    try {
+        const data = await apiCall(API_BASE + "/api/events/my-events", {
+            headers: { Authorization: "Bearer " + token }
+        });
+
+        allEvents = data;
+
+        const pending  = data.filter(e => e.status === "Pending");
+        const approved = data.filter(e => e.status === "Approved");
+        const rejected = data.filter(e => e.status === "Rejected");
+
+        renderEvents("pendingEvents",  pending);
+        renderEvents("approvedEvents", approved);
+        renderEvents("rejectedEvents", rejected);
+
+        populateAttendanceEvents(data);
+        loadParticipantCounts(data);
+
+    } catch(err) {
+        console.error("loadEvents failed:", err);
+    }
+}
+
 
 /* LOGIN */
 
@@ -1419,6 +1400,7 @@ async function loadHodList() {
         const placeholder = `<option value="">Select HOD (optional)</option>`;
         document.getElementById("uploadHodSelect").innerHTML = placeholder + options;
         document.getElementById("attendanceHodSelect").innerHTML = placeholder + options;
+        document.getElementById("createHodSelect").innerHTML = placeholder + options;
     } catch (e) {
         console.error("Could not load HOD list:", e);
     }
