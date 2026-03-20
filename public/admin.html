@@ -448,20 +448,21 @@ document.getElementById("createMsg").innerText = data.message || data.error;
 
 /* LOAD STATS */
 
-async function loadStats(){
+async function loadStats() {
+    try {
+        const res = await fetch(API_BASE + "/api/admin/stats", {
+            headers: { Authorization: "Bearer " + token }
+        });
+        const data = await res.json();
 
-const res=await fetch(API_BASE + "/api/admin/stats",{
-headers:{Authorization:"Bearer "+token}
-})
-
-const data=await res.json()
-
-students.innerText=data.students
-organizers.innerText=data.organizers
-hods.innerText=data.hods
-events.innerText=data.events
-participants.innerText=data.participants
-
+        document.getElementById("students").innerText    = data.students    ?? "—";
+        document.getElementById("organizers").innerText  = data.organizers  ?? "—";
+        document.getElementById("hods").innerText        = data.hods        ?? "—";
+        document.getElementById("events").innerText      = data.events      ?? "—";
+        document.getElementById("participants").innerText = data.participants ?? "—";
+    } catch(err) {
+        console.error("Stats load failed:", err);
+    }
 }
 
 
@@ -786,8 +787,6 @@ Authorization:"Bearer "+token
 },
 body:JSON.stringify({user_id:id})
 })
-
-loadStats()
 
 }
 

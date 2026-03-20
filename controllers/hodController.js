@@ -47,8 +47,9 @@ try{
 const { event_id } = req.body;
 
 const [result] = await db.query(
-  "UPDATE events SET status='Approved' WHERE id=? AND department_id=?",
-  [event_id, req.user.department_id]
+ `UPDATE events SET status='Approved' 
+ WHERE id=? AND (department_id=? OR target_hod_id=?)`,
+[event_id, req.user.department_id, req.user.id]
 );
 
 if (result.affectedRows === 0) {
@@ -72,8 +73,9 @@ try{
 const { event_id } = req.body;
 
 const [result] = await db.query(
-  "UPDATE events SET status='Rejected' WHERE id=? AND department_id=?",
-  [event_id, req.user.department_id]
+  `UPDATE events SET status='Rejected' 
+ WHERE id=? AND (department_id=? OR target_hod_id=?)`,
+[event_id, req.user.department_id, req.user.id]
 );
 
 if (result.affectedRows === 0) {

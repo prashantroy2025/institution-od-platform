@@ -330,9 +330,10 @@ justify-content:center;
 Start a QR session so students can scan and mark attendance.
 </p>
 
-<label>Select Event</label>
+<label style="font-weight:600;display:block;margin-bottom:4px;">Select Event</label>
+<select id="attendanceEvent" onchange="setAttendanceEvent()"></select>
 
-<label style="font-weight:600;display:block;margin-bottom:6px;">Select Target HOD</label>
+<label style="font-weight:600;display:block;margin-top:12px;margin-bottom:4px;">Target HOD <span style="font-weight:400;color:#64748b;">(optional)</span></label>
 <select id="attendanceHodSelect" style="width:100%;padding:8px;margin-bottom:14px;border-radius:6px;border:1px solid #ddd;">
   <option value="">Loading HODs...</option>
 </select>
@@ -388,9 +389,10 @@ Students who scan the QR code will appear here in real time.
 
 <h3>Submit Attendance</h3>
 
-<label>Select Event</label>
+<label style="font-weight:600;display:block;margin-bottom:4px;">Select Event</label>
+<select id="uploadEvent" onchange="setUploadEvent()"></select>
 
-<label style="font-weight:600;display:block;margin-bottom:6px;">Select Target HOD</label>
+<label style="font-weight:600;display:block;margin-top:12px;margin-bottom:4px;">Target HOD <span style="font-weight:400;color:#64748b;">(optional)</span></label>
 <select id="uploadHodSelect" style="width:100%;padding:8px;margin-bottom:14px;border-radius:6px;border:1px solid #ddd;">
   <option value="">Loading HODs...</option>
 </select>
@@ -546,68 +548,43 @@ btn.classList.add("active")
 /* EVENTS */
 
 
-///////////
+/* RENDER EVENTS */
 
-function renderEvents(containerId,events){
+function renderEvents(containerId, events) {
+    const container = document.getElementById(containerId);
+    if (events.length === 0) {
+        container.innerHTML = "<p style='color:#64748b;margin-top:8px;'>No events</p>";
+        return;
+    }
 
-const container=document.getElementById(containerId)
+    let html = `<table>
+    <tr>
+        <th>ID</th><th>Event</th><th>Dates</th>
+        <th>Participants</th><th>Status</th><th>Actions</th>
+    </tr>`;
 
-if(events.length===0){
-container.innerHTML="<p>No events</p>"
-return
-}
+    events.forEach(e => {
+        html += `
+        <tr>
+            <td>${e.id}</td>
+            <td>${e.title}</td>
+            <td>
+                ${formatDate(e.from_date)}<br>
+                <span style="color:#64748b;font-size:13px">
+                    ${formatTime(e.start_time)} → ${formatTime(e.end_time)}
+                </span>
+            </td>
+            <td id="count-${e.id}">0</td>
+            <td class="status-${e.status.toLowerCase()}">${e.status}</td>
+            <td>
+                <button class="btn" onclick="viewParticipants(${e.id})" style="margin-right:4px;">View</button>
+                <button style="background:#ef4444;color:white;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;" onclick="deleteEvent(${e.id})">Delete</button>
+            </td>
+        </tr>`;
+    });
 
-let html=`<table>
-<tr>
-<th>ID</th>
-<th>Event</th>
-<th>Dates</th>
-<th>Total</th>
-<th>Participants</th>
-<th>Status</th>
-<th>Action</th>
-</tr>`
-
-events.forEach(e=>{
-html+=`
-<tr>
-<td>${e.id}</td>
-<td>${e.title}</td>
-<td>
-${formatDate(e.from_date)}<br>
-<span style="color:#64748b;font-size:13px">
-${formatTime(e.start_time)} → ${formatTime(e.end_time)}
-</span>
-</td>
-
-<td id="count-${e.id}">0</td>
-
-<td>
-<button class="btn" onclick="viewParticipants(${e.id})">
-View
-</button>
-
-<td>
-<button 
-style="background:#ef4444;color:white;border:none;padding:6px 10px;border-radius:5px"
-onclick="deleteEvent(${e.id})">
-Delete
-</button>
-</td>
-
-</td>
-
-<td class="status-${e.status.toLowerCase()}">
-${e.status}
-</td>
-
-</tr>`
-})
-
-html+="</table>"
-
-container.innerHTML=html
-
+    html += "</table>";
+    container.innerHTML = html;
 }
 
 //////////
@@ -826,14 +803,14 @@ async function loadStatsById(eventId) {
             { headers: { Authorization: "Bearer " + token } }
         );
         const data = await res.json();
-        document.getElementById("stats").innerText = data.total;
+        document.getElementById("stats").innerText = data.total || 0;
         const ctx = document.getElementById("attendanceChart");
         if (chart) chart.destroy();
         chart = new Chart(ctx, {
             type: "line",
             data: {
                 labels: ["Start", "Mid", "End"],
-                datasets: [{ label: "Participants", data: [0, Math.floor(data.total/2), data.total], borderColor: "#3b82f6", fill: false }]
+                datasets: [{ label: "Participants", data: [0, Math.floor((data.total || 0) / 2), data.total || 0], borderColor: "#3b82f6", fill: false }]
             },
             options: { responsive: true }
         });

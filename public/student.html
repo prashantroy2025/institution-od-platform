@@ -396,7 +396,7 @@ function renderEvents(data, container) {
             <p><b>Date:</b> ${new Date(event.from_date).toLocaleDateString()}</p>
             <p style="color:${participated ? '#16a34a' : '#dc2626'}">${event.participation_status}</p>
             ${odBadge}
-            ${!odStatus ? `<button class="btn apply" onclick="applyOD(${event.id})">Apply OD</button>` : ""}
+            ${!odStatus ? `<button class="btn apply" onclick="applyOD(${event.id}, '${(event.from_date || '').split('T')[0]}')">Apply OD</button>` : ""}
         `;
         container.appendChild(div);
     });
@@ -411,10 +411,9 @@ function updateStats(data) {
 
 /* APPLY OD */
 
-async function applyOD(eventId){
-
-const date=prompt("Enter event date (YYYY-MM-DD)")
-if(!date) return
+async function applyOD(eventId, fromDate) {
+    const date = fromDate;
+    if (!date) { alert("Event date not found"); return; }
 
 const res=await fetch(API_BASE + "/api/student/apply-od",{
 

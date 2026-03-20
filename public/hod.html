@@ -225,14 +225,13 @@ width:250px;
 
 <div class="grid" id="events"></div>
 
-<div id="attendancePanel" style="display:none;margin-top:20px;">
-
     <!-- OD APPROVALS SECTION -->
 <div class="card" id="odSection" style="margin-top:24px;">
   <h2>Pending OD Requests</h2>
   <div id="odList"><p>Loading...</p></div>
 </div>
 
+<div id="attendancePanel" style="display:none;margin-top:20px;">
 <h2>Independent Attendance</h2>
 
 <br>
@@ -364,7 +363,7 @@ container.appendChild(div)
 
 async function approve(id){
 
-await fetch(API_BASE + "/api/events/approve",{
+await fetch(API_BASE + "/api/hod/events/approve",{
 
 method:"POST",
 
@@ -384,7 +383,7 @@ loadEvents()
 
 async function reject(id){
 
-await fetch(API_BASE + "/api/events/reject",{
+await fetch(API_BASE + "/api/hod/events/reject",{
 
 method:"POST",
 

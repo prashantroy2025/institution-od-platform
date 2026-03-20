@@ -1,77 +1,87 @@
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require("express-rate-limit");
+const morgan = require("morgan");
+const path = require("path");
 require('dotenv').config();
 require('events').EventEmitter.defaultMaxListeners = 20;
 
-if(!process.env.JWT_SECRET){
- console.error("JWT_SECRET missing!");
- process.exit(1);
+/* ---------------- ENV CHECK ---------------- */
+
+if (!process.env.JWT_SECRET) {
+  console.error("JWT_SECRET missing!");
+  process.exit(1);
 }
 
+/* ---------------- DB INIT ---------------- */
 
-const rateLimit = require("express-rate-limit");
-const morgan = require("morgan")
-require("./config/db"); // initialize database connection
+require("./config/db");
+
+/* ---------------- SERVICES ---------------- */
 
 const startTokenCleanup = require('./services/tokenCleanupService');
 
+/* ---------------- APP INIT ---------------- */
+
 const app = express();
 app.set("trust proxy", 1);
-console.log("Server file loaded");
+
+console.log("🚀 Server file loaded");
 
 /* ---------------- MIDDLEWARE ---------------- */
 
 app.use(cors({
- origin: [
-  "https://od-platform.vercel.app",
-  "http://localhost:3000",
-  "http://127.0.0.1:5500"
-  
- ],
- credentials: true
+  origin: [
+    "https://od-platform.vercel.app",
+    "https://institution-od-platform-production.up.railway.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:5500"
+  ],
+  credentials: true
 }));
 
-
 app.use(express.json());
-const path = require("path");
 app.use(express.static(path.join(__dirname, "public")));
-if(process.env.NODE_ENV !== "production"){
-  app.use(morgan("dev"))
+
+if (process.env.NODE_ENV !== "production") {
+  app.use(morgan("dev"));
 }
+
 /* ---------------- RATE LIMITERS ---------------- */
 
 const limiter = rateLimit({
- windowMs: 1 * 60 * 1000,
- max: 40
+  windowMs: 1 * 60 * 1000,
+  max: 40,
+  message: "Too many requests, please slow down"
 });
 app.use(limiter);
 
 const loginLimiter = rateLimit({
- windowMs: 15 * 60 * 1000,
- max: 15
+  windowMs: 15 * 60 * 1000,
+  max: 15
 });
 app.use("/api/auth/login", loginLimiter);
 
 const qrLimiter = rateLimit({
- windowMs: 1 * 60 * 1000,
- max: 15
+  windowMs: 1 * 60 * 1000,
+  max: 15
 });
 app.use("/api/qr/scan", qrLimiter);
 
-/* ---------------- ROOT ROUTE ---------------- */
+/* ---------------- ROOT ---------------- */
 
 app.get('/', (req, res) => {
- res.send('Institution OD Platform API Running 🚀');
+  res.send('Institution OD Platform API Running 🚀');
 });
 
-/* ---------------- HEALTH CHECK ---------------- */
+/* ---------------- HEALTH ---------------- */
 
 app.get("/health", (req, res) => {
- res.status(200).json({
-  status: "OK",
-  service: "OD Platform",
-  time: new Date()
- });
+  res.status(200).json({
+    status: "OK",
+    service: "OD Platform",
+    time: new Date()
+  });
 });
 
 /* ---------------- ROUTES ---------------- */
@@ -106,36 +116,34 @@ app.use('/api/analytics', analyticsRoutes);
 const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
 
-
 const organizerRoutes = require('./routes/organizerRoutes');
 app.use('/api/organizers', organizerRoutes);
-
 
 /* ---------------- ADMIN TEST ---------------- */
 
 const { verifyToken, allowRoles } = require('./middleware/authMiddleware');
 
 app.get(
- '/api/admin/test',
- verifyToken,
- allowRoles('super_admin'),
- (req, res) => {
-  res.json({ message: "Super Admin Access Granted" });
- }
+  '/api/admin/test',
+  verifyToken,
+  allowRoles('super_admin'),
+  (req, res) => {
+    res.json({ message: "Super Admin Access Granted" });
+  }
 );
-
-/* ---------------- 404 HANDLER ---------------- */
-
-app.use((req,res)=>{
- res.status(404).json({
-  message:"Route not found"
- });
-});
 
 /* ---------------- ERROR HANDLER ---------------- */
 
 const errorHandler = require('./middleware/errorMiddleware');
 app.use(errorHandler);
+
+/* ---------------- 404 HANDLER ---------------- */
+
+app.use((req, res) => {
+  res.status(404).json({
+    message: "Route not found"
+  });
+});
 
 /* ---------------- SOCKET.IO ---------------- */
 
@@ -148,6 +156,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       "https://od-platform.vercel.app",
+      "https://institution-od-platform-production.up.railway.app",
       "http://localhost:3000",
       "http://127.0.0.1:5500"
     ],
@@ -157,39 +166,34 @@ const io = new Server(server, {
 
 app.set("io", io);
 
-/* ---------------- SERVICES ---------------- */
+/* ---------------- START SERVICES ---------------- */
 
 startTokenCleanup();
-
-
-/* ---------------- EVENT LIMIT ---------------- */
-
-require('events').EventEmitter.defaultMaxListeners = 20;
 
 /* ---------------- GLOBAL ERROR HANDLING ---------------- */
 
 process.on("uncaughtException", (err) => {
- console.error("Uncaught Exception:", err);
+  console.error("Uncaught Exception:", err);
 });
 
 process.on("unhandledRejection", (err) => {
- console.error("Unhandled Promise Rejection:", err);
+  console.error("Unhandled Promise Rejection:", err);
 });
 
 /* ---------------- GRACEFUL SHUTDOWN ---------------- */
 
 process.on("SIGTERM", () => {
- console.log("SIGTERM received. Shutting down gracefully.");
- server.close(() => {
-   console.log("Server closed");
-   process.exit(0);
- });
+  console.log("SIGTERM received. Shutting down...");
+  server.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
 });
 
-/* ---------------- SERVER START ---------------- */
+/* ---------------- START SERVER ---------------- */
 
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
- console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
