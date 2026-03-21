@@ -305,17 +305,48 @@ justify-content:center;
 
 <h3>Create Event</h3>
 
-<input id="title" placeholder="Event Title">
-<input type="date" id="from_date">
-<input type="date" id="to_date">
-<input type="time" id="start_time">
-<input type="time" id="end_time">
-<label style="font-weight:600;display:block;margin-top:6px;margin-bottom:4px;">Target HOD (optional)</label>
-<select id="createHodSelect">
-  <option value="">Loading HODs...</option>
-</select>
-<button class="btn" onclick="createNewEvent()">Create Event</button>
-<p id="eventMsg"></p>
+<div style="display:flex;flex-direction:column;gap:12px;max-width:480px;">
+
+  <div>
+    <label style="font-size:13px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Event Title</label>
+    <input id="title" placeholder="Event Title" style="margin:0;">
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div>
+      <label style="font-size:13px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">From Date</label>
+      <input type="date" id="from_date" style="margin:0;">
+    </div>
+    <div>
+      <label style="font-size:13px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">To Date</label>
+      <input type="date" id="to_date" style="margin:0;">
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div>
+      <label style="font-size:13px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Start Time</label>
+      <input type="time" id="start_time" style="margin:0;">
+    </div>
+    <div>
+      <label style="font-size:13px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">End Time</label>
+      <input type="time" id="end_time" style="margin:0;">
+    </div>
+  </div>
+
+  <div>
+    <label style="font-size:13px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Target HOD (optional)</label>
+    <select id="createHodSelect" style="margin:0;">
+      <option value="">Select HOD (optional)</option>
+    </select>
+  </div>
+
+  <div>
+    <button class="btn" onclick="createNewEvent()">Create Event</button>
+    <p id="eventMsg" style="margin-top:8px;font-size:14px;color:#10b981;"></p>
+  </div>
+
+</div>
 
 </div>
 
@@ -814,6 +845,45 @@ async function loadStats() {
     loadStatsById(event.id);
 }
 
+/* UPLOAD ATTENDANCE */
+
+async function uploadAttendance(){
+
+    const eventId = document.getElementById("eventSelect").value;
+    const fileInput = document.getElementById("attendanceFile");
+
+    if(!eventId){
+        alert("Select event first");
+        return;
+    }
+
+    if(!fileInput.files.length){
+        alert("Select file");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+    formData.append("eventId", eventId);
+
+    try {
+
+        const res = await fetch(API_BASE + "/api/attendance/upload", {
+            method: "POST",
+            headers: {
+                Authorization: "Bearer " + token
+            },
+            body: formData
+        });
+
+        const data = await res.json();
+
+        document.getElementById("eventMsg").innerText = data.message;
+
+    } catch(err){
+        document.getElementById("eventMsg").innerText = "Upload failed";
+    }
+}
 
 /* UPLOAD */
 
@@ -840,7 +910,7 @@ const selectedHod = document.getElementById("uploadHodSelect").value;
 if (selectedHod) formData.append("target_hod_id", selectedHod);
 
 const res=await fetch(API_BASE +
-"/api/events/upload-participants",
+"/api/participants/upload", 
 {
 method:"POST",
 headers:{Authorization:"Bearer "+token},
