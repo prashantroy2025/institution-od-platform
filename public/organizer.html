@@ -299,8 +299,6 @@ justify-content:center;
 
 </div>
 
-<div class="grid">
-
 <!-- CREATE EVENT -->
 
 <div class="card page" id="create">
@@ -460,7 +458,6 @@ Analyze participation statistics for your events.
 
 </div>
 
-</div>
 
 <script>
 
@@ -468,7 +465,6 @@ Analyze participation statistics for your events.
 
 window.onerror = function(message, source, lineno){
 console.error("🔥 JS ERROR:", message, "at", source+":"+lineno);
-alert("Error: " + message);
 };
 
 /* API CALL */
@@ -578,58 +574,56 @@ function renderEvents(containerId, events) {
 //////////
 
 function setAttendanceEvent(){
-
-const select=document.getElementById("attendanceEvent")
-
-if(!select.value) return
-
-currentEvent=select.value
-
-document.getElementById("count").innerText="0"
-document.getElementById("list").innerHTML=""
-
+  const select = document.getElementById("attendanceEvent")
+  if(!select.value) return
+  currentEvent = parseInt(select.value)  // ← add parseInt
+  document.getElementById("count").innerText = "0"
+  document.getElementById("list").innerHTML = ""
 }
 
 /* CREATE EVENT */
 
 async function createNewEvent(){
 
-const title=document.getElementById("title").value
-const from_date=document.getElementById("from_date").value
-const to_date=document.getElementById("to_date").value
-const start_time=document.getElementById("start_time").value
-const end_time=document.getElementById("end_time").value
+    const title = document.getElementById("title").value;
+    const from_date = document.getElementById("from_date").value;
+    const to_date = document.getElementById("to_date").value;
+    const start_time = document.getElementById("start_time").value;
+    const end_time = document.getElementById("end_time").value;
 
-if(!title || !from_date || !to_date){
-alert("Please fill all fields")
-return
-}
+    if(!title || !from_date || !to_date){
+        alert("Please fill all fields");
+        return;
+    }
 
-const res=await fetch(API_BASE + "/api/events/create",{
+    try {
 
-method:"POST",
-headers:{
-"Content-Type":"application/json",
-Authorization:"Bearer "+token
-},
-body: JSON.stringify({
-    title,
-    from_date,
-    to_date,
-    start_time,
-    end_time,
-    is_full_day: 0,
-    target_hod_id: document.getElementById("createHodSelect").value || null
-})
+        const data = await apiCall(API_BASE + "/api/events/create", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + token
+            },
+            body: JSON.stringify({
+                title,
+                from_date,
+                to_date,
+                start_time,
+                end_time,
+                is_full_day: 0,
+                target_hod_id: document.getElementById("createHodSelect").value || null
+            })
+        });
 
-})
+        document.getElementById("eventMsg").innerText = data.message || "Event created successfully";
 
-const data=await res.json()
+        loadEvents();
 
-document.getElementById("eventMsg").innerText = data.message || data.error;
+    } catch(err) {
 
-loadEvents()
+        document.getElementById("eventMsg").innerText = "Failed: " + err.message;
 
+    }
 }
 
 /* ATTENDANCE */
@@ -820,30 +814,6 @@ async function loadStats() {
     loadStatsById(event.id);
 }
 
-/* Chart */
-
-const ctx = document.getElementById("attendanceChart")
-
-if(chart){
-chart.destroy()
-}
-
-chart = new Chart(ctx,{
-type:"line",
-data:{
-labels:["Start","Mid","End"],
-datasets:[{
-label:"Participants",
-data:[0, Math.floor(data.total/2), data.total],
-borderColor:"#3b82f6",
-fill:false
-}]
-},
-options:{
-responsive:true
-}
-})
-
 
 /* UPLOAD */
 
@@ -929,6 +899,13 @@ opt2.text=e.title
 uploadSelect.appendChild(opt2)
 
 })
+
+if (attendanceSelect.options.length === 1) {
+    attendanceSelect.innerHTML += `<option disabled>No pending events</option>`;
+}
+if (uploadSelect.options.length === 1) {
+    uploadSelect.innerHTML += `<option disabled>No pending events</option>`;
+}
 
 }
 
@@ -1276,91 +1253,19 @@ async function loadEvents() {
         loadParticipantCounts(data);
 
     } catch(err) {
-        console.error("loadEvents failed:", err);
+    console.error("loadEvents failed:", err);
+    document.getElementById("pendingEvents").innerHTML = "<p style='color:#ef4444'>Failed to load events</p>";
     }
 }
 
-
-/* LOGIN */
-
-async function login(){
-
-const email = document.getElementById("email").value;
-const password = document.getElementById("password").value;
-
-document.getElementById("btnText").style.display="none";
-document.getElementById("loader").style.display="block";
-
-try {
-
-const res = await fetch(API_BASE + "/api/auth/login",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-email:email,
-password:password
-})
-});
-
-// ✅ Handle non-JSON safely
-let data;
-try{
-  data = await res.json();
-}catch(e){
-  const text = await res.text();
-  console.error("Invalid JSON:", text);
-  throw new Error("Invalid server response");
-}
-
-console.log("STATUS:", res.status);
-console.log("FULL RESPONSE:", data);
-
-// ✅ Restore button
-document.getElementById("loader").style.display="none";
-document.getElementById("btnText").style.display="block";
-
-// ✅ Handle response
-if(res.ok && data.token){
-
-localStorage.setItem("token",data.token);
-localStorage.setItem("role",data.user.role);
-localStorage.setItem("user_id", data.user.id);
-
-document.getElementById("msg").innerText="Login success";
-
-redirectUser(data.user.role);
-
-}else{
-document.getElementById("msg").innerText = data.message || "Login failed";
-}
-
-} catch(err){
-
-console.error("LOGIN ERROR:", err);
-
-// ✅ Better error handling (your addition integrated)
-if(err.message.includes("Failed to fetch")){
-  document.getElementById("msg").innerText = "Server unreachable. Try again.";
-}else if(err.message.includes("Invalid server response")){
-  document.getElementById("msg").innerText = "Server error (bad response)";
-}else{
-  document.getElementById("msg").innerText = "Server error";
-}
-
-// ✅ Restore button
-document.getElementById("loader").style.display="none";
-document.getElementById("btnText").style.display="block";
-
-}
-
-}
-
 // Load all HODs into dropdowns
+
 async function loadHodList() {
     try {
-        const data = await apiCall(API_BASE + "/api/hod/list", { method: "GET" });
+        const data = await apiCall(API_BASE + "/api/hod/list", {
+            method: "GET",
+            headers: { Authorization: "Bearer " + token }  // ← ADD THIS
+        });
         const options = data.map(h => `<option value="${h.id}">${h.name} — ${h.department_name}</option>`).join('');
         const placeholder = `<option value="">Select HOD (optional)</option>`;
         document.getElementById("uploadHodSelect").innerHTML = placeholder + options;

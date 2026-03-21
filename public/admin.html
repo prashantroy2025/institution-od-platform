@@ -533,6 +533,8 @@ table.appendChild(row)
 
 async function loadStudents(){
 
+currentView = loadStudents;
+
 resetUI()
 
 document.getElementById("searchCard").style.display="block"
@@ -543,6 +545,8 @@ renderUsers(await res.json())
 }
 
 async function loadOrganizers(){
+
+currentView = loadOrganizers;    
 
 resetUI()
 
@@ -555,6 +559,8 @@ renderUsers(await res.json())
 }
 
 async function loadHODs(){
+
+currentView = loadHODs;
 
 resetUI()
 
@@ -569,6 +575,8 @@ renderUsers(await res.json())
 /* DEPARTMENTS */
 
 async function loadDepartments(){
+
+currentView = loadDepartments;
 
 resetUI()
 
@@ -606,6 +614,8 @@ table.appendChild(row)
 
 async function loadDepartmentDropdown(){
 
+currentView = loadDepartmentDropdown;
+
 const res = await fetch(API_BASE + "/api/departments",{
 headers:{Authorization:"Bearer "+token}
 })
@@ -634,6 +644,7 @@ select.appendChild(opt)
 
 async function loadEvents(){
 
+currentView = loadEvents;
 resetUI()
 
 document.getElementById("searchCard").style.display="block"
@@ -760,19 +771,16 @@ table.appendChild(row)
 
 /* USER ACTIONS */
 
-async function deactivate(id){
+let currentView = null;
 
-await fetch(API_BASE + "/api/admin/deactivate",{
-method:"POST",
-headers:{
-"Content-Type":"application/json",
-Authorization:"Bearer "+token
-},
-body:JSON.stringify({user_id:id})
-})
-
-loadStats()
-
+async function deactivate(id) {
+    await fetch(API_BASE + "/api/admin/deactivate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ user_id: id })
+    });
+    loadStats();
+    if (currentView) currentView(); // reload current table
 }
 
 async function deleteUser(id){
@@ -872,10 +880,9 @@ loadDepartments()
 
 async function loadAdminHistory(){
 
-const res = await fetch(
-"/api/admin/history",
-{headers:{Authorization:"Bearer "+token}}
-)
+const res = await fetch(API_BASE + "/api/admin/history", {
+    headers: { Authorization: "Bearer " + token }
+});
 
 const data = await res.json()
 
@@ -948,7 +955,7 @@ function showHistory() {
 
 function downloadFile(url,name){
 
-fetch(url,{
+fetch(API_BASE + url,{
 headers:{Authorization:"Bearer "+token}
 })
 .then(res=>res.blob())

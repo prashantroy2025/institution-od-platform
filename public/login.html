@@ -384,6 +384,7 @@ if(data.token){
 localStorage.setItem("token",data.token);
 localStorage.setItem("role",data.user.role);
 localStorage.setItem("club_name",data.user.club_name);
+localStorage.setItem("user_id", data.user.id); 
 
 redirectUser(data.user.role);
 

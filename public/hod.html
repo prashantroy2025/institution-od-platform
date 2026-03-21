@@ -485,13 +485,12 @@ document.getElementById("attendancePanel").style.display="block"
 
 }
 
-function loadEvents(){
-
-document.getElementById("attendancePanel").style.display="none"
-document.getElementById("events").style.display="grid"
-
-fetchEvents()
-
+function loadEvents() {
+    document.getElementById("attendancePanel").style.display = "none";
+    document.getElementById("events").style.display = "grid";
+    document.getElementById("odSection").style.display = "block";  // show OD alongside events
+    fetchEvents();
+    loadPendingODs();  // refresh OD list too
 }
 
 

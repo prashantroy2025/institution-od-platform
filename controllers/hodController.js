@@ -116,59 +116,78 @@ res.status(500).json(err);
 
 /* upload independent attendance */
 
-exports.uploadIndependentAttendance = async (req,res)=>{
+exports.uploadIndependentAttendance = async (req, res) => {
+    try {
+        const { title, from_date, to_date, start_time, end_time } = req.body;
+        const file = req.file;
 
-try{
+        if (!file) {
+            return res.status(400).json({ message: "File missing" });
+        }
 
-const {title,from_date,to_date,from_time,to_time} = req.body
-const file = req.file
+        if (!title || !from_date || !to_date) {
+            return res.status(400).json({ message: "Title, from_date and to_date are required" });
+        }
 
-if(!file){
-return res.status(400).json({message:"File missing"})
-}
+        // Create event first, get the event_id
+        const [result] = await db.query(
+         `INSERT INTO events 
+          (organizer_id, title, from_date, to_date, start_time, end_time, status, department_id, is_full_day)
+          VALUES (?, ?, ?, ?, ?, ?, 'Approved', ?, 0)`,
+          [req.user.id, title, from_date, to_date, start_time || null, end_time || null, req.user.department_id]
+      );
 
-// Create event
-const [result] = await db.query(
-`INSERT INTO events 
-(title,from_date,to_date,from_time,to_time,status,created_by) 
-VALUES (?,?,?,?,?,'Approved','hod')`,
-[title,from_date,to_date,from_time,to_time]
-)
+        const event_id = result.insertId;  // ← declared immediately after INSERT
 
-const event_id = result.insertId
+        const students = [];
 
-const students=[]
+        // Read CSV file
+        fs.createReadStream(file.path)
+            .pipe(csv())
+            .on("data", (row) => {
+                students.push(row);
+            })
+            .on("end", async () => {
+                try {
+                    let inserted = 0;
 
-// Read CSV file
-fs.createReadStream(file.path)
-.pipe(csv())
-.on("data",(row)=>{
-students.push(row)
-})
-.on("end",async ()=>{
+                    for (const student of students) {
+                        // Look up student by college_id (what's in the CSV)
+                        const [users] = await db.query(
+                            "SELECT id FROM users WHERE college_id = ? AND role = 'student'",
+                            [student.college_id]
+                        );
 
-// Insert participants
-for(const student of students){
+                        if (users.length > 0) {
+                            await db.query(
+                                "INSERT IGNORE INTO event_participants (event_id, student_id) VALUES (?, ?)",
+                                [event_id, users[0].id]
+                            );
+                            inserted++;
+                        }
+                    }
 
-await db.query(
-  "INSERT IGNORE INTO event_participants (event_id, student_id) VALUES (?, ?)",
-  [event_id, student.student_id]
-);
+                    // Clean up temp file
+                    fs.unlink(file.path, () => {});
 
-}
+                    res.json({
+                        message: "Attendance uploaded successfully",
+                        total_rows: students.length,
+                        inserted: inserted
+                    });
 
-res.json({
-message:"Attendance uploaded successfully",
-total_students:students.length
-})
+                } catch (err) {
+                    res.status(500).json({ message: "Error inserting participants", error: err.message });
+                }
+            })
+            .on("error", (err) => {
+                res.status(500).json({ message: "Error reading CSV file", error: err.message });
+            });
 
-})
-
-}catch(err){
-res.status(500).json(err);
-}
-
-}
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
 // Get all HODs (for organizer dropdown to select target HOD)
 exports.getHodList = async (req, res) => {

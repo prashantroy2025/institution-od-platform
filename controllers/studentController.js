@@ -12,7 +12,7 @@ exports.getEvents = async (req, res) => {
     CASE WHEN p.student_id IS NOT NULL THEN 'Participated' ELSE 'Not Participated' END AS participation_status,
     oa.status AS od_status
     FROM events e
-    LEFT JOIN participants p ON p.event_id = e.id AND p.student_id = ?
+    LEFT JOIN event_participants p ON p.event_id = e.id AND p.student_id = ?
     LEFT JOIN od_applications oa ON oa.event_id = e.id AND oa.student_id = ?
     WHERE e.status = 'Approved' AND e.is_deleted = 0
     ORDER BY e.from_date DESC`,
