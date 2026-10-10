@@ -1,5 +1,7 @@
 const qrService = require('../services/qrService');
 const db = require('../config/db');
+const { isPositiveInteger, isQRToken } = require('../utils/requestValidation');
+const { getManagedEvent } = require('../utils/eventAuthorization');
 
 
 // ------------------ GENERATE QR ------------------
@@ -8,10 +10,14 @@ exports.getQR = async (req, res) => {
     try {
         const { event_id } = req.body;
 
-        if (!event_id) {
+        if (!isPositiveInteger(event_id)) {
             return res.status(400).json({
                 message: "Event ID required"
             });
+        }
+
+        if (!await getManagedEvent(db, req.user, event_id)) {
+            return res.status(404).json({ message: "Event not found or unauthorized" });
         }
 
         const token = await qrService.generateQRToken(event_id);
@@ -30,7 +36,7 @@ exports.getQR = async (req, res) => {
 
     } catch (err) {
         console.error("QR ERROR:", err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -45,6 +51,10 @@ exports.scanQR = async (req, res) => {
         const { token } = req.body;
         const student_id = req.user.id;
         const ip_address = req.ip;
+
+        if (!isQRToken(token)) {
+            return res.status(400).json({ message: "Valid QR token required" });
+        }
 
         const tokenRow = await qrService.validateQRToken(token);
 
@@ -107,7 +117,7 @@ exports.scanQR = async (req, res) => {
 
     } catch (err) {
         console.error("❌ SCAN ERROR:", err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: "Server error" });
     }
 
 };
@@ -122,6 +132,14 @@ exports.startAttendance = async (req, res) => {
 
     const { event_id } = req.body;
 
+    if (!isPositiveInteger(event_id)) {
+        return res.status(400).json({ message: "Valid event ID required" });
+    }
+
+    if (!await getManagedEvent(db, req.user, event_id)) {
+        return res.status(404).json({ message: "Event not found or unauthorized" });
+    }
+
     await db.query(
         "UPDATE events SET attendance_active = 1 WHERE id = ?",
         [event_id]
@@ -132,7 +150,7 @@ exports.startAttendance = async (req, res) => {
     });
 
     }catch(err){
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: "Server error" });
     }
 
 };
@@ -147,6 +165,14 @@ exports.closeAttendance = async (req, res) => {
 
     const { event_id } = req.body;
 
+    if (!isPositiveInteger(event_id)) {
+        return res.status(400).json({ message: "Valid event ID required" });
+    }
+
+    if (!await getManagedEvent(db, req.user, event_id)) {
+        return res.status(404).json({ message: "Event not found or unauthorized" });
+    }
+
     await db.query(
         "UPDATE events SET attendance_active = 0 WHERE id = ?",
         [event_id]
@@ -157,7 +183,7 @@ exports.closeAttendance = async (req, res) => {
     });
 
     }catch(err){
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: "Server error" });
     }
 
 };
@@ -172,6 +198,14 @@ exports.getEventStats = async (req, res) => {
 
     const { event_id } = req.params;
 
+    if (!isPositiveInteger(event_id)) {
+        return res.status(400).json({ message: "Valid event ID required" });
+    }
+
+    if (!await getManagedEvent(db, req.user, event_id)) {
+        return res.status(404).json({ message: "Event not found or unauthorized" });
+    }
+
     const [rows] = await db.query(
         "SELECT COUNT(*) AS total FROM event_participants WHERE event_id=?",
         [event_id]
@@ -182,7 +216,7 @@ exports.getEventStats = async (req, res) => {
     });
 
     }catch(err){
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: "Server error" });
     }
 
 };

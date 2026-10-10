@@ -4,6 +4,7 @@
 <head>
 
 <title>HOD Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="config.js"></script>
 <style>
 
@@ -196,6 +197,7 @@ width:250px;
 }
 
 </style>
+<link rel="stylesheet" href="erp-ui.css">
 
 </head>
 
@@ -208,8 +210,12 @@ width:250px;
 
 <h2>OD System</h2>
 
-<button onclick="loadEvents()">Pending Events</button>
+<button class="active" aria-current="page" onclick="loadEvents()">Pending Events</button>
 <button onclick="showAttendancePanel()">Independent Attendance</button>
+<button onclick="location.href='class-attendance.html'">Class Attendance</button>
+<button onclick="location.href='faculty-attendance.html'">Faculty Attendance</button>
+<button onclick="location.href='learning.html'">Learning</button>
+<button onclick="location.href='examinations.html'">Examinations</button>
 <button onclick="logout()">Logout</button>
 </div>
 

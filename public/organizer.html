@@ -4,6 +4,7 @@
 <head>
 
 <title>Organizer Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="config.js"></script>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -253,6 +254,7 @@ justify-content:center;
 .status-rejected{color:#ef4444;font-weight:600;}
 
 </style>
+<link rel="stylesheet" href="erp-ui.css">
 
 </head>
 
@@ -268,6 +270,9 @@ justify-content:center;
 <button onclick="setActive(this);openPage('create')">Create Event</button> 
 <button onclick="setActive(this);openPage('upload')">Submit Attendance</button> 
 <button onclick="setActive(this);openPage('attendance')">Take Attendance</button>
+<button onclick="location.href='faculty-attendance.html'">Faculty Attendance</button>
+<button onclick="location.href='learning.html'">Learning</button>
+<button onclick="location.href='examinations.html'">Examinations</button>
  <button onclick="setActive(this);openPage('analytics')">Analytics</button> 
 <button onclick="setActive(this);openPage('history');loadHistory()">History</button>
  <button onclick="logout()">Logout</button>
@@ -864,11 +869,11 @@ async function uploadAttendance(){
 
     const formData = new FormData();
     formData.append("file", fileInput.files[0]);
-    formData.append("eventId", eventId);
+        formData.append("event_id", eventId);
 
     try {
 
-        const res = await fetch(API_BASE + "/api/attendance/upload", {
+        const res = await fetch(API_BASE + "/api/participants/upload", {
             method: "POST",
             headers: {
                 Authorization: "Bearer " + token

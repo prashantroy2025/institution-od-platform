@@ -4,6 +4,7 @@
 <head>
 
 <title>Super Admin Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="config.js"></script>
 
 <style>
@@ -129,6 +130,7 @@ background:#64748b;
 
 
 </style>
+<link rel="stylesheet" href="erp-ui.css">
 
 </head>
 
@@ -150,11 +152,17 @@ background:#64748b;
 
 <button onclick="setActive(this);loadDepartments()">Departments</button>
 
+<button onclick="setActive(this);showAcademics()">Academics</button>
+
 <button onclick="setActive(this);showCreateDepartment()">Create Department</button>
 
 <button onclick="setActive(this);loadEvents()">Events</button>
 
 <button onclick="setActive(this);attendanceAnalytics()">Attendance Analytics</button>
+<button onclick="location.href='class-attendance.html'">Class Attendance</button>
+<button onclick="location.href='faculty-attendance.html'">Faculty Attendance</button>
+<button onclick="location.href='learning.html'">Learning</button>
+<button onclick="location.href='examinations.html'">Examinations</button>
 
 <button onclick="setActive(this);loadAuditLogs()">Audit Logs</button>
 <button onclick="setActive(this);showHistory()">History</button>
@@ -352,6 +360,20 @@ roleSelect.addEventListener("change", () => {
 
 </div>
 
+<div class="card" id="academicsCard" style="display:none">
+<div class="section-heading"><div><h2>Academic foundation</h2><p>Manage sessions, semesters, courses, subjects, batches and sections. Records are scoped by role and department.</p></div></div>
+<div class="academic-toolbar">
+  <select id="academicResource" onchange="loadAcademicResource()">
+    <option value="sessions">Academic sessions</option><option value="semesters">Semesters</option><option value="courses">Courses</option><option value="subjects">Subjects</option><option value="batches">Batches</option><option value="sections">Sections</option><option value="studentProfiles">Student profiles</option><option value="facultyProfiles">Faculty profiles</option><option value="timetable">Class timetable</option>
+  </select>
+  <input id="academicSearch" type="search" placeholder="Search academic records" oninput="loadAcademicResource()">
+</div>
+<div id="academicForm" class="academic-form"></div>
+<div id="academicState" class="state" role="status" aria-live="polite">Choose a resource to load.</div>
+<div class="table-wrap"><table><thead><tr><th>ID</th><th>Name / code</th><th>Details</th><th>Action</th></tr></thead><tbody id="academicTable"></tbody></table></div>
+<div id="timetableWeek" class="timetable-week" hidden></div>
+</div>
+
 </div>
 
 <script>
@@ -377,9 +399,32 @@ document.getElementById("createDepartmentCard").style.display="none"
 document.getElementById("exportCard").style.display="none"
 document.getElementById("searchCard").style.display="none"
 document.getElementById("historyCard").style.display="none"
+document.getElementById("academicsCard").style.display="none"
 document.getElementById("tableBody").innerHTML=""
 
 }
+
+function showAcademics(){ resetUI(); document.getElementById("academicsCard").style.display="block"; loadAcademicResource(); }
+
+const academicFields = {
+ sessions: [['code','Code'],['name','Name'],['start_date','Start date','date'],['end_date','End date','date']],
+ semesters: [['session_id','Session ID','number'],['number','Semester number','number'],['name','Name']],
+ courses: [['department_id','Department ID','number'],['code','Code'],['name','Name'],['duration_semesters','Duration (semesters)','number']],
+ subjects: [['course_id','Course ID','number'],['semester_id','Semester ID','number'],['code','Code'],['name','Name'],['credits','Credits','number']],
+ batches: [['course_id','Course ID','number'],['session_id','Session ID','number'],['name','Name'],['start_year','Start year','number'],['end_year','End year','number']],
+ sections: [['batch_id','Batch ID','number'],['name','Name'],['advisor_id','Advisor ID','number']],
+ studentProfiles: [['user_id','Student user ID','number'],['enrollment_no','Enrollment no.'],['phone','Phone'],['batch_id','Batch ID','number'],['section_id','Section ID','number']],
+ facultyProfiles: [['user_id','Faculty user ID','number'],['designation','Designation'],['phone','Phone'],['employee_code','Employee code']]
+};
+const timetableFields = [['session_id','Session ID','number'],['semester_id','Semester ID','number'],['subject_id','Subject ID','number'],['batch_id','Batch ID','number'],['section_id','Section ID','number'],['faculty_id','Faculty user ID','number'],['classroom_id','Classroom ID','number'],['weekday','Weekday (1 Mon - 7 Sun)','number'],['start_time','Start time','time'],['end_time','End time','time']];
+function escapeAcademic(value){ const node=document.createElement('span'); node.textContent=value===null||value===undefined?'':String(value); return node.innerHTML; }
+function setAcademicState(text, type=''){ const state=document.getElementById('academicState'); state.className='state'+(type?' '+type:''); state.textContent=text; }
+function renderAcademicForm(record=null){ const resource=document.getElementById('academicResource').value; const fields=resource==='timetable'?timetableFields:academicFields[resource]; document.getElementById('academicForm').innerHTML=fields.map(([key,label,type='text'])=>`<label>${escapeAcademic(label)}<input id="academic-${key}" type="${type}" placeholder="${escapeAcademic(label)}" value="${record&&record[key]!==null&&record[key]!==undefined?escapeAcademic(record[key]):''}"></label>`).join('')+`<button class="btn" onclick="saveAcademicRecord()">${record?'Save changes':'Create record'}</button>${record?'<button type="button" class="button secondary" onclick="renderAcademicForm()">Cancel</button>':''}<p id="academicMsg" role="status"></p>`; document.getElementById('academicForm').dataset.editId=record?(record.id||record.user_id):''; }
+async function loadAcademicResource(){ const resource=document.getElementById('academicResource').value; if(resource==='timetable') return loadTimetable(); renderAcademicForm(); const search=encodeURIComponent(document.getElementById('academicSearch').value||''); const table=document.getElementById('academicTable'); table.innerHTML=''; document.getElementById('timetableWeek').hidden=true; setAcademicState('Loading academic records…','loading'); try { const res=await fetch(API_BASE+`/api/academics/${resource}?search=${search}&limit=50`,{headers:{Authorization:'Bearer '+token}}); const data=await res.json(); if(!res.ok) throw new Error(data.message||'Unable to load records'); const rows=data.items||[]; setAcademicState(rows.length?`${data.pagination.total} record(s) found.`:'No records found.', rows.length?'':'empty'); table.innerHTML=rows.map(row=>{ const vals=Object.entries(row).filter(([key,value])=>key!=='id'&&key!=='user_id'&&value!==null&&value!==undefined).slice(0,3).map(([,value])=>escapeAcademic(value)).join(' · '); const record=encodeURIComponent(JSON.stringify(row)); return `<tr><td>${escapeAcademic(row.id||row.user_id)}</td><td>${escapeAcademic(row.name||row.code||row.enrollment_no||row.designation||'—')}</td><td>${vals||'—'}</td><td><button class="participants" onclick="editAcademicRecord('${record}')">Edit</button> <button class="action" onclick="deleteAcademicRecord('${resource}',${Number(row.id||row.user_id)})">Delete</button></td></tr>`; }).join(''); } catch(error){ setAcademicState(error.message,'error'); table.innerHTML='<tr><td colspan="4">Unable to load academic records.</td></tr>'; } }
+async function loadTimetable(){ renderAcademicForm(); document.getElementById('academicTable').innerHTML=''; document.getElementById('timetableWeek').hidden=false; setAcademicState('Loading weekly timetable…','loading'); try { const res=await fetch(API_BASE+'/api/timetable?limit=100',{headers:{Authorization:'Bearer '+token}}); const data=await res.json(); if(!res.ok) throw new Error(data.message||'Unable to load timetable'); const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']; const groups=days.map((day,index)=>{ const rows=(data.items||[]).filter(row=>Number(row.weekday)===index+1); return `<section class="timetable-day"><h3>${day}</h3>${rows.length?rows.map(row=>`<article class="timetable-slot"><strong>${escapeAcademic(row.start_time.slice(0,5))}–${escapeAcademic(row.end_time.slice(0,5))}</strong><span>${escapeAcademic(row.subject_name||row.subject_code)} · ${escapeAcademic(row.section_name||'Section')}</span><small>${escapeAcademic(row.faculty_name)} · ${escapeAcademic(row.classroom_name||row.classroom_code)}</small><button class="participants" onclick="editAcademicRecord('${encodeURIComponent(JSON.stringify(row))}')">Edit</button> <button class="action" onclick="deleteAcademicRecord('timetable',${Number(row.id)})">Delete</button></article>`).join(''):'<p class="empty">No classes scheduled.</p>'}</section>`; }).join(''); document.getElementById('timetableWeek').innerHTML=groups; setAcademicState(`${data.pagination.total} timetable entr${data.pagination.total===1?'y':'ies'} found.`,''); } catch(error){ setAcademicState(error.message,'error'); } }
+function editAcademicRecord(encoded){ try { renderAcademicForm(JSON.parse(decodeURIComponent(encoded))); document.getElementById('academicForm').scrollIntoView({behavior:'smooth',block:'nearest'}); } catch { setAcademicState('Unable to open this record.','error'); } }
+async function saveAcademicRecord(){ const resource=document.getElementById('academicResource').value; const fields=resource==='timetable'?timetableFields:academicFields[resource]; const body={}; fields.forEach(([key])=>{const input=document.getElementById('academic-'+key); const value=input.value; if(value!=='') body[key]=input.type==='number'?Number(value):value;}); const editId=document.getElementById('academicForm').dataset.editId; const method=editId?'PATCH':'POST'; const url=resource==='timetable'?API_BASE+`/api/timetable${editId?'/'+editId:''}`:API_BASE+`/api/academics/${resource}${editId?'/'+editId:''}`; const msg=document.getElementById('academicMsg'); msg.textContent='Saving…'; try { const res=await fetch(url,{method,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body)}); const data=res.status===204?{}:await res.json(); if(!res.ok) throw new Error(data.message||'Request failed'); msg.textContent=editId?'Saved':'Created'; await loadAcademicResource(); } catch(error){ msg.textContent=error.message; msg.className='error'; } }
+async function deleteAcademicRecord(resource,id){ if(!confirm('Delete this record? Continue?')) return; try { const url=resource==='timetable'?API_BASE+`/api/timetable/${id}`:API_BASE+`/api/academics/${resource}/${id}`; const res=await fetch(url,{method:'DELETE',headers:{Authorization:'Bearer '+token}}); const data=res.status===204?{}:await res.json(); if(!res.ok) throw new Error(data.message||'Delete failed'); await loadAcademicResource(); } catch(error){ setAcademicState(error.message,'error'); } }
 
 
 /* DASHBOARD */
@@ -926,6 +971,9 @@ url="/api/admin/recover-user"
 else if(type==="departments"){
 url="/api/admin/recover-department"
 }
+else if(type==="events"){
+url="/api/admin/recover-event"
+}
 
 await fetch(url,{
 method:"POST",
@@ -935,7 +983,8 @@ Authorization:"Bearer "+token
 },
 body:JSON.stringify({
 user_id:id,
-department_id:id
+department_id:id,
+event_id:id
 })
 })
 
@@ -983,7 +1032,7 @@ downloadFile("/api/admin/export-attendance","attendance.csv")
 }
 
 function exportParticipants(){
-downloadFile("/api/admin/export-participants","participants.csv")
+downloadFile("/api/admin/export-participants-all","participants.csv")
 }
 
 function exportAudit(){

@@ -51,11 +51,27 @@ end_time = null;
 
 const proof_file = req.file ? req.file.filename : null;
 
+const [clubRows] = await db.query(
+    `SELECT id FROM clubs
+     WHERE department_id = ?
+       AND (organizer_id = ? OR organizer_id IS NULL)
+     ORDER BY organizer_id IS NULL, id
+     LIMIT 1`,
+    [department_id, req.user.id]
+);
+
+const club_id = clubRows[0]?.id || null;
+
+if (!club_id) {
+    return res.status(400).json({ message: "No club configured for organizer department" });
+}
+
 const [result] = await db.query(
 `INSERT INTO events 
-(organizer_id, title, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status, target_hod_id)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    (club_id, organizer_id, title, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status, target_hod_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 [
+    club_id,
 req.user.id,
 title,
 department_id,
@@ -66,7 +82,7 @@ end_time,
 is_full_day || 0,
 proof_file,
 "Pending",
-target_hod_id || null
+    target_hod_id || null
 ]
 );
 
@@ -111,11 +127,7 @@ event_id: eventId
 
 }catch(err){
 console.error("DB ERROR:", err);
-
-res.status(500).json({
-error: err.message,
-sql: err.sqlMessage
-});
+res.status(500).json({ message: "Internal server error" });
 }
 
 };
@@ -134,7 +146,8 @@ exports.getPendingEvents = async (req, res) => {
         );
         res.json(rows);
     } catch(err) {
-        res.status(500).json({ error: err.message });
+        console.error("Pending event query error:", err);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 
@@ -164,11 +177,7 @@ message: "Event approved successfully"
 
 }catch(err){
 console.error("DB ERROR:", err);
-
-res.status(500).json({
-error: err.message,
-sql: err.sqlMessage
-});
+res.status(500).json({ message: "Internal server error" });
 }
 
 };
@@ -199,11 +208,7 @@ message: "Event rejected"
 
 }catch(err){
 console.error("DB ERROR:", err);
-
-res.status(500).json({
-error: err.message,
-sql: err.sqlMessage
-});
+res.status(500).json({ message: "Internal server error" });
 }
 
 };
@@ -235,11 +240,7 @@ res.json(rows);
 
 }catch(err){
 console.error("DB ERROR:", err);
-
-res.status(500).json({
-error: err.message,
-sql: err.sqlMessage
-});
+res.status(500).json({ message: "Internal server error" });
 }
 
 };
@@ -266,7 +267,7 @@ res.json(rows[0]);
 
 } catch(err) {
   console.error(err);
-  res.status(500).json({ error: "Internal server error" });
+  res.status(500).json({ message: "Internal server error" });
 }
 
 };
@@ -302,11 +303,7 @@ message: "Event deleted successfully"
 
 }catch(err){
 console.error("DB ERROR:", err);
-
-res.status(500).json({
-error: err.message,
-sql: err.sqlMessage
-});
+res.status(500).json({ message: "Internal server error" });
 }
 
 };
@@ -350,10 +347,14 @@ try{
 
 const eventId = req.params.id;
 
-await db.query(
-"UPDATE events SET is_deleted=0 WHERE id=?",
-[eventId]
+    const [result] = await db.query(
+    "UPDATE events SET is_deleted=0 WHERE id=? AND organizer_id=?",
+    [eventId, req.user.id]
 );
+
+    if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Event not found or unauthorized" });
+    }
 
 await db.query(
 "INSERT INTO audit_logs (user_id,action,entity,entity_id) VALUES (?,?,?,?)",
@@ -366,11 +367,7 @@ message: "Event recovered successfully"
 
 }catch(err){
 console.error("DB ERROR:", err);
-
-res.status(500).json({
-error: err.message,
-sql: err.sqlMessage
-});
+res.status(500).json({ message: "Internal server error" });
 }
 
 };

@@ -1,0 +1,11 @@
+const express = require('express');
+const router = express.Router();
+const controller = require('../controllers/facultyAttendanceController');
+const { verifyToken, allowRoles } = require('../middleware/authMiddleware');
+router.get('/', verifyToken, allowRoles('super_admin', 'hod', 'organizer'), controller.list);
+router.get('/export.csv', verifyToken, allowRoles('super_admin', 'hod', 'organizer'), controller.exportCsv);
+router.post('/:facultyId', verifyToken, allowRoles('super_admin', 'hod', 'organizer'), controller.save);
+router.get('/reports/monthly', verifyToken, allowRoles('super_admin', 'hod', 'organizer'), controller.summary);
+router.get('/reports/workload', verifyToken, allowRoles('super_admin', 'hod', 'organizer'), controller.workload);
+router.get('/reports/workload/daily', verifyToken, allowRoles('super_admin', 'hod', 'organizer'), controller.dailyWorkload);
+module.exports = router;

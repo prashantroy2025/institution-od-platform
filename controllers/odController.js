@@ -27,6 +27,7 @@ exports.applyOD = async (req, res) => {
     });
 
     }catch(err){
-        res.status(500).json({ error: err.message });
+        console.error("Legacy OD controller error:", err);
+        res.status(500).json({ message: "Internal server error" });
     }
 };

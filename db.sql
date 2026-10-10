@@ -280,6 +280,7 @@ CREATE TABLE `events` (
   `proof_file` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `department_id` int NOT NULL,
+  `target_hod_id` int DEFAULT NULL,
   `start_time` time DEFAULT NULL,
   `end_time` time DEFAULT NULL,
   `attendance_active` tinyint(1) DEFAULT '0',
@@ -290,9 +291,11 @@ CREATE TABLE `events` (
   KEY `fk_events_department` (`department_id`),
   KEY `idx_events_status` (`status`),
   KEY `fk_organizer` (`organizer_id`),
+  KEY `fk_events_target_hod` (`target_hod_id`),
   CONSTRAINT `events_ibfk_1` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_events_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_organizer` FOREIGN KEY (`organizer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_organizer` FOREIGN KEY (`organizer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_events_target_hod` FOREIGN KEY (`target_hod_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -302,7 +305,7 @@ CREATE TABLE `events` (
 
 LOCK TABLES `events` WRITE;
 /*!40000 ALTER TABLE `events` DISABLE KEYS */;
-INSERT INTO `events` VALUES (8,1,8,'discussion','2026-03-13','2026-03-13',0,'Pending',NULL,'2026-03-13 10:19:27',1,'09:47:00','16:30:00',0,0,'pending'),(9,1,8,'discussion','2026-03-13','2026-03-13',0,'Pending',NULL,'2026-03-13 10:19:28',1,'09:47:00','16:30:00',0,0,'pending');
+INSERT INTO `events` VALUES (8,1,8,'discussion','2026-03-13','2026-03-13',0,'Pending',NULL,'2026-03-13 10:19:27',1,NULL,'09:47:00','16:30:00',0,0,'pending'),(9,1,8,'discussion','2026-03-13','2026-03-13',0,'Pending',NULL,'2026-03-13 10:19:28',1,NULL,'09:47:00','16:30:00',0,0,'pending');
 /*!40000 ALTER TABLE `events` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -344,14 +347,17 @@ CREATE TABLE `od_applications` (
   `id` int NOT NULL AUTO_INCREMENT,
   `student_id` int NOT NULL,
   `event_id` int NOT NULL,
+  `hod_id` int DEFAULT NULL,
   `applied_date` date NOT NULL,
-  `status` enum('Auto Approved','Rejected') DEFAULT 'Auto Approved',
+  `status` enum('Auto Approved','Pending','HOD Approved','Rejected') DEFAULT 'Auto Approved',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `student_id` (`student_id`),
   KEY `event_id` (`event_id`),
+  KEY `fk_od_hod` (`hod_id`),
   CONSTRAINT `od_applications_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `od_applications_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE
+  CONSTRAINT `od_applications_ibfk_2` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_od_hod` FOREIGN KEY (`hod_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -399,7 +405,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'ADMIN001','Super Admin','admin@college.com','$2b$10$XcjulSWvM3GOV7Ha3PO3ruTGWlcq2o3FUXYI2kc2rncK9gBB4MHYe','super_admin',1,'2026-03-02 12:59:38',1,0,NULL),(2,'HOD001','Dr. Sharma','hodcse@college.com','hod123','hod',1,'2026-03-02 12:59:45',1,0,NULL),(5,'HOD002','Dr. Mehta','hodit@college.com','$2b$10$DrEawGibUs3b.dETjLJx1OaRK0gdg8QSplhhC1cq5NwStxbpeN3pG','hod',1,'2026-03-02 13:42:39',2,0,NULL),(8,'ORG010','Organizer Test','orgtest@college.com','$2b$10$2a6IeUCuloG0Z7ZAzJvpJ.wG0qfaeLakmF36JiMXFOq8iA5ZnEeSm','organizer',1,'2026-03-05 12:14:40',1,0,NULL),(12,'2421756','Prashant Kumar','2421756.it.cec@cgc.edu.in','$2b$10$BBudNp1VBxIjWStqYp2KQey0FZl0.Ob3kbq3CilkQYRIrwoQuGGAm','student',1,'2026-03-07 22:23:13',1,0,NULL),(14,'24221731','Manisha Kumari','2421731.it.cec@cgc.edu.in','$2b$10$2NipVdbZ1FcuTaj.Ikt69u9UE5zo6kf42DMGMJ5pZVGilJHKuw9R2','student',1,'2026-03-14 05:02:36',2,0,NULL),(15,'24221732','Manisha Rani','2421732.it.cec@cgc.edu.in','$2b$10$.4bU87OcfLcUfv/YE84wbuVsM1GXJ0j76gGsIhvSXXUlvA8VOcxYS','student',1,'2026-03-14 05:03:18',2,0,NULL),(17,'24221739','Muskan Kumari','2421739.it.cec@cgc.edu.in','$2b$10$bPGVQU/gHvGW5T3VzaRSt.jlAQNlJoaWBhO9ww9IbY5WBCY0njBha','student',1,'2026-03-14 05:04:10',2,0,NULL),(18,'2421735','Mehatab','2421735.it.cec@cgc.edu.in','$2b$10$0y/7gho5gN9P5ab7kKhQqOuGZqvVqIf//Q8drsRgpJ3egyG/Fm1g6','student',1,'2026-03-14 05:05:31',2,0,NULL),(21,'HODIT','HODIT','prashantrohit2003@gmail.com','$2b$10$QeI4i5SKXXVZxksJpyoj2OvAGkHLJsv0QNQzsN0GKEzT4f2njJfXu','hod',1,'2026-03-14 05:22:00',2,0,NULL);
+INSERT INTO `users` VALUES (1,'ADMIN001','Super Admin','admin@college.com','$2b$10$XcjulSWvM3GOV7Ha3PO3ruTGWlcq2o3FUXYI2kc2rncK9gBB4MHYe','super_admin',1,'2026-03-02 12:59:38',1,0,NULL),(2,'HOD001','Dr. Sharma','hodcse@college.com','$2b$10$MKZ6qZT845mk3To3FD8QRus0FLRbMlBRaLVM8XedGVxSt8HwN8fxW','hod',1,'2026-03-02 12:59:45',1,0,NULL),(5,'HOD002','Dr. Mehta','hodit@college.com','$2b$10$DrEawGibUs3b.dETjLJx1OaRK0gdg8QSplhhC1cq5NwStxbpeN3pG','hod',1,'2026-03-02 13:42:39',2,0,NULL),(8,'ORG010','Organizer Test','orgtest@college.com','$2b$10$2a6IeUCuloG0Z7ZAzJvpJ.wG0qfaeLakmF36JiMXFOq8iA5ZnEeSm','organizer',1,'2026-03-05 12:14:40',1,0,NULL),(12,'2421756','Prashant Kumar','2421756.it.cec@cgc.edu.in','$2b$10$BBudNp1VBxIjWStqYp2KQey0FZl0.Ob3kbq3CilkQYRIrwoQuGGAm','student',1,'2026-03-07 22:23:13',1,0,NULL),(14,'24221731','Manisha Kumari','2421731.it.cec@cgc.edu.in','$2b$10$2NipVdbZ1FcuTaj.Ikt69u9UE5zo6kf42DMGMJ5pZVGilJHKuw9R2','student',1,'2026-03-14 05:02:36',2,0,NULL),(15,'24221732','Manisha Rani','2421732.it.cec@cgc.edu.in','$2b$10$.4bU87OcfLcUfv/YE84wbuVsM1GXJ0j76gGsIhvSXXUlvA8VOcxYS','student',1,'2026-03-14 05:03:18',2,0,NULL),(17,'24221739','Muskan Kumari','2421739.it.cec@cgc.edu.in','$2b$10$bPGVQU/gHvGW5T3VzaRSt.jlAQNlJoaWBhO9ww9IbY5WBCY0njBha','student',1,'2026-03-14 05:04:10',2,0,NULL),(18,'2421735','Mehatab','2421735.it.cec@cgc.edu.in','$2b$10$0y/7gho5gN9P5ab7kKhQqOuGZqvVqIf//Q8drsRgpJ3egyG/Fm1g6','student',1,'2026-03-14 05:05:31',2,0,NULL),(21,'HODIT','HODIT','prashantrohit2003@gmail.com','$2b$10$QeI4i5SKXXVZxksJpyoj2OvAGkHLJsv0QNQzsN0GKEzT4f2njJfXu','hod',1,'2026-03-14 05:22:00',2,0,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;

@@ -1,0 +1,31 @@
+-- Additive, rerunnable finance core. Monetary values are integer INR paise.
+CREATE TABLE IF NOT EXISTS finance_fee_structures (
+ id INT AUTO_INCREMENT PRIMARY KEY, department_id INT NULL, name VARCHAR(160) NOT NULL, academic_year VARCHAR(20) NOT NULL,
+ currency CHAR(3) NOT NULL DEFAULT 'INR', is_active TINYINT(1) NOT NULL DEFAULT 1, created_by INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ KEY idx_finance_fee_structure_scope (department_id,academic_year,is_active), CONSTRAINT fk_finance_fee_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL, CONSTRAINT fk_finance_fee_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS finance_fee_items (
+ id INT AUTO_INCREMENT PRIMARY KEY, structure_id INT NOT NULL, code VARCHAR(50) NOT NULL, name VARCHAR(160) NOT NULL, amount_paise BIGINT UNSIGNED NOT NULL,
+ UNIQUE KEY uq_finance_fee_item (structure_id,code), CONSTRAINT fk_finance_fee_item_structure FOREIGN KEY (structure_id) REFERENCES finance_fee_structures(id) ON DELETE CASCADE, CONSTRAINT chk_finance_fee_item_amount CHECK (amount_paise > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS finance_invoices (
+ id INT AUTO_INCREMENT PRIMARY KEY, invoice_no VARCHAR(50) NOT NULL UNIQUE, student_id INT NOT NULL, structure_id INT NULL, issue_date DATE NOT NULL, due_date DATE NOT NULL,
+ status ENUM('Issued','Partially Paid','Paid','Cancelled','Overdue') NOT NULL DEFAULT 'Issued', total_paise BIGINT UNSIGNED NOT NULL DEFAULT 0, discount_paise BIGINT UNSIGNED NOT NULL DEFAULT 0, waiver_paise BIGINT UNSIGNED NOT NULL DEFAULT 0, created_by INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ KEY idx_finance_invoice_student (student_id,status,due_date), CONSTRAINT fk_finance_invoice_student FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE RESTRICT, CONSTRAINT fk_finance_invoice_structure FOREIGN KEY (structure_id) REFERENCES finance_fee_structures(id) ON DELETE SET NULL, CONSTRAINT fk_finance_invoice_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT, CONSTRAINT chk_finance_invoice_dates CHECK (due_date >= issue_date), CONSTRAINT chk_finance_invoice_total CHECK (total_paise >= discount_paise + waiver_paise)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS finance_invoice_items (
+ id INT AUTO_INCREMENT PRIMARY KEY, invoice_id INT NOT NULL, code VARCHAR(50) NOT NULL, name VARCHAR(160) NOT NULL, amount_paise BIGINT UNSIGNED NOT NULL, CONSTRAINT fk_finance_invoice_item_invoice FOREIGN KEY (invoice_id) REFERENCES finance_invoices(id) ON DELETE CASCADE, CONSTRAINT chk_finance_invoice_item_amount CHECK (amount_paise > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS finance_payments (
+ id INT AUTO_INCREMENT PRIMARY KEY, invoice_id INT NOT NULL, student_id INT NOT NULL, amount_paise BIGINT UNSIGNED NOT NULL, method ENUM('Offline','Gateway') NOT NULL, reference_no VARCHAR(120) NULL, proof_storage_key VARCHAR(255) NULL, status ENUM('Pending','Verified','Rejected','Refunded') NOT NULL DEFAULT 'Pending', verified_by INT NULL, verified_at DATETIME NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE KEY uq_finance_payment_reference (method,reference_no), KEY idx_finance_payment_invoice (invoice_id,status), CONSTRAINT fk_finance_payment_invoice FOREIGN KEY (invoice_id) REFERENCES finance_invoices(id) ON DELETE RESTRICT, CONSTRAINT fk_finance_payment_student FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE RESTRICT, CONSTRAINT fk_finance_payment_verifier FOREIGN KEY (verified_by) REFERENCES users(id) ON DELETE SET NULL, CONSTRAINT chk_finance_payment_amount CHECK (amount_paise > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS finance_adjustments (
+ id INT AUTO_INCREMENT PRIMARY KEY, invoice_id INT NOT NULL, kind ENUM('Discount','Scholarship','Aid','Waiver','Refund') NOT NULL, amount_paise BIGINT UNSIGNED NOT NULL, reason VARCHAR(500) NOT NULL, approved_by INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_finance_adjustment_invoice FOREIGN KEY (invoice_id) REFERENCES finance_invoices(id) ON DELETE CASCADE, CONSTRAINT fk_finance_adjustment_approver FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE RESTRICT, CONSTRAINT chk_finance_adjustment_amount CHECK (amount_paise > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS finance_budgets (
+ id INT AUTO_INCREMENT PRIMARY KEY, department_id INT NULL, name VARCHAR(160) NOT NULL, period_start DATE NOT NULL, period_end DATE NOT NULL, amount_paise BIGINT UNSIGNED NOT NULL, created_by INT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_finance_budget_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL, CONSTRAINT fk_finance_budget_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT, CONSTRAINT chk_finance_budget_dates CHECK (period_end >= period_start)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS finance_expenses (
+ id INT AUTO_INCREMENT PRIMARY KEY, budget_id INT NULL, department_id INT NULL, vendor VARCHAR(160) NOT NULL, description VARCHAR(500) NOT NULL, amount_paise BIGINT UNSIGNED NOT NULL, expense_date DATE NOT NULL, status ENUM('Submitted','Approved','Rejected') NOT NULL DEFAULT 'Submitted', created_by INT NOT NULL, approved_by INT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, CONSTRAINT fk_finance_expense_budget FOREIGN KEY (budget_id) REFERENCES finance_budgets(id) ON DELETE SET NULL, CONSTRAINT fk_finance_expense_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL, CONSTRAINT fk_finance_expense_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT, CONSTRAINT fk_finance_expense_approver FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL, CONSTRAINT chk_finance_expense_amount CHECK (amount_paise > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

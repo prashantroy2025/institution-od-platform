@@ -48,7 +48,7 @@ exports.deleteUser = async (user_id) => {
  try{
 
  const [result] = await db.query(
-  "DELETE FROM users WHERE id=?",
+  "UPDATE users SET deleted=1, is_active=0 WHERE id=?",
   [user_id]
  )
 

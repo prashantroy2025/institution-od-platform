@@ -1,4 +1,6 @@
 const db = require('../config/db');
+const { isPositiveInteger } = require('../utils/requestValidation');
+const { getManagedEvent } = require('../utils/eventAuthorization');
 
 
 // ------------------ EVENT ANALYTICS ------------------
@@ -7,7 +9,16 @@ exports.getEventAnalytics = async (req,res)=>{
 
 try{
 
-const eventId = req.params.eventId;
+const eventId = req.params.event_id;
+
+if (!isPositiveInteger(eventId)) {
+    return res.status(400).json({ message: "Valid event ID required" });
+}
+
+const event = await getManagedEvent(db, req.user, eventId);
+if (!event) {
+    return res.status(404).json({ message: "Event not found or unauthorized" });
+}
 
 const [rows] = await db.query(
 `SELECT 
@@ -22,7 +33,8 @@ WHERE event_id=?`,
 res.json(rows[0]);
 
 }catch(err){
-res.status(500).json({error:err.message});
+console.error("Event analytics error:", err);
+res.status(500).json({ message: "Server error" });
 }
 
 }
@@ -47,7 +59,8 @@ const [rows] = await db.query(query);
 res.json(rows[0]);
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("System analytics error:", err);
+res.status(500).json({ message: "Server error" });
 }
 
 };

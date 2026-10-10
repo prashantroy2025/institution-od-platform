@@ -1,0 +1,2 @@
+const service = require('../services/attendanceSummaryService');
+exports.summary = async (req, res, next) => { try { res.json(await service.summary(req.query, req.user)); } catch (error) { next(error); } };

@@ -14,7 +14,8 @@ const [results] = await db.query(
 res.json(results);
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("Notification query error:", err);
+res.status(500).json({ message: "Internal server error" });
 }
 
 };
@@ -24,17 +25,21 @@ exports.markAsRead = async (req, res) => {
 
 try{
 
-const { id } = req.body;
+        const { id } = req.body;
 
-await db.query(
-"UPDATE notifications SET is_read=1 WHERE id=?",
-[id]
+        const [result] = await db.query(
+            "UPDATE notifications SET is_read=1 WHERE id=? AND user_id=?",
+            [id, req.user.id]
 );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Notification not found" });
+        }
 
 res.json({ message: "Notification marked as read" });
 
 }catch(err){
-res.status(500).json({ error: err.message });
+        res.status(500).json({ message: "Server error" });
 }
 
 };
@@ -56,7 +61,8 @@ unread_notifications: result[0].unread
 });
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("Unread notification query error:", err);
+res.status(500).json({ message: "Internal server error" });
 }
 
 };

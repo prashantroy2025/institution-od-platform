@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const attendanceService = require('../services/attendanceService');
+const { isDateOnly, isPositiveInteger } = require('../utils/requestValidation');
 
 // All approved events — student sees participation status
 exports.getEvents = async (req, res) => {
@@ -21,7 +22,7 @@ exports.getEvents = async (req, res) => {
 
         res.json(rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -59,7 +60,7 @@ exports.searchEvents = async (req, res) => {
 
         res.json(rows);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -70,8 +71,8 @@ exports.applyOD = async (req, res) => {
         const { event_id, applied_date } = req.body;
         const student_id = req.user.id;
 
-        if (!event_id || !applied_date) {
-            return res.status(400).json({ message: "Missing required fields" });
+        if (!isPositiveInteger(event_id) || !isDateOnly(applied_date)) {
+            return res.status(400).json({ message: "Valid event_id and applied_date (YYYY-MM-DD) are required" });
         }
 
         // Check if already applied
@@ -101,7 +102,7 @@ exports.applyOD = async (req, res) => {
 
         // Get the target HOD for this event
         const [eventRows] = await db.query(
-            "SELECT target_hod_id, department_id, title FROM events WHERE id=?",
+            "SELECT target_hod_id, department_id, title FROM events WHERE id=? AND is_deleted=0",
             [event_id]
         );
 
@@ -147,7 +148,7 @@ exports.applyOD = async (req, res) => {
 
     } catch (err) {
         console.error("OD Apply Error:", err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -180,6 +181,7 @@ exports.getMyOD = async (req, res) => {
 
         res.json(rows);
     } catch (err) {
-        res.status(500).json(err);
+        console.error("Student OD history error:", err);
+        res.status(500).json({ message: "Internal server error" });
     }
 };

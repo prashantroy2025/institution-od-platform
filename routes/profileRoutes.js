@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router();
+const controller = require('../controllers/profileController');
+const upload = require('../middleware/learningUploadMiddleware');
+const { verifyToken } = require('../middleware/authMiddleware');
+router.get('/', verifyToken, controller.get);
+router.patch('/', verifyToken, controller.update);
+router.post('/documents', verifyToken, upload.single('document'), controller.upload);
+router.get('/documents/:id/download', verifyToken, controller.download);
+module.exports = router;

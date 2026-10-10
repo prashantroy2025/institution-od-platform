@@ -1,0 +1,14 @@
+const service = require('../services/examinationService');
+exports.list = async (req,res,next)=>{try{res.json(await service.list(req.query,req.user));}catch(e){next(e);}};
+exports.create = async (req,res,next)=>{try{res.status(201).json(await service.create(req.body,req.user));}catch(e){next(e);}};
+exports.update = async (req,res,next)=>{try{res.json(await service.update(req.params.id,req.body,req.user));}catch(e){next(e);}};
+exports.get = async (req,res,next)=>{try{res.json(await service.getExam(req.params.id,req.user,req.user.role==='student'));}catch(e){next(e);}};
+exports.register = async (req,res,next)=>{try{res.status(201).json(await service.register(req.params.id,req.user));}catch(e){next(e);}};
+exports.allocate = async (req,res,next)=>{try{res.json(await service.allocate(req.params.id,req.user));}catch(e){next(e);}};
+exports.seats = async (req,res,next)=>{try{res.json(await service.seats(req.params.id,req.user));}catch(e){next(e);}};
+exports.marks = async (req,res,next)=>{try{res.json(await service.marks(req.params.id,req.body,req.user));}catch(e){next(e);}};
+exports.publish = async (req,res,next)=>{try{res.json(await service.publish(req.params.id,req.user));}catch(e){next(e);}};
+exports.result = async (req,res,next)=>{try{res.json(await service.result(req.params.id,req.user));}catch(e){next(e);}};
+exports.report = async (req,res,next)=>{try{res.json(await service.report(req.query,req.user));}catch(e){next(e);}};
+exports.export = async (req,res,next)=>{try{res.type('text/csv').set('Content-Disposition','attachment; filename="examinations.csv"').send(await service.exportCsv(req.query,req.user));}catch(e){next(e);}};
+exports.admitCard = async (req,res,next)=>{try{const exam=await service.getExam(req.params.id,req.user,req.user.role==='student');if(req.user.role==='student'){if(!['Scheduled','Registration Open','Marks Pending','Published'].includes(exam.status)){const e=new Error('Admit card is not available');e.status=403;throw e;}const seats=await service.seats(req.params.id,req.user);if(!seats.length){const e=new Error('Student is not registered or has no seat');e.status=403;throw e;}}res.type('text/plain').set('Content-Disposition',`attachment; filename="admit-card-${exam.id}.txt"`).send(`ADMIT CARD\n${exam.title}\nSubject: ${exam.subject_name}\nBatch: ${exam.batch_name}\nSection: ${exam.section_name}\nSchedule: ${exam.scheduled_start||'Not scheduled'} - ${exam.scheduled_end||'Not scheduled'}\nRoom: ${exam.room_id||'Not allocated'}`);}catch(e){next(e);}};

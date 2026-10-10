@@ -3,6 +3,8 @@ const db = require('../config/db');
 const multer = require("multer");
 const csv = require("csv-parser");
 const fs = require("fs");
+const { isDateOnly } = require('../utils/requestValidation');
+const { getManagedEvent } = require('../utils/eventAuthorization');
 
 // Get pending events for HOD department
 exports.getPendingEvents = async (req, res) => {
@@ -33,7 +35,8 @@ AND (events.target_hod_id = ? OR (events.target_hod_id IS NULL AND events.depart
 res.json(results);
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("HOD pending event query error:", err);
+res.status(500).json({ message: "Internal server error" });
 }
 
 };
@@ -59,7 +62,8 @@ if (result.affectedRows === 0) {
 res.json({ message: "Event Approved" });
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("HOD event approval error:", err);
+res.status(500).json({ message: "Internal server error" });
 }
 
 };
@@ -85,7 +89,8 @@ if (result.affectedRows === 0) {
 res.json({ message: "Event Rejected" });
 
 }catch(err){
-res.status(500).json({ error: err.message });
+console.error("HOD event rejection error:", err);
+res.status(500).json({ message: "Internal server error" });
 }
 
 };
@@ -96,6 +101,10 @@ exports.getParticipants = async (req,res)=>{
 try{
 
 const {event_id} = req.params;
+
+if (!await getManagedEvent(db, req.user, event_id)) {
+    return res.status(404).json({ message: "Event not found or unauthorized" });
+}
 
 const [rows] = await db.query(
 `SELECT users.name, users.college_id, users.email, event_participants.scan_time
@@ -108,7 +117,8 @@ const [rows] = await db.query(
 res.json(rows);
 
 }catch(err){
-res.status(500).json(err);
+console.error("HOD participant query error:", err);
+res.status(500).json({ message: "Internal server error" });
 }
 
 }
@@ -129,12 +139,30 @@ exports.uploadIndependentAttendance = async (req, res) => {
             return res.status(400).json({ message: "Title, from_date and to_date are required" });
         }
 
+        if (!isDateOnly(from_date) || !isDateOnly(to_date) || to_date < from_date) {
+            return res.status(400).json({ message: "Valid event dates are required" });
+        }
+
         // Create event first, get the event_id
+        const [clubRows] = await db.query(
+            `SELECT id FROM clubs
+             WHERE department_id = ?
+               AND (organizer_id = ? OR organizer_id IS NULL)
+             ORDER BY organizer_id IS NULL, id
+             LIMIT 1`,
+            [req.user.department_id, req.user.id]
+        );
+
+        const club_id = clubRows[0]?.id;
+        if (!club_id) {
+            return res.status(400).json({ message: "No club configured for HOD department" });
+        }
+
         const [result] = await db.query(
          `INSERT INTO events 
-          (organizer_id, title, from_date, to_date, start_time, end_time, status, department_id, is_full_day)
-          VALUES (?, ?, ?, ?, ?, ?, 'Approved', ?, 0)`,
-          [req.user.id, title, from_date, to_date, start_time || null, end_time || null, req.user.department_id]
+          (club_id, organizer_id, title, from_date, to_date, start_time, end_time, status, department_id, is_full_day)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'Approved', ?, 0)`,
+          [club_id, req.user.id, title, from_date, to_date, start_time || null, end_time || null, req.user.department_id]
       );
 
         const event_id = result.insertId;  // ← declared immediately after INSERT
@@ -177,15 +205,18 @@ exports.uploadIndependentAttendance = async (req, res) => {
                     });
 
                 } catch (err) {
-                    res.status(500).json({ message: "Error inserting participants", error: err.message });
+                    console.error("Independent attendance insert error:", err);
+                    res.status(500).json({ message: "Internal server error" });
                 }
             })
             .on("error", (err) => {
-                res.status(500).json({ message: "Error reading CSV file", error: err.message });
+                console.error("Independent attendance CSV error:", err);
+                res.status(500).json({ message: "Internal server error" });
             });
 
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error("Independent attendance error:", err);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 

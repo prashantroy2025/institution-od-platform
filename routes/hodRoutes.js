@@ -1,15 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-
 const hodController = require('../controllers/hodController');
 const { verifyToken, allowRoles } = require('../middleware/authMiddleware');
-
-
-// configure multer
-const upload = multer({
-  dest: "uploads/"
-});
+const upload = require('../middleware/uploadMiddleware');
 
 
 router.get(

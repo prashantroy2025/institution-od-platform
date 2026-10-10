@@ -1,0 +1,14 @@
+const service = require('../services/learningService');
+const sendFile = async (res, descriptor) => { const buffer = await require('../utils/learningFileStore').read(descriptor.storageKey); res.setHeader('Content-Type', descriptor.mime || 'application/octet-stream'); res.setHeader('Content-Disposition', `attachment; filename="${String(descriptor.name || 'download').replace(/["\\\r\n]/g, '_')}"`); res.send(buffer); };
+exports.createAssignment = async (req, res, next) => { try { res.status(201).json(await service.createAssignment(req.body, req.user, req.file)); } catch (error) { next(error); } };
+exports.updateAssignment = async (req, res, next) => { try { res.json(await service.updateAssignment(req.params.id, req.body, req.user, req.file)); } catch (error) { next(error); } };
+exports.listAssignments = async (req, res, next) => { try { res.json(await service.listAssignments(req.query, req.user)); } catch (error) { next(error); } };
+exports.assignment = async (req, res, next) => { try { res.json(await service.assignment(req.params.id, req.user)); } catch (error) { next(error); } };
+exports.submit = async (req, res, next) => { try { res.status(201).json(await service.submit(req.params.id, req.user, req.file)); } catch (error) { next(error); } };
+exports.submissions = async (req, res, next) => { try { res.json(await service.submissions(req.params.id, req.query, req.user)); } catch (error) { next(error); } };
+exports.grade = async (req, res, next) => { try { res.json(await service.grade(req.params.id, req.body, req.user)); } catch (error) { next(error); } };
+exports.assignmentDownload = async (req, res, next) => { try { await sendFile(res, await service.download('assignment', req.params.id, req.user)); } catch (error) { next(error); } };
+exports.submissionDownload = async (req, res, next) => { try { await sendFile(res, await service.download('submission', req.params.id, req.user)); } catch (error) { next(error); } };
+exports.createMaterial = async (req, res, next) => { try { res.status(201).json(await service.createMaterial(req.body, req.user, req.file)); } catch (error) { next(error); } };
+exports.materials = async (req, res, next) => { try { res.json(await service.materials(req.query, req.user)); } catch (error) { next(error); } };
+exports.materialDownload = async (req, res, next) => { try { await sendFile(res, await service.download('material', req.params.id, req.user)); } catch (error) { next(error); } };

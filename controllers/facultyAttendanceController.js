@@ -1,0 +1,7 @@
+const service = require('../services/facultyAttendanceService');
+exports.save = async (req, res, next) => { try { res.status(201).json(await service.save(req.params.facultyId, req.body, req.user)); } catch (error) { next(error); } };
+exports.list = async (req, res, next) => { try { res.json(await service.list(req.query, req.user)); } catch (error) { next(error); } };
+exports.summary = async (req, res, next) => { try { res.json(await service.summary(req.query, req.user)); } catch (error) { next(error); } };
+exports.workload = async (req, res, next) => { try { res.json(await service.workload(req.query, req.user)); } catch (error) { next(error); } };
+exports.dailyWorkload = async (req, res, next) => { try { res.json(await service.dailyWorkload(req.query, req.user)); } catch (error) { next(error); } };
+exports.exportCsv = async (req, res, next) => { try { const rows = await service.exportRows(req.query, req.user); const escape = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`; const lines = [['date', 'faculty', 'employee_code', 'department_id', 'status', 'check_in', 'check_out', 'notes'], ...rows.map((row) => [row.attendance_date, row.faculty_name, row.employee_code, row.department_id, row.status, row.check_in, row.check_out, row.notes])].map((row) => row.map(escape).join(',')); res.setHeader('Content-Type', 'text/csv'); res.setHeader('Content-Disposition', 'attachment; filename=faculty-attendance.csv'); res.send(lines.join('\n')); } catch (error) { next(error); } };

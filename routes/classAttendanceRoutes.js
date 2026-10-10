@@ -1,0 +1,11 @@
+const express = require('express');
+const router = express.Router();
+const controller = require('../controllers/classAttendanceController');
+const { verifyToken, allowRoles } = require('../middleware/authMiddleware');
+router.get('/threshold', verifyToken, controller.getThreshold);
+router.patch('/threshold', verifyToken, allowRoles('super_admin'), controller.threshold);
+router.get('/history', verifyToken, controller.history);
+router.get('/reports/shortage', verifyToken, controller.report);
+router.get('/timetable/:timetableId/:date', verifyToken, controller.session);
+router.post('/timetable/:timetableId', verifyToken, allowRoles('super_admin', 'hod', 'organizer'), controller.mark);
+module.exports = router;

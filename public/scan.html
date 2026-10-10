@@ -107,6 +107,7 @@ font-weight:bold;
 }
 
 </style>
+<link rel="stylesheet" href="erp-ui.css">
 
 </head>
 
@@ -130,11 +131,6 @@ const urlParams = new URLSearchParams(window.location.search)
 const qrToken = urlParams.get("token")
 
 const studentToken = localStorage.getItem("token")
-
-if(!studentToken){
-     window.location = "login.html";
-    return;
-}
 
 
 async function markAttendance(){
@@ -195,7 +191,11 @@ document.getElementById("status").className="error"
 
 }
 
-markAttendance()
+if(!studentToken){
+    window.location = "login.html";
+} else {
+    markAttendance()
+}
 
 </script>
 

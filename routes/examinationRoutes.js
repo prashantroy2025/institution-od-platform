@@ -1,0 +1,15 @@
+const express=require('express');const router=express.Router();const c=require('../controllers/examinationController');const {verifyToken,allowRoles}=require('../middleware/authMiddleware');
+router.get('/',verifyToken,allowRoles('super_admin','hod','organizer','student'),c.list);
+router.get('/reports/summary',verifyToken,allowRoles('super_admin','hod','organizer'),c.report);
+router.get('/reports/export',verifyToken,allowRoles('super_admin','hod','organizer'),c.export);
+router.post('/',verifyToken,allowRoles('super_admin','hod','organizer'),c.create);
+router.get('/:id',verifyToken,allowRoles('super_admin','hod','organizer','student'),c.get);
+router.patch('/:id',verifyToken,allowRoles('super_admin','hod','organizer'),c.update);
+router.post('/:id/register',verifyToken,allowRoles('student'),c.register);
+router.post('/:id/allocate-seats',verifyToken,allowRoles('super_admin','hod','organizer'),c.allocate);
+router.get('/:id/seats',verifyToken,allowRoles('super_admin','hod','organizer','student'),c.seats);
+router.post('/:id/marks',verifyToken,allowRoles('super_admin','hod','organizer'),c.marks);
+router.post('/:id/publish',verifyToken,allowRoles('super_admin','hod'),c.publish);
+router.get('/:id/result',verifyToken,allowRoles('super_admin','hod','organizer','student'),c.result);
+router.get('/:id/admit-card',verifyToken,allowRoles('super_admin','hod','organizer','student'),c.admitCard);
+module.exports=router;

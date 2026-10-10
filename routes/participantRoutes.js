@@ -23,6 +23,7 @@ participantController.getParticipantsByEvent
 router.get(
 "/count/:eventId",
 verifyToken,
+allowRoles("organizer", "hod", "super_admin"),
 participantController.getParticipantCount
 );
 

@@ -1,0 +1,5 @@
+const service = require('../services/profileService');
+exports.get = async (req, res, next) => { try { res.json(await service.get(req.user.id)); } catch (error) { next(error); } };
+exports.update = async (req, res, next) => { try { res.json(await service.update(req.user.id, req.body)); } catch (error) { next(error); } };
+exports.upload = async (req, res, next) => { try { res.status(201).json(await service.addDocument(req.user, req.file, req.body.label)); } catch (error) { next(error); } };
+exports.download = async (req, res, next) => { try { const document = await service.document(req.params.id, req.user); const files = require('../utils/learningFileStore'); res.type(document.mime_type).attachment(document.original_name).send(await files.read(document.storage_key)); } catch (error) { next(error); } };

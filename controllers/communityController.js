@@ -1,0 +1,23 @@
+const service = require('../services/communityService');
+const files = require('../utils/learningFileStore');
+const wrap = handler => async (req, res, next) => { try { res.json(await handler(req, res)); } catch (error) { next(error); } };
+
+exports.feed = wrap(async req => service.feed(req.query, req.user));
+exports.create = async (req, res, next) => { try { res.status(201).json(await service.createPost(req.body, req.user, req.file)); } catch (e) { next(e); } };
+exports.like = wrap(async req => service.like(req.params.id, req.user));
+exports.save = wrap(async req => service.save(req.params.id, req.user));
+exports.share = async (req, res, next) => { try { res.status(201).json(await service.share(req.params.id, req.body || {}, req.user)); } catch (e) { next(e); } };
+exports.unshare = wrap(async req => service.unshare(req.params.id, req.user));
+exports.remove = async (req, res, next) => { try { res.json(await service.removePost(req.params.id, req.user)); } catch (e) { next(e); } };
+exports.comment = async (req, res, next) => { try { res.status(201).json(await service.comment(req.params.id, req.body, req.user)); } catch (e) { next(e); } };
+exports.comments = wrap(async req => service.comments(req.params.id, req.user));
+exports.removeComment = async (req, res, next) => { try { res.json(await service.removeComment(req.params.id, req.user)); } catch (e) { next(e); } };
+exports.follow = wrap(async req => service.follow(req.params.id, req.user));
+exports.unfollow = wrap(async req => service.unfollow(req.params.id, req.user));
+exports.report = async (req, res, next) => { try { res.status(201).json(await service.report(req.body, req.user)); } catch (e) { next(e); } };
+exports.reports = wrap(async req => service.listReports(req.user, req.query));
+exports.moderate = async (req, res, next) => { try { res.json(await service.moderateReport(req.params.id, req.body, req.user)); } catch (e) { next(e); } };
+exports.people = wrap(async req => service.people(req.user, req.query));
+exports.block = wrap(async req => service.block(req.params.id, req.user));
+exports.unblock = wrap(async req => service.unblock(req.params.id, req.user));
+exports.media = async (req, res, next) => { try { const m = await service.media(req.params.id, req.user); res.type(m.media_mime_type).attachment(m.media_original_name).send(await files.read(m.media_storage_key)); } catch (e) { next(e); } };

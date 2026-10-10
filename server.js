@@ -6,16 +6,16 @@ const path = require("path");
 require('dotenv').config();
 require('events').EventEmitter.defaultMaxListeners = 20;
 
-/* ---------------- ENV CHECK ---------------- */
+/* ---------------- ENV CHECK / DB INIT ---------------- */
 
-if (!process.env.JWT_SECRET) {
-  console.error("JWT_SECRET missing!");
+try {
+  require("./config/db").validateRuntimeConfig();
+} catch (err) {
+  console.error(err.message);
   process.exit(1);
 }
 
-/* ---------------- DB INIT ---------------- */
-
-require("./config/db");
+const db = require("./config/db");
 
 /* ---------------- SERVICES ---------------- */
 
@@ -51,7 +51,8 @@ if (process.env.NODE_ENV !== "production") {
 
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 40,
+  // Integration tests exercise dozens of endpoints in one minute; production limits stay unchanged.
+  max: process.env.NODE_ENV === "test" ? 100000 : 40,
   message: "Too many requests, please slow down"
 });
 app.use(limiter);
@@ -88,6 +89,42 @@ app.get("/health", (req, res) => {
 
 const departmentRoutes = require('./routes/departmentRoutes');
 app.use('/api/departments', departmentRoutes);
+
+const academicRoutes = require('./routes/academicRoutes');
+app.use('/api/academics', academicRoutes);
+
+const timetableRoutes = require('./routes/timetableRoutes');
+app.use('/api/timetable', timetableRoutes);
+
+const classAttendanceRoutes = require('./routes/classAttendanceRoutes');
+app.use('/api/class-attendance', classAttendanceRoutes);
+
+const facultyAttendanceRoutes = require('./routes/facultyAttendanceRoutes');
+app.use('/api/faculty-attendance', facultyAttendanceRoutes);
+
+const learningRoutes = require('./routes/learningRoutes');
+app.use('/api/learning', learningRoutes);
+
+const examinationRoutes = require('./routes/examinationRoutes');
+app.use('/api/examinations', examinationRoutes);
+
+const financeRoutes = require('./routes/financeRoutes');
+app.use('/api/finance', financeRoutes);
+
+const libraryRoutes = require('./routes/libraryRoutes');
+app.use('/api/library', libraryRoutes);
+
+const profileRoutes = require('./routes/profileRoutes');
+app.use('/api/profile', profileRoutes);
+
+const attendanceSummaryRoutes = require('./routes/attendanceSummaryRoutes');
+app.use('/api/attendance', attendanceSummaryRoutes);
+
+const communityRoutes = require('./routes/communityRoutes');
+app.use('/api/community', communityRoutes);
+
+const messageRoutes = require('./routes/messageRoutes');
+app.use('/api/messages', messageRoutes);
 
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
@@ -162,6 +199,25 @@ const io = new Server(server, {
     ],
     credentials: true
   }
+});
+
+const jwt = require('jsonwebtoken');
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) return next(new Error('Authentication required'));
+  jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
+    if (error) return next(new Error('Invalid token'));
+    socket.user = decoded;
+    next();
+  });
+});
+io.on('connection', (socket) => {
+  socket.on('conversation:join', async (conversationId) => {
+    if (!Number.isInteger(Number(conversationId)) || Number(conversationId) < 1) return;
+    const [rows] = await db.query('SELECT 1 FROM erp_message_conversation_members WHERE conversation_id=? AND user_id=? LIMIT 1', [conversationId, socket.user.id]);
+    if (rows.length) socket.join(`conversation:${conversationId}`);
+  });
+  socket.on('conversation:leave', (conversationId) => socket.leave(`conversation:${conversationId}`));
 });
 
 app.set("io", io);

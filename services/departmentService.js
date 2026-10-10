@@ -17,7 +17,7 @@ return result
 exports.getDepartments = async () => {
 
 const [rows] = await db.query(
-"SELECT * FROM departments"
+"SELECT * FROM departments WHERE deleted=0"
 )
 
 return rows
@@ -42,7 +42,7 @@ return result
 exports.deleteDepartment = async (department_id) => {
 
 const [result] = await db.query(
-"DELETE FROM departments WHERE id=?",
+"UPDATE departments SET deleted=1 WHERE id=?",
 [department_id]
 )
 

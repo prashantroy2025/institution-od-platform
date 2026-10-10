@@ -140,4 +140,11 @@ allowRoles("super_admin"),
 adminController.recoverDepartment
 )
 
+router.post(
+"/recover-event",
+verifyToken,
+allowRoles("super_admin"),
+adminController.recoverEvent
+)
+
 module.exports = router;

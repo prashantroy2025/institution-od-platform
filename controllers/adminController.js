@@ -121,7 +121,8 @@ const [rows] = await db.query(query,params);
 res.json(rows);
 
 }catch(err){
-res.status(500).json({error:err.message});
+console.error("User search error:", err);
+res.status(500).json({error:"Internal server error"});
 }
 };
 
@@ -388,7 +389,7 @@ try{
 const { user_id } = req.body;
 
 await db.query(
-"UPDATE users SET deleted=0 WHERE id=?",
+    "UPDATE users SET deleted=0, is_active=1 WHERE id=?",
 [user_id]
 );
 
@@ -408,7 +409,7 @@ try{
 const { department_id } = req.body;
 
 await db.query(
-"UPDATE departments SET deleted=0 WHERE id=?",
+  "UPDATE departments SET deleted=0 WHERE id=?",
 [department_id]
 );
 
@@ -417,5 +418,29 @@ res.json({message:"Department recovered"});
 } catch(err) {
   console.error(err);
   res.status(500).json({ error: "Internal server error" });
+}
+};
+
+exports.recoverEvent = async (req, res) => {
+try {
+  const { event_id } = req.body;
+  const [result] = await db.query(
+    "UPDATE events SET is_deleted=0 WHERE id=?",
+    [event_id]
+  );
+
+  if (result.affectedRows === 0) {
+    return res.status(404).json({ message: "Event not found" });
+  }
+
+  await db.query(
+    "INSERT INTO audit_logs (user_id, action, entity, entity_id) VALUES (?, ?, ?, ?)",
+    [req.user.id, "RECOVER_EVENT", "events", event_id]
+  );
+
+  res.json({ message: "Event recovered" });
+} catch (err) {
+  console.error("Recover event error:", err);
+  res.status(500).json({ message: "Server error" });
 }
 };
