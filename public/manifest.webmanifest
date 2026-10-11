@@ -1,0 +1,19 @@
+{
+  "name": "College ERP",
+  "short_name": "College ERP",
+  "description": "Student and staff portal for attendance, academics, fees, library and campus updates.",
+  "start_url": "./home.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef2fb",
+  "theme_color": "#2f6bff",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

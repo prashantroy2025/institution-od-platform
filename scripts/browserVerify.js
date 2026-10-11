@@ -137,6 +137,22 @@ const overflow = page => page.evaluate(() => ({
     overflowing: document.documentElement.scrollWidth > window.innerWidth + 1
 }));
 
+/* Scroll an element to a position clear of the fixed bottom navigation, then click it.
+   home.html keeps its bottom bar fixed over the page (as designed), so a target that
+   would land underneath it must be scrolled above the bar first. */
+async function clickClearOfFixedNav(page, selector) {
+    await page.waitForSelector(selector, { timeout: 10000 });
+    await page.evaluate(target => {
+        const node = document.querySelector(target);
+        const bar = document.querySelector('.stu-bottom, .bottom-nav');
+        const clearance = (bar ? bar.getBoundingClientRect().height : 0) + 28;
+        const rect = node.getBoundingClientRect();
+        const desired = window.scrollY + rect.top + rect.height / 2 - (window.innerHeight - clearance);
+        if (desired > window.scrollY) window.scrollTo({ top: desired, behavior: 'instant' });
+    }, selector);
+    await page.click(selector);
+}
+
 async function loginAs(page, role, email, errors) {
     await page.goto(`${BASE}/login.html`, { waitUntil: 'networkidle2', timeout: 20000 });
     await page.click(`[data-role="${role}"]`);
@@ -147,9 +163,216 @@ async function loginAs(page, role, email, errors) {
         page.click('#loginButton')
     ]);
     const url = page.url();
-    if (!url.includes('dashboard.html')) throw new Error(`login for ${role} did not reach the dashboard (url=${url}, errors=${errors.join(' | ')})`);
+    const isStudentHome = role === 'student' && url.includes('home.html');
+    if (!url.includes('dashboard.html') && !isStudentHome) throw new Error(`login for ${role} did not reach a workspace (url=${url}, errors=${errors.join(' | ')})`);
 }
 
+/* Student home dashboard (home.html): verifies the mobile-first blue/white layout,
+   quick information cards, service shortcuts, event banner, campus feed filters,
+   post composer and the five-item bottom navigation. */
+async function checkStudentHome(page, role, viewport, errors) {
+    await page.waitForSelector('#heroName', { timeout: 10000 });
+    await page.waitForFunction(() => !/^Loading/.test(document.getElementById('heroName').textContent), { timeout: 10000 });
+    const name = await page.$eval('#heroName', el => el.textContent.trim());
+    record(role, viewport, 'home banner shows the authenticated name', /Live (Student|HOD|Admin|Faculty)/.test(name), name);
+
+    // Quick information cards must render real API data, not placeholders.
+    await page.waitForFunction(() => {
+        const cards = document.querySelectorAll('#quickCards .stu-qcard');
+        return cards.length >= 3 && ![...cards].some(c => c.classList.contains('stu-skel'));
+    }, { timeout: 15000 });
+    const quickText = await page.$eval('#quickCards', el => el.innerText.replace(/\n/g, ' ').trim());
+    record(role, viewport, 'quick info cards render real data', quickText.length > 10, quickText.slice(0, 80));
+
+    // Service shortcuts: all 12 tiles plus the More Services panel.
+    const serviceCount = await page.$$eval('#serviceGrid .stu-svc', nodes => nodes.length);
+    record(role, viewport, 'all 12 service shortcuts render', serviceCount === 12, `${serviceCount} tiles`);
+    const labels = await page.$$eval('#serviceGrid .stu-svc .lbl', nodes => nodes.map(n => n.textContent.trim()));
+    const required = ['Academic', 'Attendance', 'Examinations', 'Assignments', 'Library', 'Fees', 'Events', 'Notices', 'Transport', 'Hostel', 'Certificates', 'More Services'];
+    record(role, viewport, 'service shortcuts match the required module list', required.every(r => labels.includes(r)), labels.join(','));
+
+    // More Services panel is searchable.
+    await page.click('#allServicesBtn');
+    await page.waitForSelector('#moreServices.open', { timeout: 5000 });
+    await page.type('#moreSearch', 'library');
+    const filtered = await page.$$eval('#moreList a', nodes => nodes.map(n => n.textContent.trim()));
+    record(role, viewport, 'More Services panel filters by search term', filtered.length >= 1 && filtered.every(t => /librar/i.test(t)), filtered.join(','));
+    await page.evaluate(() => document.getElementById('moreSearch').value = '');
+    await page.click('#moreServices .cancel');
+    await page.waitForFunction(() => !document.getElementById('moreServices').classList.contains('open'), { timeout: 5000 });
+
+    // Quick create sheet.
+    await page.click('#quickCreateBtn');
+    await page.waitForSelector('#sheetBack.open', { timeout: 5000 });
+    record(role, viewport, 'quick create sheet opens', true);
+    await page.click('#sheetBack .cancel');
+    await page.waitForFunction(() => !document.getElementById('sheetBack').classList.contains('open'), { timeout: 5000 });
+
+    // Campus feed filters must all load without an error.
+    if (process.env.DBG_PROBE) {
+        const info = await page.evaluate(() => {
+            const tab = document.querySelector('#feedTabs [data-filter="for_you"]');
+            if (!tab) return { missing: true, url: location.pathname, scrollY: Math.round(window.scrollY) };
+            tab.scrollIntoViewIfNeeded();
+            const r = tab.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2);
+            const y = Math.round(r.top + r.height / 2);
+            const top = document.elementFromPoint(x, y);
+            const nav = document.querySelector('.stu-bottom').getBoundingClientRect();
+            return {
+                url: location.pathname, scrollY: Math.round(window.scrollY),
+                tabY: Math.round(r.top), navTop: Math.round(nav.top),
+                interceptedBy: top && top !== tab && !tab.contains(top) ? `${top.tagName.toLowerCase()}.${top.className}`.slice(0, 60) : null
+            };
+        });
+        record(role, viewport, 'probe before feed filters', true, JSON.stringify(info));
+    }
+    await page.waitForSelector('#feedTabs .stu-tab', { timeout: 10000 });
+    // Record every real click so an unexpected navigation can be attributed.
+    await page.evaluate(() => {
+        window.__clicks = [];
+        document.addEventListener('click', event => {
+            const node = event.target instanceof Element ? event.target : null;
+            window.__clicks.push({
+                on: `${node ? node.tagName.toLowerCase() : '?'}.${node && node.className ? node.className.toString().slice(0, 40) : ''}`,
+                href: node && node.closest('a') ? node.closest('a').getAttribute('href') : null,
+                x: Math.round(event.clientX), y: Math.round(event.clientY)
+            });
+        }, true);
+    });
+    for (const filter of ['for_you', 'official', 'events', 'following', 'all']) {
+        await clickClearOfFixedNav(page, `#feedTabs [data-filter="${filter}"]`);
+        await sleep(300);
+        // Each click must leave the filter row intact and the page on home.
+        const stillThere = await page.evaluate(() => ({
+            url: location.pathname,
+            tabs: document.querySelectorAll('#feedTabs [data-filter]').length,
+            scrollY: Math.round(window.scrollY)
+        }));
+        if (stillThere.tabs !== 5 || !stillThere.url.endsWith('home.html')) {
+            record(role, viewport, 'feed filter row stays intact after switching', false, JSON.stringify(stillThere));
+            throw new Error('feed filter row lost after switching filters');
+        }
+    }
+    await clickClearOfFixedNav(page, '#feedTabs [data-filter="for_you"]');
+    await sleep(300);
+    const feedText = await page.$eval('#posts', el => el.innerText.trim());
+    record(role, viewport, 'campus feed reaches a loaded/empty state', feedText.length > 0, feedText.slice(0, 60).replace(/\n/g, ' '));
+    const filterErrors = errors.filter(e => /feed|community|http-5/i.test(e));
+    record(role, viewport, 'feed filters switch without errors', filterErrors.length === 0, filterErrors.join(' | '));
+
+    // Notification bell must show a badge or a populated panel, and never 500.
+    await page.click('#bellBtn');
+    await sleep(400);
+    const notifText = await page.$eval('#notifList', el => el.innerText.trim());
+    record(role, viewport, 'notification panel lists notifications', notifText.length > 0, notifText.slice(0, 50));
+    const notifErrors = errors.filter(e => /notifications/i.test(e) && /http-5/i.test(e));
+    record(role, viewport, 'notification API responds successfully', notifErrors.length === 0, notifErrors.join(' | '));
+
+    const nav = await page.evaluate(() => {
+        const items = [...document.querySelectorAll('.stu-bottom a, .stu-bottom button')];
+        return {
+            count: items.length,
+            labels: items.map(i => i.textContent.replace(/\s+/g, ' ').trim()),
+            homeActive: Boolean(document.querySelector('.stu-bottom a[href="home.html"]'))
+        };
+    });
+    if (viewport === 'mobile') {
+        record(role, viewport, 'mobile bottom navigation has Home/Messages/Create/Attendance/Profile',
+            nav.count === 5 && nav.homeActive, JSON.stringify(nav.labels));
+    }
+
+    // ---- Publish a real post with an image attachment, then exercise the
+    // ---- interactions against the live API instead of only checking styling.
+    await page.evaluate(() => {
+        document.querySelector('#postBody').scrollIntoView({ block: 'center', behavior: 'instant' });
+    });
+    const marker = `browser-verify post ${Date.now()}`;
+    const png = path.join(os.tmpdir(), `erp-verify-post-${process.pid}.png`);
+    fs.writeFileSync(png, Buffer.from(
+        '89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c49444154789c6360000002000100ffff030000060005',
+        'hex'));
+    await page.click('#postBody');
+    await page.type('#postBody', marker);
+    await (await page.$('#postImage')).uploadFile(png);
+    await page.waitForFunction(() => !document.getElementById('postSubmitBtn').disabled, { timeout: 5000 });
+    await page.click('#postSubmitBtn');
+    await page.waitForFunction(text => {
+        const posts = [...document.querySelectorAll('.stu-post')];
+        return posts.length > 0 && posts.some(p => p.innerText.includes(text));
+    }, { timeout: 25000 }, marker);
+    const published = await page.$$eval('.stu-post .txt', nodes => nodes.map(n => n.textContent.trim()));
+    record(role, viewport, 'composer publishes a real post to the campus feed',
+        published.some(t => t.includes('browser-verify post')), `${published.length} post(s) in view`);
+    const attached = await page.$$eval('.stu-post .media img, .stu-post .media video', nodes => nodes.length);
+    // Attachments are private: the proof is that a blob URL was produced by an
+    // authenticated fetch, not that a bare (403-rejected) src attribute exists.
+    const attachmentLoaded = await page.evaluate(() =>
+        [...document.querySelectorAll('.stu-post .media img, .stu-post .media video')].some(n => n.currentSrc.startsWith('blob:') || n.src.startsWith('blob:')));
+    record(role, viewport, 'published post renders its uploaded image', attached >= 1 && attachmentLoaded,
+        `${attached} media node(s), blob loaded=${attachmentLoaded}`);
+
+    const postId = await page.evaluate(text => {
+        const row = [...document.querySelectorAll('.stu-post')].find(p => p.innerText.includes(text));
+        return row ? row.dataset.id : null;
+    }, marker);
+    if (!postId) throw new Error('published post disappeared before interaction');
+
+    // Liking must be answered by the API and reflected in aria-pressed, not just re-styled.
+    const likeBefore = await page.$eval(`.stu-post[data-id="${postId}"] [data-act="like"]`, el => el.getAttribute('aria-pressed'));
+    await clickClearOfFixedNav(page, `.stu-post[data-id="${postId}"] [data-act="like"]`);
+    await page.waitForFunction(({ id, before }) => {
+        const row = document.querySelector(`.stu-post[data-id="${id}"]`);
+        return row && row.querySelector('[data-act="like"]').getAttribute('aria-pressed') !== before;
+    }, { timeout: 15000 }, { id: postId, before: likeBefore });
+    const likeAfter = await page.$eval(`.stu-post[data-id="${postId}"] [data-act="like"]`, el => el.getAttribute('aria-pressed'));
+    record(role, viewport, 'like is persisted by the API and re-rendered', likeBefore !== likeAfter, `${likeBefore} -> ${likeAfter}`);
+
+    // Saving must round-trip: the saved post is the student's own record.
+    const saveBefore = await page.$eval(`.stu-post[data-id="${postId}"] [data-act="save"]`, el => el.getAttribute('aria-pressed'));
+    await clickClearOfFixedNav(page, `.stu-post[data-id="${postId}"] [data-act="save"]`);
+    await page.waitForFunction(({ id, before }) => {
+        const row = document.querySelector(`.stu-post[data-id="${id}"]`);
+        return row && row.querySelector('[data-act="save"]').getAttribute('aria-pressed') !== before;
+    }, { timeout: 15000 }, { id: postId, before: saveBefore });
+    record(role, viewport, 'save is persisted by the API and re-rendered',
+        saveBefore !== await page.$eval(`.stu-post[data-id="${postId}"] [data-act="save"]`, el => el.getAttribute('aria-pressed')), 'toggled');
+
+    // Comments post to the API and are rendered for the post.
+    await clickClearOfFixedNav(page, `.stu-post[data-id="${postId}"] [data-act="comment"]`);
+    await page.waitForSelector(`.stu-post[data-id="${postId}"] .comments:not([hidden])`, { timeout: 5000 });
+    await page.type(`.stu-post[data-id="${postId}"] .comments input`, `verify comment ${Date.now()}`);
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(id => {
+        const row = document.querySelector(`.stu-post[data-id="${id}"]`);
+        return row && [...row.querySelectorAll('.crow')].length > 0;
+    }, { timeout: 15000 }, postId);
+    record(role, viewport, 'comment is posted to the API and rendered', true);
+
+    // Feed search must filter posts server-side by text.
+    await page.evaluate(() => document.getElementById('feedSearchForm').classList.add('open'));
+    await page.type('#feedSearchInput', marker);
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(text => {
+        const posts = [...document.querySelectorAll('.stu-post')];
+        return posts.length > 0 && posts.every(p => p.innerText.includes(text));
+    }, { timeout: 15000 }, marker);
+    const searchResults = await page.$$eval('.stu-post .txt', nodes => nodes.map(n => n.textContent.trim()));
+    record(role, viewport, 'feed search filters posts server-side',
+        searchResults.length >= 1 && searchResults.every(t => t.includes('browser-verify post')), `${searchResults.length} result(s)`);
+    await page.click('#feedSearchClear');
+    await page.waitForTimeout(800);
+
+    // Cleanup: remove the post so the sandbox database stays tidy.
+    await page.click(`.stu-post[data-id="${postId}"] [data-act="remove"]`);
+    await page.waitForSelector('.ui-modal-backdrop', { timeout: 5000 });
+    await page.click('.ui-modal-backdrop [data-confirm]');
+    await page.waitForFunction(id => !document.querySelector(`.stu-post[data-id="${id}"]`), { timeout: 15000 }, postId);
+    fs.rmSync(png, { force: true });
+
+    const o = await overflow(page);
+    record(role, viewport, 'no horizontal overflow on Home', !o.overflowing, `scrollWidth=${o.scrollWidth} innerWidth=${o.innerWidth}`);
+}
 async function checkDashboard(page, role, viewport, errors) {
     await page.waitForSelector('#welcome', { timeout: 10000 });
     await page.waitForFunction(() => /Welcome back,/.test(document.getElementById('welcome').textContent), { timeout: 10000 });
@@ -246,7 +469,9 @@ async function verifyRoleViewport(account, viewportName, size) {
     try {
         await loginAs(page, account.dataRole, account.email, errors);
         record(account.role, viewportName, 'login reaches the role dashboard', true);
-        await checkDashboard(page, account.role, viewportName, errors);
+        // Students land on the mobile-first home dashboard; every other role on dashboard.html.
+        if (account.role === 'student') await checkStudentHome(page, account.role, viewportName, errors);
+        else await checkDashboard(page, account.role, viewportName, errors);
         await checkAttendance(page, account.role, viewportName);
         await checkProfile(page, account.role, viewportName, account.name);
         await checkMessages(page, account.role, viewportName);
@@ -255,6 +480,7 @@ async function verifyRoleViewport(account, viewportName, size) {
         const resourceErrors = errors.filter(e => /^(console|requestfailed|http-\d)/.test(e));
         record(account.role, viewportName, 'no console/asset errors across the four screens', resourceErrors.length === 0, resourceErrors.slice(0, 3).join(' | '));
     } catch (error) {
+        if (process.env.DBG_STACK) console.log(`[dbg ${account.role}/${viewportName}] ${error.stack}`);
         record(account.role, viewportName, 'verification flow completed', false, `${error.message} | errors: ${errors.slice(0, 3).join(' | ')}`);
     } finally {
         await page.close().catch(() => {});
@@ -279,11 +505,25 @@ async function verifyRoleViewport(account, viewportName, size) {
         await navPage.setViewport(VIEWPORTS.mobile);
         try {
             await loginAs(navPage, 'student', 'live.student@test.local', navErrors);
-            for (const [label, expected] of [['attendance', 'attendance.html'], ['profile', 'profile.html'], ['messages', 'messages.html'], ['home', 'dashboard.html']]) {
-                await navPage.click(`.bottom-nav [data-bottom="${label}"]`);
+            for (const [label, selector, expected] of [
+                ['attendance', '.stu-bottom a[href="attendance.html"]', 'attendance.html'],
+                ['profile', '.stu-bottom a[href="profile.html"]', 'profile.html'],
+                ['messages', '.stu-bottom a[href="messages.html"]', 'messages.html'],
+                ['home', '.stu-bottom a[href="home.html"]', 'home.html']
+            ]) {
+                await navPage.goto(`${BASE}/home.html`, { waitUntil: 'networkidle2', timeout: 20000 });
+                await navPage.waitForSelector(selector, { timeout: 10000 });
+                await navPage.click(selector);
                 await navPage.waitForFunction(exp => location.pathname.endsWith(exp), { timeout: 10000 }, expected);
                 record('student', 'mobile', `bottom nav "${label}" opens ${expected}`, navPage.url().endsWith(expected), navPage.url());
             }
+            // The centre Quick Create button must open the post composer sheet.
+            await navPage.goto(`${BASE}/home.html`, { waitUntil: 'networkidle2', timeout: 20000 });
+            await navPage.click('#quickCreateBtn');
+            await navPage.waitForSelector('#sheetBack.open', { timeout: 5000 });
+            record('student', 'mobile', 'bottom nav quick-create opens the composer', true);
+            await navPage.click('#sheetBack [data-close="sheet"]');
+            await navPage.waitForFunction(() => !document.getElementById('sheetBack').classList.contains('open'), { timeout: 5000 });
         } catch (error) {
             record('student', 'mobile', 'bottom navigation flow', false, error.message);
         } finally {

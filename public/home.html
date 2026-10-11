@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Home · College ERP</title>
+<script src="config.js"></script>
+<script src="ui-feedback.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2f6bff">
+<link rel="stylesheet" href="erp-ui.css">
+<link rel="stylesheet" href="home.css">
+</head>
+<body class="stu-home">
+<div class="stu-wrap">
+
+  <!-- ======================= TOP BAR ======================= -->
+  <header class="stu-topbar">
+    <button class="icon-btn" id="menuBtn" aria-label="Open navigation menu">☰</button>
+    <div class="stu-brand"><span class="cap" aria-hidden="true">🎓</span><span class="title">College ERP</span></div>
+    <span class="spacer"></span>
+    <button class="icon-btn" id="topSearchBtn" aria-label="Search posts, people, events or services">🔍</button>
+    <button class="icon-btn stu-bell" id="bellBtn" aria-label="Notifications">
+      <span aria-hidden="true">🔔</span><span class="badge" id="bellBadge" hidden>0</span>
+    </button>
+    <a class="stu-avatar-btn" id="topAvatar" href="profile.html" aria-label="Open your profile">
+      <span id="topAvatarInitial">?</span>
+    </a>
+  </header>
+
+  <!-- ======================= PROFILE / GREETING BANNER ======================= -->
+  <section class="stu-hero">
+    <div class="stu-hero-top">
+      <div class="ava" id="heroAvatar" aria-hidden="true">?</div>
+      <div>
+        <p class="greet" id="heroGreet">Good Morning</p>
+        <h1 class="name" id="heroName">Loading…</h1>
+      </div>
+      <button class="stu-edit" id="editProfileBtn"><span aria-hidden="true">✏️</span> Edit Profile</button>
+    </div>
+    <div class="stu-hero-meta" id="heroMeta">
+      <span class="roll">Loading your academic profile…</span>
+    </div>
+  </section>
+
+  <!-- ======================= QUICK INFO CARDS ======================= -->
+  <section class="stu-quick" id="quickCards" aria-label="Quick information">
+    <div class="stu-skel" aria-hidden="true"></div>
+    <div class="stu-skel" aria-hidden="true"></div>
+    <div class="stu-skel" aria-hidden="true"></div>
+  </section>
+
+  <!-- ======================= SERVICE SHORTCUTS ======================= -->
+  <section class="stu-section" aria-label="Service shortcuts">
+    <div class="stu-section-head">
+      <h2>Services</h2>
+      <button class="link" id="allServicesBtn">See all</button>
+    </div>
+    <div class="stu-grid" id="serviceGrid"></div>
+  </section>
+
+  <!-- ======================= EVENT / ANNOUNCEMENT BANNER ======================= -->
+  <section class="stu-banner" id="eventBanner" hidden aria-label="Latest announcements">
+    <div class="body">
+      <p class="eyebrow" id="bannerEyebrow">Featured</p>
+      <h3 id="bannerTitle">Loading…</h3>
+      <p id="bannerText"></p>
+      <div class="tags" id="bannerTags"></div>
+      <button class="cta" id="bannerCta">Register Now <span aria-hidden="true">→</span></button>
+    </div>
+    <div class="dots" id="bannerDots" aria-hidden="true"></div>
+  </section>
+
+  <!-- ======================= CAMPUS FEED ======================= -->
+  <section class="stu-feed" aria-label="Campus feed">
+    <div class="stu-feed-head">
+      <h2>Campus Feed</h2>
+      <div class="fsearch">
+        <button id="feedSearchBtn" aria-label="Search campus posts">🔍</button>
+        <button id="feedFilterBtn" aria-label="Feed display options">⚙️</button>
+      </div>
+    </div>
+
+    <form class="stu-feed-search" id="feedSearchForm" role="search">
+      <input id="feedSearchInput" type="search" placeholder="Search campus posts…" maxlength="100" aria-label="Search campus posts">
+      <button class="stu-loadmore" type="submit" style="margin:0">Search</button>
+      <button class="stu-loadmore" type="button" id="feedSearchClear" hidden>Clear</button>
+    </form>
+    <p class="stu-state" id="feedNote" role="status"></p>
+
+    <!-- Feed filters -->
+    <div class="stu-tabs" id="feedTabs" role="tablist" aria-label="Feed filters">
+      <button class="stu-tab active" role="tab" aria-selected="true" data-filter="for_you">For You</button>
+      <button class="stu-tab" role="tab" aria-selected="false" data-filter="official">Official</button>
+      <button class="stu-tab" role="tab" aria-selected="false" data-filter="events">Events</button>
+      <button class="stu-tab" role="tab" aria-selected="false" data-filter="following">Following</button>
+      <button class="stu-tab" role="tab" aria-selected="false" data-filter="all">All</button>
+    </div>
+
+    <!-- Post composer -->
+    <form class="stu-composer" id="composer">
+      <div class="row">
+        <div class="ava" id="composerAvatar" aria-hidden="true">?</div>
+        <textarea id="postBody" rows="1" maxlength="4000" placeholder="Share something with your campus…" aria-label="Write a post"></textarea>
+      </div>
+      <div class="attach" id="composerAttach" hidden>
+        <img class="chipimg" id="composerPreview" alt="Selected media preview" hidden>
+        <video class="chipimg" id="composerPreviewVideo" hidden playsinline></video>
+        <span id="composerFileName"></span>
+        <button type="button" id="composerRemove">Remove</button>
+      </div>
+      <div class="morewrap">
+        <div class="moremenu" id="composerMoreMenu" role="menu" aria-label="More post options">
+          <button type="button" role="menuitem" data-vis="college">🌐 Visible to college</button>
+          <button type="button" role="menuitem" data-vis="classmates">🎓 Visible to classmates</button>
+          <button type="button" role="menuitem" data-vis="following">👥 Visible to followers</button>
+          <button type="button" role="menuitem" data-act="event">📅 Tag a campus event</button>
+        </div>
+      </div>
+      <div class="tools">
+        <button type="button" class="stu-tool" id="pickImage" aria-label="Add image">🖼️</button>
+        <button type="button" class="stu-tool" id="pickVideo" aria-label="Add video">🎬</button>
+        <button type="button" class="stu-tool more" id="composerMoreBtn" aria-label="More options">⋮</button>
+        <span id="composerVisLabel" class="stu-media-name" style="margin:0 0 0 auto"></span>
+        <button class="stu-post-btn" type="submit" id="postSubmitBtn" disabled>Post</button>
+      </div>
+      <input type="file" id="postImage" accept="image/png,image/jpeg,image/jpg" hidden>
+      <input type="file" id="postVideo" accept="video/mp4" hidden>
+    </form>
+
+    <div class="stu-posts" id="posts"></div>
+    <button class="stu-loadmore" id="loadMoreBtn" hidden></button>
+  </section>
+
+  <p class="stu-state" id="homeNotice" role="status" aria-live="polite"></p>
+</div>
+
+<!-- ======================= DRAWER ======================= -->
+<div class="stu-drawer-back" id="drawerBack"></div>
+<aside class="stu-drawer" id="drawer" aria-label="Navigation drawer" aria-hidden="true">
+  <div class="dh">
+    <div class="ava" id="drawerAvatar">?</div>
+    <div><b id="drawerName">Loading…</b><br><small id="drawerMeta">Student</small></div>
+  </div>
+  <nav id="drawerNav"></nav>
+  <button class="signout" id="signOutBtn">↪ Sign out</button>
+</aside>
+
+<!-- ======================= QUICK CREATE SHEET ======================= -->
+<div class="stu-sheet-back" id="sheetBack">
+  <div class="stu-sheet" role="dialog" aria-modal="true" aria-label="Quick create">
+    <h3>Quick Create</h3>
+    <p class="sub">Post quickly from anywhere.</p>
+    <div class="opts">
+      <button class="opt" data-create="post"><span class="ico svc-blue">✏️</span> Write a post</button>
+      <button class="opt" data-create="image"><span class="ico svc-green">🖼️</span> Share a photo</button>
+      <button class="opt" data-create="video"><span class="ico svc-purple">🎬</span> Share a video</button>
+      <button class="opt" data-create="event"><span class="ico svc-orange">📅</span> Post about an event</button>
+    </div>
+    <button class="cancel" data-close="sheet">Cancel</button>
+  </div>
+</div>
+
+<!-- ======================= NOTIFICATIONS PANEL ======================= -->
+<div class="stu-notif" id="notifPanel" role="dialog" aria-label="Notifications" aria-hidden="true">
+  <h3>Notifications</h3>
+  <div id="notifList"><div class="stu-state">Loading notifications…</div></div>
+</div>
+
+<!-- ======================= MORE SERVICES PANEL ======================= -->
+<div class="stu-more" id="moreServices" role="dialog" aria-label="More services" aria-hidden="true">
+  <div class="back" data-close="more"></div>
+  <div class="panel">
+    <h3>More Services</h3>
+    <p class="sub" id="moreSub">Every module available in this installation.</p>
+    <input class="search" id="moreSearch" type="search" placeholder="Search services…" maxlength="40" aria-label="Search services">
+    <div id="moreList"></div>
+    <button class="cancel" data-close="more">Close</button>
+  </div>
+</div>
+
+<!-- ======================= BOTTOM NAVIGATION ======================= -->
+<nav class="stu-bottom" aria-label="Primary">
+  <div class="inner">
+    <a href="home.html" class="active" aria-current="page"><span class="g" aria-hidden="true">🏠</span>Home</a>
+    <a href="messages.html"><span class="g" aria-hidden="true">💬</span>Messages</a>
+    <button class="fab" id="quickCreateBtn" aria-label="Quick create"><span class="circle" aria-hidden="true">+</span></button>
+    <a href="attendance.html"><span class="g" aria-hidden="true">📅</span>Attendance</a>
+    <a href="profile.html"><span class="g" aria-hidden="true">👤</span>Profile</a>
+  </div>
+</nav>
+
+<script src="erp-app.js"></script>
+<script src="home.js"></script>
+</body>
+</html>

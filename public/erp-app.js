@@ -19,6 +19,11 @@ const ERP = (() => {
 
     async function call(url, options = {}) {
         const headers = { ...authHeaders(), ...(options.headers || {}) };
+        // FormData bodies are sent as-is (the browser sets the multipart boundary).
+        // Plain objects are serialised here; pre-stringified bodies are passed through.
+        if (options.body && !(options.body instanceof FormData) && typeof options.body !== 'string') {
+            options = { ...options, body: JSON.stringify(options.body) };
+        }
         if (options.body && !(options.body instanceof FormData) && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
         const response = await fetch(apiBase() + url, { ...options, headers });
         const payload = await response.json().catch(() => ({}));

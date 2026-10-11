@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#2f6bff"><title>College ERP</title><script src="config.js"></script><script src="ui-feedback.js"></script><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="stylesheet" href="erp-ui.css"><link rel="stylesheet" href="home.css"></head>
+<body class="stu-home"><div class="stu-wrap">
+<header class="stu-topbar"><button class="icon-btn" type="button" data-back-home aria-label="Back to dashboard">←</button><div class="stu-brand"><span class="cap">🎓</span><span class="title">College ERP</span></div><span class="spacer"></span><a class="avatar-btn icon-btn" href="home.html" aria-label="Back to dashboard">⌂</a></header>
+<main style="padding:30px 16px 40px;max-width:520px;margin:0 auto;">
+  <section class="section-card" style="background:#fff;border:1px solid var(--stu-line);border-radius:20px;box-shadow:var(--stu-shadow-sm);padding:28px;text-align:center;">
+    <div class="stu-qicon tone-blue" id="csIcon" style="margin:0 auto 14px;width:64px;height:64px;font-size:28px;">✦</div>
+    <h1 id="csTitle" style="margin:0 0 6px;font-size:22px;font-weight:800;letter-spacing:-.01em;">Module</h1>
+    <p class="eyebrow" style="color:var(--stu-muted);font-size:13px;margin:0 0 16px;">Placeholder</p>
+    <p id="csDesc" style="color:#46527a;font-size:14px;line-height:1.6;margin:0 auto 22px;max-width:420px;">This service is not yet available in your campus workspace. It is listed here so navigation stays consistent while the module is being built.</p>
+    <a class="primary-btn" href="home.html" style="display:inline-flex;background:var(--stu-blue);color:#fff;text-decoration:none;font-weight:800;padding:11px 20px;border-radius:999px;">Back to dashboard</a>
+  </section>
+</main>
+</div>
+<script>
+(function(){
+  const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+  if (!token) location.replace('login.html');
+  const params = new URLSearchParams(location.search);
+  const map = {
+    notices:  { title: 'Notices',        icon: '📢', tone: 'svc-blue',   desc: 'Official college and department notices will appear here. For now, check your Notifications and the Campus Feed for the latest announcements.' },
+    transport:{ title: 'Transport',      icon: '🚌', tone: 'svc-cyan',   desc: 'Bus routes, timings and transport requests will be available here. This module is not yet enabled for your campus.' },
+    hostel:   { title: 'Hostel',         icon: '🏠', tone: 'svc-teal',   desc: 'Room allocation, mess and hostel services will be available here. This module is not yet enabled for your campus.' },
+    certificates:{ title: 'Certificates',icon: '📜', tone: 'svc-purple', desc: 'Bonafide, character and other certificates will be requestable here. This module is not yet enabled for your campus.' },
+    academic: { title: 'Academic',       icon: '📚', tone: 'svc-green',  desc: 'Your courses, learning materials and academic records live here. You can open Assignments & Materials from the dashboard.' }
+  };
+  const key = (params.get('module') || '').toLowerCase();
+  const info = map[key];
+  const titleEl = document.getElementById('csTitle');
+  const iconEl = document.getElementById('csIcon');
+  const descEl = document.getElementById('csDesc');
+  if (info) {
+    titleEl.textContent = info.title;
+    iconEl.textContent = info.icon;
+    iconEl.className = 'stu-qicon ' + info.tone;
+    descEl.textContent = info.desc;
+    document.title = info.title + ' · College ERP';
+  } else {
+    titleEl.textContent = 'Coming soon';
+    document.title = 'Coming soon · College ERP';
+  }
+})();
+</script>
+</body></html>

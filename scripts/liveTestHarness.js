@@ -61,8 +61,9 @@ CREATE TABLE users(id INT AUTO_INCREMENT PRIMARY KEY,college_id VARCHAR(50) NULL
 CREATE TABLE audit_logs(id INT AUTO_INCREMENT PRIMARY KEY,user_id INT NULL,action TEXT NULL,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,entity VARCHAR(80) NULL,entity_id INT NULL);
 CREATE TABLE notifications(id INT AUTO_INCREMENT PRIMARY KEY,user_id INT NULL,title VARCHAR(200) NULL,message TEXT NULL,is_read TINYINT DEFAULT 0,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 INSERT INTO departments(id,name,hod_id,deleted) VALUES (1,'Computer Science',2,0),(2,'Information Technology',NULL,0);
-CREATE TABLE events(id INT AUTO_INCREMENT PRIMARY KEY,title VARCHAR(200) NULL,department_id INT NULL,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE od_applications(id INT AUTO_INCREMENT PRIMARY KEY,event_id INT NULL,status ENUM('Auto Approved','Pending','HOD Approved','Rejected') DEFAULT 'Auto Approved',created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`;
+ CREATE TABLE events(id INT AUTO_INCREMENT PRIMARY KEY,organizer_id INT NULL,title VARCHAR(200) NOT NULL,from_date DATE NOT NULL,to_date DATE NOT NULL,is_full_day TINYINT(1) DEFAULT 0,status ENUM('Pending','Approved','Rejected') DEFAULT 'Pending',proof_file VARCHAR(255) NULL,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,department_id INT NOT NULL,target_hod_id INT NULL,start_time TIME NULL,end_time TIME NULL,attendance_active TINYINT(1) DEFAULT 0,is_deleted TINYINT DEFAULT 0,attendance_status ENUM('pending','submitted','approved','resubmitted') DEFAULT 'pending');
+ CREATE TABLE event_participants(id INT AUTO_INCREMENT PRIMARY KEY,event_id INT NOT NULL,student_id INT NOT NULL,scan_time TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,UNIQUE KEY uniq_event_student(event_id,student_id));
+ CREATE TABLE od_applications(id INT AUTO_INCREMENT PRIMARY KEY,student_id INT NOT NULL,event_id INT NOT NULL,hod_id INT NULL,applied_date DATE NOT NULL,status ENUM('Auto Approved','Pending','HOD Approved','Rejected') DEFAULT 'Auto Approved',created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,KEY idx_od_student(student_id),KEY idx_od_event(event_id));`;
 
 const ACADEMIC_FIXTURE = `INSERT INTO academic_sessions(id,code,name,start_date,end_date) VALUES (1,'L2627','Live Session','2026-06-01','2027-04-30');
 INSERT INTO semesters(id,session_id,number,name) VALUES (1,1,5,'Semester 5');

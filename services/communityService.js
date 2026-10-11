@@ -8,10 +8,12 @@ const body = value => { if (typeof value !== 'string' || !value.trim() || value.
 const note = value => { if (value === undefined || value === null || value === '') return null; if (typeof value !== 'string' || value.length > 280) fail('Share note must be at most 280 characters'); return value.trim() || null; };
 const searchTerm = value => String(value || '').slice(0, 100).replace(/[%_]/g, '');
 const staff = u => ['super_admin', 'hod', 'organizer'].includes(u.role);
-const FEED_FILTERS = ['college', 'following', 'classmates', 'saved'];
+// 'for_you' is the recommended default, 'official' and 'events' back the dashboard
+// feed tabs, and 'all' is the unfiltered college-wide view.
+const FEED_FILTERS = ['for_you', 'college', 'official', 'events', 'following', 'classmates', 'all', 'saved'];
 const VISIBILITIES = ['college', 'following', 'classmates'];
 const academicPeer = async (a, b) => { const [rows] = await db.query(`SELECT 1 FROM student_profiles a JOIN student_profiles b ON a.batch_id=b.batch_id AND a.section_id=b.section_id WHERE a.user_id=? AND b.user_id=? UNION SELECT 1 FROM users ua JOIN users ub ON ua.department_id=ub.department_id WHERE ua.id=? AND ub.id=? AND ua.role IN ('organizer','hod')`, [a,b,a,b]); return Boolean(rows.length); };
-const SELECT_COLUMNS = `p.id,p.author_id,u.name author_name,u.role author_role,p.body,p.media_original_name,p.media_mime_type,p.is_official,p.visibility,p.created_at,
+const SELECT_COLUMNS = `p.id,p.author_id,u.name author_name,u.role author_role,p.body,p.media_original_name,p.media_mime_type,p.is_official,p.visibility,p.event_id,p.created_at,
     (SELECT COUNT(*) FROM erp_feed_likes l WHERE l.post_id=p.id) likes,
     (SELECT COUNT(*) FROM erp_feed_comments c WHERE c.post_id=p.id AND c.is_deleted=0) comments,
     (SELECT COUNT(*) FROM erp_feed_shares sh WHERE sh.post_id=p.id) shares,
@@ -20,10 +22,14 @@ const SELECT_COLUMNS = `p.id,p.author_id,u.name author_name,u.role author_role,p
     EXISTS(SELECT 1 FROM erp_feed_shares sh WHERE sh.post_id=p.id AND sh.user_id=?) shared`;
 async function feed(query, user) {
     const { limit, offset } = page(query);
-    const filter = FEED_FILTERS.includes(query.filter) ? query.filter : 'college';
+    const filter = FEED_FILTERS.includes(query.filter) ? query.filter : 'for_you';
     const conditions = ['p.is_deleted=0', 'NOT EXISTS(SELECT 1 FROM erp_social_blocks sb WHERE sb.blocker_id=? AND sb.blocked_id=p.author_id)'];
     const where = [user.id];
-    if (filter === 'following') {
+    if (filter === 'official') {
+        conditions.push('p.is_official=1');
+    } else if (filter === 'events') {
+        conditions.push('p.event_id IS NOT NULL');
+    } else if (filter === 'following') {
         conditions.push('(p.author_id IN (SELECT followed_id FROM erp_feed_follows WHERE follower_id=?) OR p.is_official=1 OR EXISTS(SELECT 1 FROM erp_feed_shares sh WHERE sh.post_id=p.id AND sh.user_id=?))');
         where.push(user.id, user.id);
     } else if (filter === 'classmates') {
@@ -39,7 +45,7 @@ async function feed(query, user) {
     const [items] = await db.query(`SELECT ${SELECT_COLUMNS} FROM erp_feed_posts p JOIN users u ON u.id=p.author_id WHERE ${clause} ORDER BY p.is_official DESC,p.created_at DESC LIMIT ? OFFSET ?`, [user.id, user.id, user.id, ...where, limit, offset]);
     return { items, filter, pagination: { limit, offset, total: Number(total) } };
 }
-async function createPost(data, user, file) { const official = data.is_official === true || data.is_official === 1 || data.is_official === '1' || data.is_official === 'true'; if (official && !staff(user)) fail('Only authorized staff may publish official posts',403); const textValue=body(data.body); let key=null; try { if(file){files.validateUpload(file,'png,jpg,jpeg,mp4',10*1024*1024);key=await files.save(file);} const [r]=await db.query('INSERT INTO erp_feed_posts(author_id,body,media_storage_key,media_original_name,media_mime_type,is_official,visibility) VALUES(?,?,?,?,?,?,?)',[user.id,textValue,key,file?.originalname||null,file?.mimetype||null,official?1:0,['college','following','classmates'].includes(data.visibility)?data.visibility:'college']); await audit.log(user.id,'CREATE_FEED_POST','erp_feed_posts',r.insertId); return {id:r.insertId}; } catch(e){if(key)await files.remove(key);throw e;} }
+async function createPost(data, user, file) { const official = data.is_official === true || data.is_official === 1 || data.is_official === '1' || data.is_official === 'true'; if (official && !staff(user)) fail('Only authorized staff may publish official posts',403); const textValue=body(data.body); const eventId = data.event_id === undefined || data.event_id === null || data.event_id === '' ? null : id(data.event_id, 'event_id'); let key=null; try { if(file){files.validateUpload(file,'png,jpg,jpeg,mp4',10*1024*1024);key=await files.save(file);} const [r]=await db.query('INSERT INTO erp_feed_posts(author_id,event_id,body,media_storage_key,media_original_name,media_mime_type,is_official,visibility) VALUES(?,?,?,?,?,?,?,?)',[user.id,eventId,textValue,key,file?.originalname||null,file?.mimetype||null,official?1:0,['college','following','classmates'].includes(data.visibility)?data.visibility:'college']); await audit.log(user.id,'CREATE_FEED_POST','erp_feed_posts',r.insertId); return {id:r.insertId}; } catch(e){if(key)await files.remove(key);throw e;} }
 async function toggle(table, postId, user) { const p=id(postId,'post_id'); const [existing]=await db.query(`SELECT 1 FROM ${table} WHERE post_id=? AND user_id=?`,[p,user.id]); if(existing.length) await db.query(`DELETE FROM ${table} WHERE post_id=? AND user_id=?`,[p,user.id]); else await db.query(`INSERT INTO ${table}(post_id,user_id) VALUES(?,?)`,[p,user.id]); return {active:!existing.length}; }
 async function comment(postId, data, user) {
     const post = id(postId, 'post_id');
