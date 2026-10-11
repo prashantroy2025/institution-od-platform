@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '..');
 process.env.NODE_ENV = 'test';
@@ -90,6 +91,17 @@ test('private feed media is not disclosed to a non-follower', async t => {
 
     await assert.rejects(community.media(91, { id: 17 }), error => error.status === 404);
     assert.equal(calls, 1);
+});
+
+test('preview API requests use the current origin instead of browser localhost', () => {
+    const source = fs.readFileSync(path.join(ROOT, 'public/config.js'), 'utf8');
+    const resolve = hostname => {
+        const context = { window: { location: { hostname, origin: `https://${hostname}` } } };
+        vm.runInNewContext(`${source}\nglobalThis.resolvedApiBase = API_BASE;`, context);
+        return context.resolvedApiBase;
+    };
+    assert.equal(resolve('builder-preview.invalid'), 'https://builder-preview.invalid');
+    assert.equal(resolve('od-platform.vercel.app'), 'https://institution-od-platform-production.up.railway.app');
 });
 
 test('dashboard sends selected post visibility and uses verified invoice payments', () => {
