@@ -380,8 +380,8 @@ roleSelect.addEventListener("change", () => {
 
 /* SECURITY */
 
-const role = localStorage.getItem("role")
-const token = localStorage.getItem("token")
+const role = sessionStorage.getItem("role") || localStorage.getItem("role")
+const token = sessionStorage.getItem("token") || localStorage.getItem("token")
 
 if(role !== "super_admin" || !token){
 alert("Access denied")

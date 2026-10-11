@@ -252,7 +252,7 @@ button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--foc
 
 <script>
 
-const token = localStorage.getItem("token")
+const token = sessionStorage.getItem("token") || localStorage.getItem("token")
 let qrScanner = null;
 
 function setPanelState(container, title, message, type = "") {
@@ -527,7 +527,7 @@ async function handleQRResult(qrData){
         const url = new URL(qrData);
         const token = url.searchParams.get("token");
 
-        const studentToken = localStorage.getItem("token");
+        const studentToken = sessionStorage.getItem("token") || localStorage.getItem("token");
 
         const res = await fetch(API_BASE + "/api/qr/scan",{
             method:"POST",

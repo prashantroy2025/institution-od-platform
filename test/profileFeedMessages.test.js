@@ -172,6 +172,34 @@ test('library catalog exposes and consumes digital resource availability', () =>
     assert.match(page, /esc\(b\.title\)/);
 });
 
+test('academic profile self-service cannot change identity fields or delete institutional records', () => {
+    const academic = fs.readFileSync(path.join(ROOT, 'services/academicService.js'), 'utf8');
+    assert.match(academic, /config\.profile && user\.role !== 'super_admin' \? \['user_id', 'phone'\]/);
+    assert.match(academic, /config\.profile && user\.role !== 'super_admin' \? \['phone'\]/);
+    assert.match(academic, /config\.profile && user\.role !== 'super_admin'\) fail\('Access denied', 403\)/);
+});
+
+test('legacy module pages accept session-only login tokens', () => {
+    for (const file of ['public/learning.html','public/class-attendance.html','public/faculty-attendance.html','public/student.html','public/admin.html','public/hod.html','public/organizer.html','public/scan.html']) {
+        const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
+        assert.match(source, /sessionStorage\.getItem\(["']token["']\)/, `${file} should accept session-only auth`);
+    }
+});
+
+test('learning and feed media render untrusted strings safely', () => {
+    const learning = fs.readFileSync(path.join(ROOT, 'public/learning.html'), 'utf8');
+    const dashboard = fs.readFileSync(path.join(ROOT, 'public/dashboard.html'), 'utf8');
+    const finance = fs.readFileSync(path.join(ROOT, 'public/finance.html'), 'utf8');
+    assert.match(learning, /const esc=value=>String\(value\?\?'\'\)/);
+    assert.match(learning, /esc\(a\.title\)/);
+    assert.match(learning, /data-name="\$\{esc\(m\.original_name\)\}"/);
+    assert.match(dashboard, /data-media-name="\$\{escapeHtml\(p\.media_original_name\)\}"/);
+    assert.match(dashboard, /downloadPostMedia\(this\)/);
+    assert.match(finance, /function esc\(v\)/);
+    assert.match(finance, /\$\{esc\(i\.invoice_no\)\}/);
+    assert.match(finance, /\$\{esc\(d\.invoice\.invoice_no\)\}/);
+});
+
 test('demo importer is development/test-only, idempotent, hashed, and does not seed academic outcomes', () => {
     const importer = fs.readFileSync(path.join(ROOT, 'scripts/seedDemoPeople.js'), 'utf8');
     assert.match(importer, /NODE_ENV=development or NODE_ENV=test/);
