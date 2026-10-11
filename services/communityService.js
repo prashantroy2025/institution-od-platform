@@ -23,8 +23,13 @@ const SELECT_COLUMNS = `p.id,p.author_id,u.name author_name,u.role author_role,p
 async function feed(query, user) {
     const { limit, offset } = page(query);
     const filter = FEED_FILTERS.includes(query.filter) ? query.filter : 'for_you';
-    const conditions = ['p.is_deleted=0', 'NOT EXISTS(SELECT 1 FROM erp_social_blocks sb WHERE sb.blocker_id=? AND sb.blocked_id=p.author_id)'];
-    const where = [user.id];
+    const conditions = [
+        'p.is_deleted=0',
+        'NOT EXISTS(SELECT 1 FROM erp_social_blocks sb WHERE sb.blocker_id=? AND sb.blocked_id=p.author_id)',
+        'NOT EXISTS(SELECT 1 FROM erp_social_blocks sb WHERE sb.blocker_id=p.author_id AND sb.blocked_id=?)',
+        `(p.author_id=? OR p.visibility='college' OR (p.visibility='following' AND EXISTS(SELECT 1 FROM erp_feed_follows vf WHERE vf.follower_id=? AND vf.followed_id=p.author_id)) OR (p.visibility='classmates' AND EXISTS(SELECT 1 FROM student_profiles viewer JOIN student_profiles author ON viewer.batch_id=author.batch_id AND viewer.section_id=author.section_id WHERE viewer.user_id=? AND author.user_id=p.author_id)))`
+    ];
+    const where = [user.id, user.id, user.id, user.id, user.id];
     if (filter === 'official') {
         conditions.push('p.is_official=1');
     } else if (filter === 'events') {
@@ -45,21 +50,34 @@ async function feed(query, user) {
     const [items] = await db.query(`SELECT ${SELECT_COLUMNS} FROM erp_feed_posts p JOIN users u ON u.id=p.author_id WHERE ${clause} ORDER BY p.is_official DESC,p.created_at DESC LIMIT ? OFFSET ?`, [user.id, user.id, user.id, ...where, limit, offset]);
     return { items, filter, pagination: { limit, offset, total: Number(total) } };
 }
+async function viewablePost(postId, user) {
+    const post = id(postId, 'post_id');
+    const [rows] = await db.query(`SELECT p.author_id,p.visibility,
+        EXISTS(SELECT 1 FROM erp_feed_follows f WHERE f.follower_id=? AND f.followed_id=p.author_id) follows_author,
+        EXISTS(SELECT 1 FROM student_profiles viewer JOIN student_profiles author ON viewer.batch_id=author.batch_id AND viewer.section_id=author.section_id WHERE viewer.user_id=? AND author.user_id=p.author_id) classmate,
+        EXISTS(SELECT 1 FROM erp_social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=p.author_id) OR (b.blocker_id=p.author_id AND b.blocked_id=?)) blocked
+        FROM erp_feed_posts p WHERE p.id=? AND p.is_deleted=0`, [user.id, user.id, user.id, user.id, post]);
+    const row = rows[0];
+    const isAuthor = row && Number(row.author_id) === Number(user.id);
+    if (!row || (!isAuthor && (row.blocked || (row.visibility === 'following' && !row.follows_author) || (row.visibility === 'classmates' && !row.classmate)))) fail('Post not found', 404);
+    return row;
+}
 async function createPost(data, user, file) { const official = data.is_official === true || data.is_official === 1 || data.is_official === '1' || data.is_official === 'true'; if (official && !staff(user)) fail('Only authorized staff may publish official posts',403); const textValue=body(data.body); const eventId = data.event_id === undefined || data.event_id === null || data.event_id === '' ? null : id(data.event_id, 'event_id'); let key=null; try { if(file){files.validateUpload(file,'png,jpg,jpeg,mp4',10*1024*1024);key=await files.save(file);} const [r]=await db.query('INSERT INTO erp_feed_posts(author_id,event_id,body,media_storage_key,media_original_name,media_mime_type,is_official,visibility) VALUES(?,?,?,?,?,?,?,?)',[user.id,eventId,textValue,key,file?.originalname||null,file?.mimetype||null,official?1:0,['college','following','classmates'].includes(data.visibility)?data.visibility:'college']); await audit.log(user.id,'CREATE_FEED_POST','erp_feed_posts',r.insertId); return {id:r.insertId}; } catch(e){if(key)await files.remove(key);throw e;} }
-async function toggle(table, postId, user) { const p=id(postId,'post_id'); const [existing]=await db.query(`SELECT 1 FROM ${table} WHERE post_id=? AND user_id=?`,[p,user.id]); if(existing.length) await db.query(`DELETE FROM ${table} WHERE post_id=? AND user_id=?`,[p,user.id]); else await db.query(`INSERT INTO ${table}(post_id,user_id) VALUES(?,?)`,[p,user.id]); return {active:!existing.length}; }
+async function toggle(table, postId, user) { const p=id(postId,'post_id'); await viewablePost(p,user); const [existing]=await db.query(`SELECT 1 FROM ${table} WHERE post_id=? AND user_id=?`,[p,user.id]); if(existing.length) await db.query(`DELETE FROM ${table} WHERE post_id=? AND user_id=?`,[p,user.id]); else await db.query(`INSERT INTO ${table}(post_id,user_id) VALUES(?,?)`,[p,user.id]); return {active:!existing.length}; }
 async function comment(postId, data, user) {
     const post = id(postId, 'post_id');
-    const [exists] = await db.query('SELECT 1 FROM erp_feed_posts WHERE id=? AND is_deleted=0', [post]);
-    if (!exists.length) fail('Post not found', 404);
+    await viewablePost(post, user);
     const [r] = await db.query('INSERT INTO erp_feed_comments(post_id,author_id,parent_id,body) VALUES(?,?,?,?)', [post, user.id, data?.parent_id ? id(data.parent_id, 'parent_id') : null, body(data?.body)]);
     return { id: r.insertId };
 }
 async function comments(postId, user) {
     const post = id(postId, 'post_id');
+    await viewablePost(post, user);
     const [rows] = await db.query(`SELECT c.id,c.body,c.parent_id,c.created_at,u.id author_id,u.name author_name,u.role author_role
         FROM erp_feed_comments c JOIN users u ON u.id=c.author_id
-        WHERE c.post_id=? AND c.is_deleted=0 AND NOT EXISTS(SELECT 1 FROM erp_social_blocks b WHERE b.blocker_id=? AND b.blocked_id=c.author_id)
-        ORDER BY c.created_at ASC LIMIT 200`, [post, user.id]);
+        WHERE c.post_id=? AND c.is_deleted=0
+        AND NOT EXISTS(SELECT 1 FROM erp_social_blocks b WHERE (b.blocker_id=? AND b.blocked_id=c.author_id) OR (b.blocker_id=c.author_id AND b.blocked_id=?))
+        ORDER BY c.created_at ASC LIMIT 200`, [post, user.id, user.id]);
     return { items: rows };
 }
 async function removeComment(commentId, user) {
@@ -73,10 +91,9 @@ async function removeComment(commentId, user) {
 }
 async function share(postId, data, user) {
     const post = id(postId, 'post_id');
-    const [rows] = await db.query('SELECT author_id FROM erp_feed_posts WHERE id=? AND is_deleted=0', [post]);
-    if (!rows[0]) fail('Post not found', 404);
-    if (Number(rows[0].author_id) === Number(user.id)) fail('You cannot share your own post');
-    const [blocked] = await db.query('SELECT 1 FROM erp_social_blocks WHERE (blocker_id=? AND blocked_id=?) OR (blocker_id=? AND blocked_id=?)', [user.id, rows[0].author_id, rows[0].author_id, user.id]);
+    const visible = await viewablePost(post, user);
+    if (Number(visible.author_id) === Number(user.id)) fail('You cannot share your own post');
+    const [blocked] = await db.query('SELECT 1 FROM erp_social_blocks WHERE (blocker_id=? AND blocked_id=?) OR (blocker_id=? AND blocked_id=?)', [user.id, visible.author_id, visible.author_id, user.id]);
     if (blocked.length) fail('Sharing is unavailable for this account', 403);
     await db.query('INSERT INTO erp_feed_shares(post_id,user_id,note) VALUES(?,?,?) ON DUPLICATE KEY UPDATE note=VALUES(note)', [post, user.id, note(data?.note)]);
     await audit.log(user.id, 'SHARE_FEED_POST', 'erp_feed_shares', post);
@@ -85,6 +102,7 @@ async function share(postId, data, user) {
 }
 async function unshare(postId, user) {
     const post = id(postId, 'post_id');
+    await viewablePost(post, user);
     await db.query('DELETE FROM erp_feed_shares WHERE post_id=? AND user_id=?', [post, user.id]);
     const [[{ shares }]] = await db.query('SELECT COUNT(*) shares FROM erp_feed_shares WHERE post_id=?', [post]);
     return { shared: false, shares: Number(shares) };
@@ -101,7 +119,6 @@ async function removePost(postId, user) {
 async function follow(targetId,user){const target=id(targetId,'user_id');if(target===Number(user.id))fail('You cannot follow yourself');const [blocked]=await db.query('SELECT 1 FROM erp_social_blocks WHERE blocker_id=? AND blocked_id=? UNION SELECT 1 FROM erp_social_blocks WHERE blocker_id=? AND blocked_id=?',[user.id,target,target,user.id]);if(blocked.length)fail('Follow is unavailable for this account',403);await db.query('INSERT IGNORE INTO erp_feed_follows(follower_id,followed_id) VALUES(?,?)',[user.id,target]);return {following:true};}
 async function unfollow(targetId,user){await db.query('DELETE FROM erp_feed_follows WHERE follower_id=? AND followed_id=?',[user.id,id(targetId,'user_id')]);return {following:false};}
 async function report(data,user){const types=['post','comment','message','user'];if(!types.includes(data.target_type)||!data.reason)fail('Valid report target and reason are required');const [r]=await db.query('INSERT INTO erp_social_reports(reporter_id,target_type,target_id,reason) VALUES(?,?,?,?)',[user.id,data.target_type,id(data.target_id,'target_id'),String(data.reason).slice(0,500)]);await audit.log(user.id,'REPORT_SOCIAL_CONTENT','erp_social_reports',r.insertId);return {id:r.insertId,status:'Open'};}
-async function comments(postId,user){const p=id(postId,'post_id');const [rows]=await db.query('SELECT c.id,c.body,c.parent_id,c.created_at,u.id author_id,u.name author_name,u.role author_role FROM erp_feed_comments c JOIN users u ON u.id=c.author_id WHERE c.post_id=? AND c.is_deleted=0 AND NOT EXISTS(SELECT 1 FROM erp_social_blocks b WHERE b.blocker_id=? AND b.blocked_id=c.author_id) ORDER BY c.created_at ASC',[p,user.id]);return rows;}
 async function listReports(user, query = {}) {
     if (!staff(user)) fail('Moderation access denied', 403);
     const { limit, offset } = page(query);
@@ -159,7 +176,7 @@ async function people(user, query = {}) {
 }
 async function block(targetId,user){const target=id(targetId,'user_id');if(target===Number(user.id))fail('You cannot block yourself');await db.query('INSERT IGNORE INTO erp_social_blocks(blocker_id,blocked_id) VALUES(?,?)',[user.id,target]);await db.query('DELETE FROM erp_feed_follows WHERE (follower_id=? AND followed_id=?) OR (follower_id=? AND followed_id=?)',[user.id,target,target,user.id]);return {blocked:true};}
 async function unblock(targetId,user){await db.query('DELETE FROM erp_social_blocks WHERE blocker_id=? AND blocked_id=?',[user.id,id(targetId,'user_id')]);return {blocked:false};}
-async function media(postId,user){const [r]=await db.query('SELECT p.media_storage_key,p.media_original_name,p.media_mime_type FROM erp_feed_posts p WHERE p.id=? AND p.is_deleted=0 AND NOT EXISTS(SELECT 1 FROM erp_social_blocks b WHERE b.blocker_id=? AND b.blocked_id=p.author_id)',[id(postId,'post_id'),user.id]);if(!r[0]?.media_storage_key)fail('Media not found',404);return r[0];}
+async function media(postId,user){const post=id(postId,'post_id');await viewablePost(post,user);const [r]=await db.query('SELECT p.media_storage_key,p.media_original_name,p.media_mime_type FROM erp_feed_posts p WHERE p.id=? AND p.is_deleted=0',[post]);if(!r[0]?.media_storage_key)fail('Media not found',404);return r[0];}
 module.exports = { feed, createPost, removePost, comment, comments, removeComment, share, unshare, report, listReports, moderateReport,
     like: (p, u) => toggle('erp_feed_likes', p, u),
     save: (p, u) => toggle('erp_feed_saves', p, u),

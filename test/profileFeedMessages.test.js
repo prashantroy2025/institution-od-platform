@@ -4,6 +4,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
+process.env.NODE_ENV = 'test';
+process.env.DB_HOST ||= 'localhost';
+process.env.DB_USER ||= 'root';
+process.env.DB_NAME ||= 'institution_od_recovery';
+process.env.DB_PORT ||= '3306';
+process.env.JWT_SECRET ||= 'x'.repeat(32);
+const db = require('../config/db');
+const community = require('../services/communityService');
 
 test('profile/feed/message migration is additive and protected from destructive statements', () => {
     const migration = fs.readFileSync(path.join(ROOT, 'db/migrations/010_profile_feed_messages.sql'), 'utf8');
@@ -49,6 +57,64 @@ test('community and messaging services enforce official, academic-peer, and memb
     const ui = fs.readFileSync(path.join(ROOT, 'public/messages.html'), 'utf8');
     assert.match(ui, /c\.is_member/);
     assert.match(ui, /g\.is_member/);
+});
+
+test('feed listings enforce visibility and mutual block rules before returning posts', async t => {
+    const originalQuery = db.query;
+    const calls = [];
+    db.query = async (sql, params) => {
+        calls.push({ sql, params });
+        if (sql.startsWith('SELECT COUNT(*)')) return [[{ total: 0 }]];
+        return [[]];
+    };
+    t.after(() => { db.query = originalQuery; });
+
+    await community.feed({ filter: 'all' }, { id: 17 });
+
+    assert.match(calls[0].sql, /p\.visibility='college'/);
+    assert.match(calls[0].sql, /visibility='following'/);
+    assert.match(calls[0].sql, /visibility='classmates'/);
+    assert.match(calls[0].sql, /sb\.blocker_id=p\.author_id AND sb\.blocked_id=\?/);
+    assert.deepEqual(calls[0].params, [17, 17, 17, 17, 17]);
+});
+
+test('private feed media is not disclosed to a non-follower', async t => {
+    const originalQuery = db.query;
+    let calls = 0;
+    db.query = async sql => {
+        calls += 1;
+        assert.match(sql, /SELECT p\.author_id,p\.visibility/);
+        return [[{ author_id: 22, visibility: 'following', follows_author: 0, classmate: 0, blocked: 0 }]];
+    };
+    t.after(() => { db.query = originalQuery; });
+
+    await assert.rejects(community.media(91, { id: 17 }), error => error.status === 404);
+    assert.equal(calls, 1);
+});
+
+test('dashboard sends selected post visibility and uses verified invoice payments', () => {
+    const home = fs.readFileSync(path.join(ROOT, 'public/home.js'), 'utf8');
+    const finance = fs.readFileSync(path.join(ROOT, 'services/financeService.js'), 'utf8');
+    assert.match(home, /form\.append\('visibility', postVisibility\)/);
+    assert.match(home, /BigInt\(i\.paid_paise \|\| 0\)/);
+    assert.match(finance, /p\.status='Verified'\),0\) paid_paise/);
+});
+
+test('dashboard quick search uses existing post, people, event and service destinations', () => {
+    const home = fs.readFileSync(path.join(ROOT, 'public/home.js'), 'utf8');
+    const messages = fs.readFileSync(path.join(ROOT, 'public/messages.html'), 'utf8');
+    assert.match(home, /\/api\/community\/people\?/);
+    assert.match(home, /\/api\/student\/search-events\?/);
+    assert.match(home, /home\.html\?feedSearch=/);
+    assert.match(messages, /openPeerFromSearch/);
+});
+
+test('library catalog exposes and consumes digital resource availability', () => {
+    const library = fs.readFileSync(path.join(ROOT, 'services/libraryService.js'), 'utf8');
+    const page = fs.readFileSync(path.join(ROOT, 'public/library.html'), 'utf8');
+    assert.match(library, /digital_storage_key<>''\) digital_available/);
+    assert.match(page, /b\.digital_available/);
+    assert.match(page, /esc\(b\.title\)/);
 });
 
 test('demo importer is development/test-only, idempotent, hashed, and does not seed academic outcomes', () => {
