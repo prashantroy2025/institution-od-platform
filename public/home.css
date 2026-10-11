@@ -365,3 +365,24 @@
 .stu-quick-search .search-result > span { color: var(--stu-muted); font-size: 12px; overflow-wrap: anywhere; }
 .stu-quick-search .search-result .search-action { color: var(--stu-blue); font-weight: 800; }
 @media (min-width: 700px) { .stu-quick-search .panel { top: 8vh; max-height: 84vh; } }
+.notice-main { width: min(100% - 32px, 760px); margin: 22px auto 36px; }
+.notice-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.notice-heading h1 { margin: 0; font-size: clamp(24px, 4vw, 32px); color: var(--stu-ink); }
+.notice-heading p:not(.eyebrow) { margin: 5px 0 0; color: var(--stu-muted); }
+.notice-refresh, .notice-read { min-height: 44px; padding: 9px 15px; border: 1px solid var(--stu-line); border-radius: 12px; background: #fff; color: var(--stu-blue); font-weight: 800; cursor: pointer; }
+.notice-tabs { display: flex; gap: 8px; overflow-x: auto; margin: 12px 0 16px; }
+.notice-tabs button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--stu-line); border-radius: 999px; background: #fff; color: #46527a; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.notice-tabs button.active { border-color: var(--stu-blue); background: var(--stu-blue); color: #fff; }
+.notice-list { display: grid; gap: 12px; }
+.notice-card { padding: 16px; border: 1px solid var(--stu-line); border-radius: 16px; background: #fff; box-shadow: var(--stu-shadow-sm); overflow-wrap: anywhere; }
+.notice-card.unread { border-left: 4px solid var(--stu-blue); background: #f7f9ff; }
+.notice-card h2 { margin: 0; font-size: 15px; line-height: 1.45; }
+.notice-card p { margin: 9px 0 0; line-height: 1.5; white-space: pre-wrap; }
+.notice-card .notice-meta { color: var(--stu-muted); font-size: 12px; }
+.notice-read { margin-top: 12px; }
+.notice-read:disabled { opacity: .6; cursor: wait; }
+.notice-back { display: inline-flex; min-height: 44px; align-items: center; margin-top: 18px; color: var(--stu-blue); font-weight: 800; }
+.offline-page { display: grid; justify-items: center; gap: 12px; width: min(100% - 32px, 460px); min-height: 70vh; align-content: center; margin: auto; padding: 28px; border-radius: var(--stu-radius); background: #fff; box-shadow: var(--stu-shadow); text-align: center; }
+.offline-page h1 { margin: 0; font-size: 25px; }
+.offline-page p { margin: 0; color: var(--stu-muted); line-height: 1.6; }
+.offline-link { display: inline-flex; min-height: 44px; align-items: center; padding: 10px 17px; border-radius: 999px; background: var(--stu-blue); color: #fff !important; font-weight: 800; }

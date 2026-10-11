@@ -121,6 +121,49 @@ test('dashboard quick search uses existing post, people, event and service desti
     assert.match(messages, /openPeerFromSearch/);
 });
 
+test('Notices reuses official feed and user-scoped notification endpoints', () => {
+    const page = fs.readFileSync(path.join(ROOT, 'public/notices.js'), 'utf8');
+    const routes = fs.readFileSync(path.join(ROOT, 'routes/notificationRoutes.js'), 'utf8');
+    assert.match(page, /filter: 'official'/);
+    assert.match(page, /\/api\/notifications\/my-notifications/);
+    assert.match(page, /\/api\/notifications\/mark-read/);
+    assert.match(routes, /verifyToken/);
+});
+
+test('PWA caches only static shell assets and bypasses APIs and Socket.IO', () => {
+    const worker = fs.readFileSync(path.join(ROOT, 'public/service-worker.js'), 'utf8');
+    const page = fs.readFileSync(path.join(ROOT, 'public/home.html'), 'utf8');
+    assert.match(page, /pwa\.js/);
+    assert.match(worker, /url\.pathname\.startsWith\('\/api\/'\)/);
+    assert.match(worker, /url\.pathname\.startsWith\('\/socket\.io\/'\)/);
+    assert.match(worker, /if \(SHELL_PATHS\.has\(url\.pathname\)\)/);
+    assert.match(worker, /cache\.put\(request, response\.clone\(\)\)/);
+    assert.match(worker, /caches\.match\('\/offline\.html'\)/);
+});
+
+test('service worker bypasses APIs and serves the offline shell for cached navigation', async () => {
+    const worker = fs.readFileSync(path.join(ROOT, 'public/service-worker.js'), 'utf8');
+    const handlers = {};
+    let networkCalls = 0;
+    const cache = { addAll: async () => {}, match: async () => null, put: async () => {} };
+    const context = {
+        URL,
+        self: { location: { origin: 'https://erp.test' }, addEventListener: (name, callback) => { handlers[name] = callback; }, skipWaiting: async () => {}, clients: { claim: async () => {} } },
+        caches: { open: async () => cache, keys: async () => [], delete: async () => {}, match: async request => request === '/offline.html' ? 'offline shell' : null },
+        fetch: async () => { networkCalls += 1; throw new Error('offline'); }
+    };
+    vm.runInNewContext(worker, context);
+    let apiResponded = false;
+    handlers.fetch({ request: { method: 'GET', mode: 'cors', url: 'https://erp.test/api/auth/me' }, respondWith: () => { apiResponded = true; } });
+    assert.equal(apiResponded, false);
+    assert.equal(networkCalls, 0);
+
+    let response;
+    handlers.fetch({ request: { method: 'GET', mode: 'navigate', url: 'https://erp.test/home.html' }, respondWith: promise => { response = promise; } });
+    assert.equal(await response, 'offline shell');
+    assert.equal(networkCalls, 1);
+});
+
 test('library catalog exposes and consumes digital resource availability', () => {
     const library = fs.readFileSync(path.join(ROOT, 'services/libraryService.js'), 'utf8');
     const page = fs.readFileSync(path.join(ROOT, 'public/library.html'), 'utf8');

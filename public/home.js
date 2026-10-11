@@ -49,7 +49,6 @@
        labelled placeholder page (coming-soon.html?module=…) instead of a broken
        link or a feature that only appears to work. */
     const PLACEHOLDER_MODULES = {
-        notices: 'notices.html',
         transport: 'transport.html',
         hostel: 'hostel.html',
         certificates: 'certificates.html'
@@ -693,6 +692,7 @@
             ['📖', 'Library', 'library.html'],
             ['₹', 'Fees', 'finance.html'],
             ['🎉', 'Events & OD', 'student.html'],
+            ['📢', 'Notices', 'notices.html'],
             ['💬', 'Messages', 'messages.html'],
             ['👤', 'Profile', 'profile.html']
         ];
