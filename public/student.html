@@ -594,7 +594,9 @@ window.location="login.html"
 /* DEFAULT */
 
 window.onload = () => {
-    document.querySelector(".sidebar button").click();
+    const sectionId = location.hash === '#myodSection' ? 'myodSection' : 'eventsSection';
+    const button = [...document.querySelectorAll('.sidebar button')].find(item => item.getAttribute('onclick')?.includes(sectionId));
+    showSection(button || document.querySelector('.sidebar button'), sectionId);
 };
 
 </script>

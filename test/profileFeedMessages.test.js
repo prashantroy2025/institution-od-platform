@@ -133,7 +133,10 @@ test('Notices reuses official feed and user-scoped notification endpoints', () =
 test('PWA caches only static shell assets and bypasses APIs and Socket.IO', () => {
     const worker = fs.readFileSync(path.join(ROOT, 'public/service-worker.js'), 'utf8');
     const page = fs.readFileSync(path.join(ROOT, 'public/home.html'), 'utf8');
+    const timetable = fs.readFileSync(path.join(ROOT, 'public/timetable.html'), 'utf8');
     assert.match(page, /pwa\.js/);
+    assert.match(timetable, /pwa\.js/);
+    assert.match(worker, /'\/timetable\.html'/);
     assert.match(worker, /url\.pathname\.startsWith\('\/api\/'\)/);
     assert.match(worker, /url\.pathname\.startsWith\('\/socket\.io\/'\)/);
     assert.match(worker, /if \(SHELL_PATHS\.has\(url\.pathname\)\)/);
@@ -180,7 +183,7 @@ test('academic profile self-service cannot change identity fields or delete inst
 });
 
 test('legacy module pages accept session-only login tokens', () => {
-    for (const file of ['public/learning.html','public/class-attendance.html','public/faculty-attendance.html','public/student.html','public/admin.html','public/hod.html','public/organizer.html','public/scan.html']) {
+    for (const file of ['public/learning.html','public/class-attendance.html','public/faculty-attendance.html','public/student.html','public/admin.html','public/hod.html','public/organizer.html','public/scan.html','public/examinations.html']) {
         const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
         assert.match(source, /sessionStorage\.getItem\(["']token["']\)/, `${file} should accept session-only auth`);
     }
@@ -198,6 +201,31 @@ test('learning and feed media render untrusted strings safely', () => {
     assert.match(finance, /function esc\(v\)/);
     assert.match(finance, /\$\{esc\(i\.invoice_no\)\}/);
     assert.match(finance, /\$\{esc\(d\.invoice\.invoice_no\)\}/);
+});
+
+test('student home summary cards and OD deep links reach their matching dashboards', () => {
+    const home = fs.readFileSync(path.join(ROOT, 'public/home.js'), 'utf8');
+    const student = fs.readFileSync(path.join(ROOT, 'public/student.html'), 'utf8');
+    const timetable = fs.readFileSync(path.join(ROOT, 'public/timetable.html'), 'utf8');
+    assert.match(home, /querySelectorAll\('\[data-href\]'\)\.forEach\(card => card\.addEventListener\('click'/);
+    assert.match(home, /href: 'timetable\.html'/);
+    assert.match(home, /student\.html#myodSection/);
+    assert.match(student, /location\.hash === '#myodSection'/);
+    assert.match(timetable, /ERP\.call\('\/api\/timetable\?limit=100'\)/);
+    assert.match(timetable, /ERP\.escapeHtml/);
+});
+
+test('student navigation returns home and message attachments use authenticated fetch', () => {
+    const messages = fs.readFileSync(path.join(ROOT, 'public/messages.html'), 'utf8');
+    const feedback = fs.readFileSync(path.join(ROOT, 'public/ui-feedback.js'), 'utf8');
+    const shared = fs.readFileSync(path.join(ROOT, 'public/erp-app.js'), 'utf8');
+    assert.match(messages, /profile&&profile\.role==='student'\?'home\.html':'dashboard\.html'/);
+    assert.match(messages, /data-attachment=.*Download/);
+    assert.match(messages, /downloadAttachment\(button\)/);
+    assert.match(messages, /headers:auth/);
+    assert.match(feedback, /Authorization: 'Bearer ' \+ token/);
+    assert.match(feedback, /stopImmediatePropagation\(\)/);
+    assert.match(shared, /studentHome.*home\.html.*dashboard\.html/);
 });
 
 test('demo importer is development/test-only, idempotent, hashed, and does not seed academic outcomes', () => {

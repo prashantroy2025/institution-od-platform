@@ -4,6 +4,7 @@ const SHELL = [
     '/login.html',
     '/home.html',
     '/notices.html',
+    '/timetable.html',
     '/config.js',
     '/ui-feedback.js',
     '/erp-app.js',
@@ -15,7 +16,7 @@ const SHELL = [
     '/favicon.svg'
 ];
 const SHELL_PATHS = new Set(SHELL);
-const NAVIGATION_PATHS = new Set(['/', '/index.html', '/login.html', '/home.html', '/notices.html']);
+const NAVIGATION_PATHS = new Set(['/', '/index.html', '/login.html', '/home.html', '/notices.html', '/timetable.html']);
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));

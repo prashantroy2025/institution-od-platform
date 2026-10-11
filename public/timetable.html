@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Timetable · College ERP</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <script src="config.js"></script>
+  <script src="pwa.js"></script>
+  <script src="erp-app.js"></script>
+  <link rel="stylesheet" href="erp-ui.css">
+  <style>
+    body{margin:0;background:#f5f8ff;color:#111b44;font-family:Inter,system-ui,sans-serif}.timetable-page{max-width:960px;margin:auto;padding:24px 18px 100px}.timetable-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.timetable-header h1{margin:0}.day-list{display:grid;gap:14px}.day-card{background:#fff;border:1px solid #e6ebf5;border-radius:18px;padding:16px;box-shadow:0 8px 24px #173b7110}.day-card h2{margin:0 0 12px;font-size:18px}.class-row{display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 0;border-top:1px solid #edf0f6}.class-time{color:#1266d8;font-weight:750}.class-name{font-weight:750}.class-meta{display:block;color:#6a7488;font-size:14px;margin-top:4px}.class-room{color:#59647a;font-size:14px}.empty{background:#fff;border-radius:16px;padding:20px;color:#667085}@media(max-width:560px){.timetable-page{padding:18px 14px 96px}.timetable-header{align-items:flex-start}.class-row{grid-template-columns:72px minmax(0,1fr);gap:8px}.class-room{grid-column:2}}
+  </style>
+</head>
+<body>
+  <main class="timetable-page">
+    <header class="timetable-header"><div><p class="eyebrow">Academics</p><h1>Class timetable</h1><p id="timetableMeta">Loading your schedule…</p></div><button class="secondary-btn" type="button" data-back>Back</button></header>
+    <label for="semesterFilter">Semester</label>
+    <select id="semesterFilter" aria-label="Filter timetable by semester"><option value="">All available semesters</option></select>
+    <div id="timetableState" class="empty" role="status" aria-live="polite">Loading your schedule…</div>
+    <section id="timetableDays" class="day-list" aria-label="Weekly timetable"></section>
+  </main>
+  <nav class="bottom-nav" aria-label="Primary navigation"></nav>
+  <script>
+    const dayNames=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    const state=document.getElementById('timetableState');
+    const days=document.getElementById('timetableDays');
+    let entries=[];
+    function renderTimetable(){
+      const semester=document.getElementById('semesterFilter').value;
+      const visible=entries.filter(entry=>!semester||entry.semester_name===semester);
+      const groups=dayNames.map((name,index)=>({name,classes:visible.filter(entry=>Number(entry.weekday)===index+1)})).filter(day=>day.classes.length);
+      days.innerHTML=groups.map(day=>`<article class="day-card"><h2>${ERP.escapeHtml(day.name)}</h2>${day.classes.map(item=>`<div class="class-row"><span class="class-time">${ERP.escapeHtml(String(item.start_time).slice(0,5))}–${ERP.escapeHtml(String(item.end_time).slice(0,5))}</span><div><span class="class-name">${ERP.escapeHtml(item.subject_name||item.subject_code||'Class')}</span><span class="class-meta">${ERP.escapeHtml(item.semester_name||'Semester unavailable')} · ${ERP.escapeHtml(item.faculty_name||'Faculty unavailable')}</span></div><span class="class-room">${ERP.escapeHtml(item.classroom_name||item.classroom_code||'Room TBD')}</span></div>`).join('')}</article>`).join('');
+      state.hidden=groups.length>0;
+      if(!groups.length)state.textContent=entries.length?'No scheduled classes in this semester.':'No timetable has been published for your account.';
+    }
+    async function loadTimetable(){
+      try{
+        if(!ERP.token()){ERP.redirectToLogin();return}
+        const result=await ERP.call('/api/timetable?limit=100');
+        entries=(result.items||[]).sort((a,b)=>Number(a.weekday)-Number(b.weekday)||String(a.start_time).localeCompare(String(b.start_time)));
+        const semesters=[...new Set(entries.map(entry=>entry.semester_name).filter(Boolean))];
+        document.getElementById('semesterFilter').innerHTML='<option value="">All available semesters</option>'+semesters.map(name=>`<option value="${ERP.escapeHtml(name)}">${ERP.escapeHtml(name)}</option>`).join('');
+        document.getElementById('timetableMeta').textContent=`${entries.length} scheduled class${entries.length===1?'':'es'}`;
+        renderTimetable();
+      }catch(error){state.hidden=false;state.textContent=error.message;document.getElementById('timetableMeta').textContent='Schedule unavailable';}
+    }
+    document.getElementById('semesterFilter').addEventListener('change',renderTimetable);
+    ERP.bottomNav('home');
+    loadTimetable();
+  </script>
+</body>
+</html>

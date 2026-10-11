@@ -31,7 +31,7 @@
     /* Full service catalogue. Only real destination pages are linked; anything
        without an implementation renders a labelled, navigable placeholder. */
     const SERVICES = [
-        { key: 'academic', label: 'Academic', icon: '📚', tone: 'svc-blue', href: 'learning.html' },
+        { key: 'academic', label: 'Academic', icon: '📚', tone: 'svc-blue', href: 'timetable.html' },
         { key: 'attendance', label: 'Attendance', icon: '📅', tone: 'svc-green', href: 'attendance.html' },
         { key: 'examinations', label: 'Examinations', icon: '📝', tone: 'svc-red', href: 'examinations.html' },
         { key: 'assignments', label: 'Assignments', icon: '📋', tone: 'svc-orange', href: 'learning.html?view=assignments' },
@@ -114,15 +114,15 @@
             const now = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
             const todays = data.items.filter(e => Number(e.weekday) === today).sort((a, b) => timeOf(a.start_time).localeCompare(timeOf(b.start_time)));
             const next = todays.find(e => timeOf(e.end_time) > now) || todays[0];
-            if (!next) return quickCard({ tone: 'blue', icon: '<span class="stu-qicon tone-blue">📅</span>', key: 'Next Class', value: 'No classes today', sub: 'Enjoy your day', href: 'attendance.html' });
+            if (!next) return quickCard({ tone: 'blue', icon: '<span class="stu-qicon tone-blue">📅</span>', key: 'Next Class', value: 'No classes today', sub: 'Enjoy your day', href: 'timetable.html' });
             return quickCard({
                 tone: 'blue', icon: '<span class="stu-qicon tone-blue">📅</span>', key: 'Next Class',
                 value: esc(next.subject_name || 'Class'),
                 sub: `${timeOf(next.start_time)} – ${timeOf(next.end_time)}${next.classroom_name ? ' · ' + esc(next.classroom_name) : ''}${next.faculty_name ? ' · ' + esc(next.faculty_name) : ''}`,
-                href: 'attendance.html'
+                href: 'timetable.html'
             });
         } catch (e) {
-            return quickCard({ tone: 'blue', icon: '<span class="stu-qicon tone-blue">📅</span>', key: 'Next Class', value: 'Unavailable', sub: 'Timetable not loaded', href: 'attendance.html' });
+            return quickCard({ tone: 'blue', icon: '<span class="stu-qicon tone-blue">📅</span>', key: 'Next Class', value: 'Unavailable', sub: 'Timetable not loaded', href: 'timetable.html' });
         }
     }
 
@@ -186,10 +186,10 @@
             const rows = data || [];
             const approved = rows.filter(o => o.status === 'Auto Approved' || o.status === 'HOD Approved').length;
             const pending = rows.filter(o => o.status === 'Pending').length;
-            if (!rows.length) return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'No requests', sub: 'Apply OD from the Events page', href: 'student.html' });
-            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: `${approved} approved`, sub: pending ? `${pending} awaiting HOD approval` : 'No pending requests', href: 'student.html' });
+            if (!rows.length) return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'No requests', sub: 'Apply OD from the Events page', href: 'student.html#myodSection' });
+            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: `${approved} approved`, sub: pending ? `${pending} awaiting HOD approval` : 'No pending requests', href: 'student.html#myodSection' });
         } catch (e) {
-            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'Unavailable', sub: 'Could not load OD requests', href: 'student.html' });
+            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'Unavailable', sub: 'Could not load OD requests', href: 'student.html#myodSection' });
         }
     }
 
@@ -199,6 +199,7 @@
             loadFeesCard(), loadExamsCard(), loadOdCard()
         ]);
         $('quickCards').innerHTML = cards.join('');
+        $('quickCards').querySelectorAll('[data-href]').forEach(card => card.addEventListener('click', () => location.href = card.dataset.href));
     }
 
     /* ------------------------------ profile ------------------------------ */
