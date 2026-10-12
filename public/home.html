@@ -73,12 +73,12 @@
   </section>
 
   <!-- ======================= CAMPUS FEED ======================= -->
-  <section class="stu-feed" aria-label="Campus feed">
+  <section class="stu-feed" id="campusFeed" aria-label="Campus feed">
     <div class="stu-feed-head">
       <h2>Campus Feed</h2>
       <div class="fsearch">
         <button id="feedSearchBtn" aria-label="Search campus posts">🔍</button>
-        <button id="feedFilterBtn" aria-label="Feed display options">⚙️</button>
+        <button id="feedFilterBtn" aria-label="Show feed filters" aria-expanded="true">☷</button>
       </div>
     </div>
 
@@ -111,10 +111,10 @@
         <button type="button" id="composerRemove">Remove</button>
       </div>
       <div class="morewrap">
-        <div class="moremenu" id="composerMoreMenu" role="menu" aria-label="More post options">
-          <button type="button" role="menuitem" data-vis="college">🌐 Visible to college</button>
-          <button type="button" role="menuitem" data-vis="classmates">🎓 Visible to classmates</button>
-          <button type="button" role="menuitem" data-vis="following">👥 Visible to followers</button>
+        <div class="moremenu" id="composerMoreMenu" role="group" aria-label="More post options">
+          <button type="button" data-vis="college" role="radio" aria-checked="true">🌐 Visible to college</button>
+          <button type="button" data-vis="classmates" role="radio" aria-checked="false">🎓 Visible to classmates</button>
+          <button type="button" data-vis="following" role="radio" aria-checked="false">👥 Visible to followers</button>
           <button type="button" role="menuitem" data-act="event">📅 Tag a campus event</button>
         </div>
       </div>
@@ -180,6 +180,23 @@
   </div>
 </div>
 
+<!-- ======================= QUICK SEARCH ======================= -->
+<section class="stu-quick-search" id="quickSearch" role="dialog" aria-modal="true" aria-label="Search campus" aria-hidden="true">
+  <button class="back" type="button" data-close="search" aria-label="Close search"></button>
+  <div class="panel">
+    <div class="search-head"><h2>Quick Search</h2><button type="button" class="close-search" data-close="search" aria-label="Close search">×</button></div>
+    <form id="quickSearchForm" role="search"><input id="quickSearchInput" type="search" maxlength="100" placeholder="Posts, people, events or services…" aria-label="Search posts, people, events or services"><button type="submit">Search</button></form>
+    <div class="search-tabs" role="tablist" aria-label="Search category">
+      <button type="button" class="active" role="tab" aria-selected="true" data-search-tab="posts">Posts</button>
+      <button type="button" role="tab" aria-selected="false" data-search-tab="people">People</button>
+      <button type="button" role="tab" aria-selected="false" data-search-tab="events">Events</button>
+      <button type="button" role="tab" aria-selected="false" data-search-tab="services">Services</button>
+    </div>
+    <p id="quickSearchStatus" class="stu-state" role="status">Choose a category and search.</p>
+    <div id="quickSearchResults" class="search-results"></div>
+  </div>
+</section>
+
 <!-- ======================= BOTTOM NAVIGATION ======================= -->
 <nav class="stu-bottom" aria-label="Primary">
   <div class="inner">
@@ -193,5 +210,6 @@
 
 <script src="erp-app.js"></script>
 <script src="home.js"></script>
+<script src="pwa.js"></script>
 </body>
 </html>

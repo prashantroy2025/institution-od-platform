@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2f6bff">
+<title>Notices · College ERP</title>
+<script src="config.js"></script>
+<script src="ui-feedback.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="erp-ui.css">
+<link rel="stylesheet" href="home.css">
+</head>
+<body class="stu-home">
+<div class="stu-wrap">
+  <header class="stu-topbar">
+    <a class="icon-btn" href="home.html" aria-label="Back to dashboard">←</a>
+    <div class="stu-brand"><span class="cap" aria-hidden="true">🎓</span><span class="title">College ERP</span></div>
+    <span class="spacer"></span>
+    <a class="stu-avatar-btn" href="profile.html" aria-label="Open your profile">👤</a>
+  </header>
+  <main class="notice-main">
+    <div class="notice-heading"><div><p class="eyebrow">Campus updates</p><h1>Notices</h1><p>Official campus announcements and your notifications.</p></div><button class="notice-refresh" id="refreshNotices" type="button">Refresh</button></div>
+    <p class="stu-state" id="noticeStatus" role="status" aria-live="polite">Loading notices…</p>
+    <div class="notice-tabs" role="tablist" aria-label="Notice type">
+      <button type="button" role="tab" aria-selected="true" class="active" data-notice-tab="announcements">Official announcements</button>
+      <button type="button" role="tab" aria-selected="false" data-notice-tab="notifications">My notifications</button>
+    </div>
+    <section id="announcementList" class="notice-list" aria-label="Official announcements"></section>
+    <section id="notificationList" class="notice-list" aria-label="My notifications" hidden></section>
+    <a class="notice-back" href="home.html">Back to dashboard</a>
+  </main>
+</div>
+<script src="erp-app.js"></script>
+<script src="notices.js"></script>
+<script src="pwa.js"></script>
+</body>
+</html>

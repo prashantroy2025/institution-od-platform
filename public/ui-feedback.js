@@ -106,3 +106,38 @@ window.ERPUI = (function () {
         confirm: confirmDialog
     };
 })();
+
+document.addEventListener('click', async event => {
+    const homeButton = event.target.closest('[data-bottom="home"]');
+    if (homeButton && (sessionStorage.getItem('role') || localStorage.getItem('role')) === 'student') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        location.href = 'home.html';
+        return;
+    }
+    const link = event.target.closest('a[href]');
+    const profileButton = event.target.closest('.document-row button[onclick]');
+    if (!link && !profileButton) return;
+    const inlinePath = profileButton?.getAttribute('onclick').match(/\/api\/profile\/documents\/(\d+)\/download/);
+    const target = link ? new URL(link.href, location.href) : inlinePath ? new URL('/api/profile/documents/' + inlinePath[1] + '/download', typeof API_BASE === 'undefined' ? location.origin : API_BASE) : null;
+    if (!target || !/^\/api\/profile\/documents\/\d+\/download$/.test(target.pathname)) return;
+    const apiOrigin = new URL(typeof API_BASE === 'undefined' ? location.origin : API_BASE, location.origin).origin;
+    if (target.origin !== apiOrigin) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    try {
+        const response = await fetch(target.href, { headers: { Authorization: 'Bearer ' + token } });
+        if (!response.ok) throw new Error('Document download denied');
+        const objectUrl = URL.createObjectURL(await response.blob());
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || 'document';
+        const download = document.createElement('a');
+        download.href = objectUrl;
+        download.download = filename;
+        download.click();
+        URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+        window.ERPUI.error(error.message);
+    }
+}, true);

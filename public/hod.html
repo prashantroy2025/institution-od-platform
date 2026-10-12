@@ -288,14 +288,14 @@ Upload Attendance
 
 <script>
 
-const role = localStorage.getItem("role")
+const role = sessionStorage.getItem("role") || localStorage.getItem("role")
 
 if(role !== "hod"){
 alert("Access denied")
 window.location = "login.html"
 }
 
-const token = localStorage.getItem("token")
+const token = sessionStorage.getItem("token") || localStorage.getItem("token")
 
 
 async function fetchEvents(){
@@ -607,4 +607,3 @@ loadEvents()
 
 </body>
 </html>
-

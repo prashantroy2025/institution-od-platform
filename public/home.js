@@ -31,7 +31,7 @@
     /* Full service catalogue. Only real destination pages are linked; anything
        without an implementation renders a labelled, navigable placeholder. */
     const SERVICES = [
-        { key: 'academic', label: 'Academic', icon: '📚', tone: 'svc-blue', href: 'learning.html' },
+        { key: 'academic', label: 'Academic', icon: '📚', tone: 'svc-blue', href: 'timetable.html' },
         { key: 'attendance', label: 'Attendance', icon: '📅', tone: 'svc-green', href: 'attendance.html' },
         { key: 'examinations', label: 'Examinations', icon: '📝', tone: 'svc-red', href: 'examinations.html' },
         { key: 'assignments', label: 'Assignments', icon: '📋', tone: 'svc-orange', href: 'learning.html?view=assignments' },
@@ -49,7 +49,6 @@
        labelled placeholder page (coming-soon.html?module=…) instead of a broken
        link or a feature that only appears to work. */
     const PLACEHOLDER_MODULES = {
-        notices: 'notices.html',
         transport: 'transport.html',
         hostel: 'hostel.html',
         certificates: 'certificates.html'
@@ -67,6 +66,8 @@
     let profile = null;
     let events = [];
     let pendingEventId = null;
+    let postVisibility = 'college';
+    let activeQuickSearchTab = 'posts';
 
     /* ------------------------------ helpers ------------------------------ */
 
@@ -113,15 +114,15 @@
             const now = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
             const todays = data.items.filter(e => Number(e.weekday) === today).sort((a, b) => timeOf(a.start_time).localeCompare(timeOf(b.start_time)));
             const next = todays.find(e => timeOf(e.end_time) > now) || todays[0];
-            if (!next) return quickCard({ tone: 'blue', icon: '<span class="stu-qicon tone-blue">📅</span>', key: 'Next Class', value: 'No classes today', sub: 'Enjoy your day', href: 'attendance.html' });
+            if (!next) return quickCard({ tone: 'blue', icon: '<span class="stu-qicon tone-blue">📅</span>', key: 'Next Class', value: 'No classes today', sub: 'Enjoy your day', href: 'timetable.html' });
             return quickCard({
                 tone: 'blue', icon: '<span class="stu-qicon tone-blue">📅</span>', key: 'Next Class',
                 value: esc(next.subject_name || 'Class'),
                 sub: `${timeOf(next.start_time)} – ${timeOf(next.end_time)}${next.classroom_name ? ' · ' + esc(next.classroom_name) : ''}${next.faculty_name ? ' · ' + esc(next.faculty_name) : ''}`,
-                href: 'attendance.html'
+                href: 'timetable.html'
             });
         } catch (e) {
-            return quickCard({ tone: 'blue', icon: '<span class="stu-qicon tone-blue">📅</span>', key: 'Next Class', value: 'Unavailable', sub: 'Timetable not loaded', href: 'attendance.html' });
+            return quickCard({ tone: 'blue', icon: '<span class="stu-qicon tone-blue">📅</span>', key: 'Next Class', value: 'Unavailable', sub: 'Timetable not loaded', href: 'timetable.html' });
         }
     }
 
@@ -158,7 +159,7 @@
         try {
             const data = await safe(() => ERP.call('/api/finance/invoices?limit=100'));
             const items = (data.items || []).filter(i => i.status !== 'Paid');
-            const outstanding = items.reduce((sum, i) => sum + (BigInt(i.total_paise || 0) - BigInt(i.discount_paise || 0) - BigInt(i.waiver_paise || 0)), 0n);
+            const outstanding = items.reduce((sum, i) => sum + (BigInt(i.total_paise || 0) - BigInt(i.discount_paise || 0) - BigInt(i.waiver_paise || 0) - BigInt(i.paid_paise || 0)), 0n);
             const value = items.length ? money(outstanding.toString()) : 'No dues';
             return quickCard({ tone: 'purple', icon: '<span class="stu-qicon tone-purple">₹</span>', key: 'Fees', value, sub: items.length ? `${items.length} unpaid invoice${items.length === 1 ? '' : 's'}` : 'All invoices settled', href: 'finance.html' });
         } catch (e) {
@@ -185,10 +186,10 @@
             const rows = data || [];
             const approved = rows.filter(o => o.status === 'Auto Approved' || o.status === 'HOD Approved').length;
             const pending = rows.filter(o => o.status === 'Pending').length;
-            if (!rows.length) return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'No requests', sub: 'Apply OD from the Events page', href: 'student.html' });
-            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: `${approved} approved`, sub: pending ? `${pending} awaiting HOD approval` : 'No pending requests', href: 'student.html' });
+            if (!rows.length) return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'No requests', sub: 'Apply OD from the Events page', href: 'student.html#myodSection' });
+            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: `${approved} approved`, sub: pending ? `${pending} awaiting HOD approval` : 'No pending requests', href: 'student.html#myodSection' });
         } catch (e) {
-            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'Unavailable', sub: 'Could not load OD requests', href: 'student.html' });
+            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'Unavailable', sub: 'Could not load OD requests', href: 'student.html#myodSection' });
         }
     }
 
@@ -198,6 +199,7 @@
             loadFeesCard(), loadExamsCard(), loadOdCard()
         ]);
         $('quickCards').innerHTML = cards.join('');
+        $('quickCards').querySelectorAll('[data-href]').forEach(card => card.addEventListener('click', () => location.href = card.dataset.href));
     }
 
     /* ------------------------------ profile ------------------------------ */
@@ -247,7 +249,8 @@
 
     function renderMoreServices(filter = '') {
         const term = filter.trim().toLowerCase();
-        const matches = SERVICES.filter(s => !term || s.label.toLowerCase().includes(term));
+        const catalogue = SERVICES.filter(s => s.key !== 'more');
+        const matches = catalogue.filter(s => !term || s.label.toLowerCase().includes(term));
         const nodes = matches.map((service, index) => {
             const tone = SERVICE_TONES[(SERVICES.indexOf(service)) % SERVICE_TONES.length];
             return `<a href="${esc(service.href)}" data-href="${esc(service.href)}">
@@ -260,7 +263,63 @@
             closeOverlay('more');
             openService(node.dataset.href);
         }));
-        $('moreSub').textContent = `${matches.length} of ${SERVICES.length} services`;
+        $('moreSub').textContent = `${matches.length} of ${catalogue.length} services`;
+    }
+
+    function renderQuickSearchResults(items) {
+        $('quickSearchResults').innerHTML = items.length ? items.join('') : '<div class="stu-empty">No matching results.</div>';
+        $('quickSearchResults').querySelectorAll('[data-search-href]').forEach(node => node.addEventListener('click', event => {
+            event.preventDefault();
+            closeOverlay('search');
+            openService(node.dataset.searchHref);
+        }));
+    }
+
+    async function searchQuickSearch() {
+        const query = $('quickSearchInput').value.trim();
+        const results = $('quickSearchResults');
+        if (!query) {
+            $('quickSearchStatus').textContent = 'Enter a search term.';
+            results.innerHTML = '';
+            return;
+        }
+        $('quickSearchStatus').textContent = 'Searching…';
+        try {
+            let items = [];
+            if (activeQuickSearchTab === 'posts') {
+                const data = await safe(() => ERP.call('/api/community/feed?' + new URLSearchParams({ filter: 'all', search: query, limit: '8' })));
+                items = data.items.map(post => `<a class="search-result" href="home.html?feedSearch=${encodeURIComponent(query)}#campusFeed"><strong>${esc(post.author_name)}</strong><span>${esc(post.body)}</span></a>`);
+            } else if (activeQuickSearchTab === 'people') {
+                const data = await safe(() => ERP.call('/api/community/people?' + new URLSearchParams({ search: query })));
+                items = data.items.map(person => `<a class="search-result" href="messages.html?user_id=${encodeURIComponent(person.id)}"><strong>${esc(person.name)}</strong><span>${esc([person.role, person.department_name].filter(Boolean).join(' · '))}</span><span class="search-action">Message</span></a>`);
+            } else if (activeQuickSearchTab === 'events') {
+                const data = await safe(() => ERP.call('/api/student/search-events?q=' + encodeURIComponent(query)));
+                items = data.map(event => `<a class="search-result" href="student.html?event_id=${encodeURIComponent(event.id)}"><strong>${esc(event.title)}</strong><span>${esc(event.from_date ? new Date(event.from_date).toLocaleDateString() : 'Date to be announced')}</span><span class="search-action">View event</span></a>`);
+            } else {
+                const term = query.toLowerCase();
+                items = SERVICES.filter(service => service.key !== 'more' && service.label.toLowerCase().includes(term)).map(service => {
+                    const tone = SERVICE_TONES[SERVICES.indexOf(service) % SERVICE_TONES.length];
+                    return `<a class="search-result" href="${esc(service.href)}" data-search-href="${esc(service.href)}"><strong><span class="ico ${tone}">${service.icon}</span>${esc(service.label)}</strong><span>Open service</span></a>`;
+                });
+            }
+            $('quickSearchStatus').textContent = `${items.length} result${items.length === 1 ? '' : 's'}`;
+            renderQuickSearchResults(items);
+        } catch (e) {
+            $('quickSearchStatus').textContent = 'Search unavailable';
+            results.innerHTML = `<div class="stu-state error">${esc(e.message)}</div>`;
+        }
+    }
+
+    function bindQuickSearch() {
+        $('quickSearchForm').addEventListener('submit', event => { event.preventDefault(); searchQuickSearch(); });
+        $('quickSearch').querySelectorAll('[data-search-tab]').forEach(button => button.addEventListener('click', () => {
+            activeQuickSearchTab = button.dataset.searchTab;
+            $('quickSearch').querySelectorAll('[data-search-tab]').forEach(tab => {
+                tab.classList.toggle('active', tab === button);
+                tab.setAttribute('aria-selected', String(tab === button));
+            });
+            searchQuickSearch();
+        }));
     }
 
     /* ------------------------------ event banner ------------------------------ */
@@ -408,8 +467,9 @@
                         toast(action === 'like' ? (result.active ? 'Liked post' : 'Like removed') : (result.active ? 'Post saved' : 'Removed from saved'));
                         await loadFeed(false);
                     } else if (action === 'share') {
-                        await safe(() => ERP.call(`/api/community/feed/${id}/share`, { method: 'POST', body: {} }));
-                        toast('Post shared');
+                        const shared = button.textContent.includes('Shared');
+                        await safe(() => ERP.call(`/api/community/feed/${id}/share`, { method: shared ? 'DELETE' : 'POST', body: {} }));
+                        toast(shared ? 'Share removed' : 'Post shared');
                         await loadFeed(false);
                     } else if (action === 'comment') {
                         const area = node.querySelector('.comments');
@@ -505,7 +565,9 @@
         $('composerMoreBtn').addEventListener('click', () => $('composerMoreMenu').classList.toggle('open'));
         $('composerMoreMenu').querySelectorAll('[data-vis]').forEach(button => button.addEventListener('click', () => {
             const labels = { college: 'Visible to college', classmates: 'Visible to classmates', following: 'Visible to followers' };
-            $('composerVisLabel').textContent = labels[button.dataset.vis];
+            postVisibility = button.dataset.vis;
+            $('composerVisLabel').textContent = labels[postVisibility];
+            $('composerMoreMenu').querySelectorAll('[data-vis]').forEach(option => option.setAttribute('aria-checked', String(option === button)));
             $('composerMoreMenu').classList.remove('open');
         }));
         document.addEventListener('click', event => {
@@ -524,10 +586,13 @@
                 form.append('body', body || composerFile.name);
                 if (composerFile) form.append('media', composerFile);
                 if (pendingEventId) form.append('event_id', String(pendingEventId));
+                form.append('visibility', postVisibility);
                 await safe(() => ERP.call('/api/community/feed', { method: 'POST', body: form }));
                 $('composer').reset();
                 setComposerFile(null);
                 pendingEventId = null;
+                postVisibility = 'college';
+                $('composerMoreMenu').querySelectorAll('[data-vis]').forEach(option => option.setAttribute('aria-checked', String(option.dataset.vis === 'college')));
                 $('composerVisLabel').textContent = '';
                 toast('Post published');
                 await loadFeed(true);
@@ -550,8 +615,14 @@
             badge.textContent = unread > 9 ? '9+' : String(unread);
             const items = rows || [];
             $('notifList').innerHTML = items.length
-                ? items.slice(0, 30).map(n => `<div class="item ${n.is_read ? '' : 'unread'}"><div class="t">${esc(n.message)}</div><div class="time">${new Date(n.created_at).toLocaleString()}</div></div>`).join('')
+                ? items.slice(0, 30).map(n => `<button class="item ${n.is_read ? '' : 'unread'}" type="button" data-notification-id="${esc(n.id)}" ${n.is_read ? 'disabled' : ''}><span class="t">${esc(n.message)}</span><span class="time">${new Date(n.created_at).toLocaleString()}</span>${n.is_read ? '' : '<span class="mark-read">Mark as read</span>'}</button>`).join('')
                 : '<div class="stu-empty">No notifications yet.</div>';
+            $('notifList').querySelectorAll('[data-notification-id]:not(:disabled)').forEach(node => node.addEventListener('click', async () => {
+                try {
+                    await safe(() => ERP.call('/api/notifications/mark-read', { method: 'POST', body: { id: Number(node.dataset.notificationId) } }));
+                    await loadNotifications();
+                } catch (e) { err(e.message); }
+            }));
         } catch (e) { $('notifList').innerHTML = `<div class="stu-state error">${esc(e.message)}</div>`; }
     }
 
@@ -577,12 +648,14 @@
         if (name === 'drawer') { $('drawer').classList.add('open'); $('drawerBack').classList.add('open'); $('drawer').setAttribute('aria-hidden', 'false'); }
         if (name === 'sheet') { $('sheetBack').classList.add('open'); $('sheetBack').setAttribute('aria-hidden', 'false'); }
         if (name === 'more') { $('moreServices').classList.add('open'); $('moreServices').setAttribute('aria-hidden', 'false'); renderMoreServices($('moreSearch').value); }
+        if (name === 'search') { $('quickSearch').classList.add('open'); $('quickSearch').setAttribute('aria-hidden', 'false'); $('quickSearchInput').focus(); }
     };
 
     const closeOverlay = name => {
         if (name === 'drawer') { $('drawer').classList.remove('open'); $('drawerBack').classList.remove('open'); $('drawer').setAttribute('aria-hidden', 'true'); }
         if (name === 'sheet') { $('sheetBack').classList.remove('open'); $('sheetBack').setAttribute('aria-hidden', 'true'); }
         if (name === 'more') { $('moreServices').classList.remove('open'); $('moreServices').setAttribute('aria-hidden', 'true'); }
+        if (name === 'search') { $('quickSearch').classList.remove('open'); $('quickSearch').setAttribute('aria-hidden', 'true'); }
     };
 
     function bindOverlays() {
@@ -592,6 +665,7 @@
         $('quickCreateBtn').addEventListener('click', () => openOverlay('sheet'));
         document.querySelectorAll('[data-close]').forEach(node => node.addEventListener('click', () => closeOverlay(node.dataset.close)));
         $('moreSearch').addEventListener('input', event => renderMoreServices(event.target.value));
+        bindQuickSearch();
         $('sheetBack').querySelectorAll('[data-create]').forEach(button => button.addEventListener('click', () => {
             closeOverlay('sheet');
             const kind = button.dataset.create;
@@ -602,8 +676,11 @@
         }));
         $('signOutBtn').addEventListener('click', ERP.signOut);
         $('editProfileBtn').addEventListener('click', () => location.href = 'profile.html');
-        $('bannerCta').addEventListener('click', () => location.href = 'student.html');
-        document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeOverlay('drawer'); closeOverlay('sheet'); closeOverlay('more'); $('notifPanel').classList.remove('open'); } });
+        $('bannerCta').addEventListener('click', () => {
+            const event = events[bannerIndex % events.length];
+            location.href = event ? `student.html?event_id=${encodeURIComponent(event.id)}` : 'student.html';
+        });
+        document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeOverlay('drawer'); closeOverlay('sheet'); closeOverlay('more'); closeOverlay('search'); $('notifPanel').classList.remove('open'); } });
     }
 
     function bindDrawerNav() {
@@ -616,6 +693,7 @@
             ['📖', 'Library', 'library.html'],
             ['₹', 'Fees', 'finance.html'],
             ['🎉', 'Events & OD', 'student.html'],
+            ['📢', 'Notices', 'notices.html'],
             ['💬', 'Messages', 'messages.html'],
             ['👤', 'Profile', 'profile.html']
         ];
@@ -641,7 +719,7 @@
             form.classList.toggle('open');
             if (form.classList.contains('open')) $('feedSearchInput').focus();
         });
-        $('topSearchBtn').addEventListener('click', () => { openOverlay('more'); $('moreSearch').focus(); });
+        $('topSearchBtn').addEventListener('click', () => openOverlay('search'));
         $('feedSearchForm').addEventListener('submit', event => {
             event.preventDefault();
             feed.search = $('feedSearchInput').value.trim();
@@ -654,7 +732,11 @@
             $('feedSearchClear').hidden = true;
             loadFeed(true);
         });
-        $('feedFilterBtn').addEventListener('click', () => openOverlay('more'));
+        $('feedFilterBtn').addEventListener('click', () => {
+            const tabs = $('feedTabs');
+            tabs.hidden = !tabs.hidden;
+            $('feedFilterBtn').setAttribute('aria-expanded', String(!tabs.hidden));
+        });
         $('loadMoreBtn').addEventListener('click', () => { feed.offset += feed.limit; loadFeed(false); });
     }
 
@@ -671,6 +753,13 @@
             $('composerVisLabel').textContent = '';
             await loadProfile();
             await Promise.all([loadQuickCards(), loadEvents(), loadNotifications()]);
+            const initialSearch = new URLSearchParams(location.search).get('feedSearch');
+            if (initialSearch) {
+                feed.search = initialSearch.slice(0, 100);
+                $('feedSearchInput').value = feed.search;
+                $('feedSearchForm').classList.add('open');
+                $('feedSearchClear').hidden = false;
+            }
             await loadFeed(true);
         } catch (e) {
             setStatus(e.message || 'Could not load your dashboard.', 'error');

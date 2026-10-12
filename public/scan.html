@@ -130,7 +130,7 @@ const urlParams = new URLSearchParams(window.location.search)
 
 const qrToken = urlParams.get("token")
 
-const studentToken = localStorage.getItem("token")
+const studentToken = sessionStorage.getItem("token") || localStorage.getItem("token")
 
 
 async function markAttendance(){

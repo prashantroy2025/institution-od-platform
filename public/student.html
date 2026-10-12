@@ -88,6 +88,8 @@ button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--foc
 .event-card, .card, .notification { border: 1px solid var(--line); border-radius: var(--radius-md); background: white; }
 .event-card { padding: 20px; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
 .event-card:hover { border-color: #cbd6ff; box-shadow: 0 14px 30px rgba(35, 62, 133, .1); transform: translateY(-2px); }
+.event-card.event-highlight { border-color: #315efb; box-shadow: 0 0 0 4px rgba(49, 94, 251, .16); }
+.module-link { display: block; color: inherit; text-decoration: none; }
 .event-kicker { margin-bottom: 10px; color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .event-card h3 { margin: 0 0 12px; font-size: 17px; }
 .event-meta { display: grid; gap: 7px; margin-bottom: 15px; color: var(--muted); font-size: 13px; }
@@ -165,11 +167,11 @@ button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--foc
         <button type="button" onclick="location.href='class-attendance.html'">Class attendance</button>
         <button type="button" onclick="location.href='learning.html'">Assignments &amp; materials</button>
         <button type="button" onclick="location.href='examinations.html'">Examinations &amp; results</button>
-        <div class="nav-unavailable" aria-disabled="true"><span>Examinations</span><small>Not connected</small></div>
-        <div class="nav-unavailable" aria-disabled="true"><span>Fees</span><small>Not connected</small></div>
-        <div class="nav-unavailable" aria-disabled="true"><span>Library</span><small>Not connected</small></div>
-        <div class="nav-unavailable" aria-disabled="true"><span>Campus Feed</span><small>Not connected</small></div>
-        <div class="nav-unavailable" aria-disabled="true"><span>Profile</span><small>Not connected</small></div>
+        <button type="button" onclick="location.href='finance.html'">Fees</button>
+        <button type="button" onclick="location.href='library.html'">Library</button>
+        <button type="button" onclick="location.href='home.html#campusFeed'">Campus Feed</button>
+        <button type="button" onclick="location.href='profile.html'">Profile</button>
+        <button type="button" onclick="location.href='messages.html'">Messages</button>
     </div>
     <button type="button" class="logout" onclick="logout()">Sign out</button>
 </aside>
@@ -207,6 +209,7 @@ button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--foc
         <input type="search" id="searchEvent" placeholder="Search by event title" oninput="searchEvents()">
         <button type="button" class="button" onclick="searchEvents()">Search events</button>
     </div>
+    <p id="studentActionStatus" class="state" role="status" aria-live="polite" hidden></p>
     <div class="events-grid" id="events" aria-live="polite"></div>
 </section>
 
@@ -233,12 +236,13 @@ button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--foc
 
 <section class="content-card" style="margin-top: 18px;">
     <div class="section-heading">
-        <div><h2>More from your ERP</h2><p>These modules are reserved in the navigation and will appear here once their APIs are available.</p></div>
+        <div><h2>More from your ERP</h2><p>Continue to your academic, finance, library and campus modules.</p></div>
     </div>
     <div class="events-grid">
-        <div class="event-card"><div class="event-kicker">Academics</div><h3>Timetable &amp; courses</h3><p class="event-meta">Timetable, subjects and semester records are not connected yet.</p></div>
-        <div class="event-card"><div class="event-kicker">Campus feed</div><h3>Announcements</h3><p class="event-meta">Announcements will appear when a campus feed endpoint is implemented.</p></div>
-        <div class="event-card"><div class="event-kicker">Student services</div><h3>Exams, fees &amp; library</h3><p class="event-meta">No live APIs exist for these services yet, so no placeholder actions are shown.</p></div>
+        <a class="event-card module-link" href="learning.html"><div class="event-kicker">Academics</div><h3>Timetable &amp; courses</h3><p class="event-meta">Open your courses, materials and assignments.</p></a>
+        <a class="event-card module-link" href="examinations.html"><div class="event-kicker">Examinations</div><h3>Exams &amp; results</h3><p class="event-meta">View scheduled exams and published results.</p></a>
+        <a class="event-card module-link" href="finance.html"><div class="event-kicker">Student services</div><h3>Fees</h3><p class="event-meta">Review invoices, balances and payment status.</p></a>
+        <a class="event-card module-link" href="library.html"><div class="event-kicker">Library</div><h3>Catalog &amp; loans</h3><p class="event-meta">Search the catalog and review your loans.</p></a>
     </div>
 </section>
 
@@ -248,15 +252,27 @@ button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--foc
 
 <script>
 
-const token = localStorage.getItem("token")
+const token = sessionStorage.getItem("token") || localStorage.getItem("token")
 let qrScanner = null;
 
-function stateMarkup(title, message, type = "") {
-    return `<div class="state ${type}"><div><strong>${title}</strong><span>${message}</span></div></div>`;
+function setPanelState(container, title, message, type = "") {
+    const state = document.createElement("div");
+    state.className = "state " + type;
+    const content = document.createElement("div");
+    const heading = document.createElement("strong");
+    const detail = document.createElement("span");
+    heading.textContent = title;
+    detail.textContent = message;
+    content.append(heading, detail);
+    state.append(content);
+    container.replaceChildren(state);
 }
 
-function setPanelState(container, title, message, type = "") {
-    container.innerHTML = stateMarkup(title, message, type);
+function showActionStatus(message, isError = false) {
+    const status = document.getElementById("studentActionStatus");
+    status.textContent = message;
+    status.className = "state" + (isError ? " error" : "");
+    status.hidden = false;
 }
 
 /* LOAD EVENTS */
@@ -305,6 +321,7 @@ function renderEvents(data, container) {
     data.forEach(event => {
         const div = document.createElement("div");
         div.className = "event-card";
+        div.dataset.eventId = String(event.id);
         const participated = event.participation_status === "Participated";
         const odStatus = event.od_status;
         let odBadge = "<span class='event-status status-neutral'>No OD request</span>";
@@ -317,7 +334,7 @@ function renderEvents(data, container) {
         }
         div.innerHTML = `
             <div class="event-kicker">Campus activity</div>
-            <h3>${event.title}</h3>
+            <h3></h3>
             <div class="event-meta">
                 <span>📅 ${new Date(event.from_date).toLocaleDateString()}</span>
                 <span class="event-status ${participated ? 'status-positive' : 'status-neutral'}">${event.participation_status}</span>
@@ -325,8 +342,17 @@ function renderEvents(data, container) {
             ${odBadge}
             ${!odStatus ? `<button type="button" class="btn apply" onclick="applyOD(${event.id}, '${(event.from_date || '').split('T')[0]}')">Apply for OD</button>` : ""}
         `;
+        div.querySelector('h3').textContent = event.title;
         container.appendChild(div);
     });
+    const requestedId = new URLSearchParams(location.search).get('event_id');
+    if (requestedId) {
+        const target = [...container.querySelectorAll('.event-card')].find(card => card.dataset.eventId === requestedId);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.add('event-highlight');
+        }
+    }
 }
 
 function updateStats(data) {
@@ -341,7 +367,7 @@ function updateStats(data) {
 
 async function applyOD(eventId, fromDate) {
     const date = fromDate;
-    if (!date) { alert("Event date not found"); return; }
+    if (!date) { showActionStatus("Event date not found.", true); return; }
 
 const button = document.querySelector(`button[onclick^="applyOD(${eventId},"]`);
 if (button) { button.disabled = true; button.textContent = "Submitting…"; }
@@ -363,11 +389,11 @@ applied_date:date
 
 const data=await res.json()
 if (!res.ok) throw new Error(data.message || "OD request failed");
-alert(data.message)
 await loadEvents();
+showActionStatus(data.message);
 await loadMyOD();
 } catch (error) {
-    alert(error.message || "Unable to submit OD request");
+    showActionStatus(error.message || "Unable to submit OD request", true);
 } finally {
     if (button) { button.disabled = false; button.textContent = "Apply for OD"; }
 }
@@ -501,7 +527,7 @@ async function handleQRResult(qrData){
         const url = new URL(qrData);
         const token = url.searchParams.get("token");
 
-        const studentToken = localStorage.getItem("token");
+        const studentToken = sessionStorage.getItem("token") || localStorage.getItem("token");
 
         const res = await fetch(API_BASE + "/api/qr/scan",{
             method:"POST",
@@ -568,7 +594,9 @@ window.location="login.html"
 /* DEFAULT */
 
 window.onload = () => {
-    document.querySelector(".sidebar button").click();
+    const sectionId = location.hash === '#myodSection' ? 'myodSection' : 'eventsSection';
+    const button = [...document.querySelectorAll('.sidebar button')].find(item => item.getAttribute('onclick')?.includes(sectionId));
+    showSection(button || document.querySelector('.sidebar button'), sectionId);
 };
 
 </script>
