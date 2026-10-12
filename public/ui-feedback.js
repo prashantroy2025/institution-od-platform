@@ -108,6 +108,13 @@ window.ERPUI = (function () {
 })();
 
 document.addEventListener('click', async event => {
+    const homeButton = event.target.closest('[data-bottom="home"]');
+    if (homeButton && (sessionStorage.getItem('role') || localStorage.getItem('role')) === 'student') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        location.href = 'home.html';
+        return;
+    }
     const link = event.target.closest('a[href]');
     const profileButton = event.target.closest('.document-row button[onclick]');
     if (!link && !profileButton) return;

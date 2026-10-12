@@ -225,6 +225,7 @@ test('student navigation returns home and message attachments use authenticated 
     assert.match(messages, /headers:auth/);
     assert.match(feedback, /Authorization: 'Bearer ' \+ token/);
     assert.match(feedback, /stopImmediatePropagation\(\)/);
+    assert.match(feedback, /location\.href = 'home\.html'/);
     assert.match(shared, /studentHome.*home\.html.*dashboard\.html/);
 });
 
