@@ -1,5 +1,7 @@
 const db = require('../config/db');
 const notificationService = require('../services/notificationService');
+const { isPositiveInteger } = require('../utils/requestValidation');
+const { EVENT_CATEGORIES } = require('../utils/eventCategories');
 
 /* ---------------- CREATE EVENT ---------------- */
 
@@ -18,7 +20,8 @@ to_date,
 start_time,
 end_time,
 is_full_day,
-target_hod_id
+target_hod_id,
+category
 } = req.body;
 
 
@@ -26,6 +29,10 @@ const department_id = req.user.department_id;
 
 if (!title || !from_date || !to_date) {
 return res.status(400).json({ message: "Missing required fields" });
+}
+
+if (category && !EVENT_CATEGORIES.includes(category)) {
+return res.status(400).json({ message: "Unsupported event category" });
 }
 
 if (new Date(to_date) < new Date(from_date)) {
@@ -66,14 +73,23 @@ if (!club_id) {
     return res.status(400).json({ message: "No club configured for organizer department" });
 }
 
+if (target_hod_id) {
+    const [hodRows] = await db.query(
+        "SELECT id FROM users WHERE id=? AND role='hod' AND is_active=1 AND department_id=?",
+        [target_hod_id, department_id]
+    );
+    if (!hodRows.length) return res.status(400).json({ message: "Target must be an active HOD in the event department" });
+}
+
 const [result] = await db.query(
-`INSERT INTO events 
-    (club_id, organizer_id, title, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status, target_hod_id)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+`INSERT INTO events
+    (club_id, organizer_id, title, category, department_id, from_date, to_date, start_time, end_time, is_full_day, proof_file, status, target_hod_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 [
     club_id,
 req.user.id,
 title,
+category || null,
 department_id,
 from_date,
 to_date,
@@ -161,8 +177,8 @@ try{
 const { event_id } = req.body;
 
 const [result] = await db.query(
-  "UPDATE events SET status='Approved' WHERE id=? AND (department_id=? OR target_hod_id=?)",
-  [event_id, req.user.department_id, req.user.id]  // add req.user.id
+  "UPDATE events SET status='Approved' WHERE id=? AND status='Pending' AND (target_hod_id=? OR (target_hod_id IS NULL AND department_id=?))",
+  [event_id, req.user.id, req.user.department_id]
 );
 
 if (result.affectedRows === 0) {
@@ -192,8 +208,8 @@ try{
 const { event_id } = req.body;
 
 const [result] = await db.query(
-  "UPDATE events SET status='Rejected' WHERE id=? AND (department_id=? OR target_hod_id=?)",
-  [event_id, req.user.department_id, req.user.id]
+  "UPDATE events SET status='Rejected' WHERE id=? AND status='Pending' AND (target_hod_id=? OR (target_hod_id IS NULL AND department_id=?))",
+  [event_id, req.user.id, req.user.department_id]
 );
 
 if (result.affectedRows === 0) {
@@ -322,11 +338,12 @@ const [rows] = await db.query(
   `SELECT a.action, a.entity, a.entity_id, a.created_at,
    u.name, e.title
    FROM audit_logs a
+   JOIN events e ON a.entity = 'events' AND a.entity_id = e.id
    LEFT JOIN users u ON a.user_id = u.id
-   LEFT JOIN events e ON a.entity_id = e.id
+   WHERE e.organizer_id = ?
    ORDER BY a.created_at DESC
    LIMIT ? OFFSET ?`,
-  [limit, offset]
+  [req.user.id, limit, offset]
 );
 
 res.json(rows);
@@ -377,12 +394,24 @@ exports.setTargetHod = async (req, res) => {
     try {
         const { event_id, target_hod_id } = req.body;
 
-        if (!event_id || !target_hod_id) {
-            return res.status(400).json({ message: "event_id and target_hod_id required" });
+        if (!isPositiveInteger(event_id) || !isPositiveInteger(target_hod_id)) {
+            return res.status(400).json({ message: "Valid event_id and target_hod_id required" });
         }
 
+        const [events] = await db.query(
+            "SELECT id, department_id FROM events WHERE id=? AND organizer_id=? AND is_deleted=0",
+            [event_id, req.user.id]
+        );
+        if (!events.length) return res.status(404).json({ message: "Event not found" });
+
+        const [hods] = await db.query(
+            "SELECT id FROM users WHERE id=? AND role='hod' AND is_active=1 AND department_id=?",
+            [target_hod_id, events[0].department_id]
+        );
+        if (!hods.length) return res.status(400).json({ message: "Target must be an active HOD in the event department" });
+
         await db.query(
-            "UPDATE events SET target_hod_id=? WHERE id=? AND organizer_id=?",
+            "UPDATE events SET target_hod_id=? WHERE id=? AND organizer_id=? AND is_deleted=0",
             [target_hod_id, event_id, req.user.id]
         );
 

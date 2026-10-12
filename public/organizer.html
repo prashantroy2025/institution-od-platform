@@ -340,6 +340,18 @@ justify-content:center;
   </div>
 
   <div>
+    <label style="font-size:13px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Category (optional)</label>
+    <select id="createCategory" style="margin:0;">
+      <option value="">No category</option>
+      <option value="Technical">Technical</option>
+      <option value="Cultural">Cultural</option>
+      <option value="Workshop">Workshop</option>
+      <option value="Hackathon">Hackathon</option>
+      <option value="AI Event">AI Event</option>
+    </select>
+  </div>
+
+  <div>
     <label style="font-size:13px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Target HOD (optional)</label>
     <select id="createHodSelect" style="margin:0;">
       <option value="">Select HOD (optional)</option>
@@ -580,6 +592,10 @@ btn.classList.add("active")
 
 /* RENDER EVENTS */
 
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+}
+
 function renderEvents(containerId, events) {
     const container = document.getElementById(containerId);
     if (!events.length) {
@@ -591,12 +607,12 @@ function renderEvents(containerId, events) {
     events.forEach(e => {
         html += `<tr>
             <td>${e.id}</td>
-            <td>${e.title}</td>
+            <td>${escapeHtml(e.title)}</td>
             <td>${formatDate(e.from_date)}<br>
                 <span style="color:#64748b;font-size:13px">${formatTime(e.start_time)} → ${formatTime(e.end_time)}</span>
             </td>
             <td id="count-${e.id}">0</td>
-            <td class="status-${(e.status||'').toLowerCase()}">${e.status}</td>
+            <td class="status-${escapeHtml((e.status||'').toLowerCase())}">${escapeHtml(e.status)}</td>
             <td>
                 <button class="btn" onclick="viewParticipants(${e.id})">View</button>
                 <button style="background:#ef4444;color:white;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;margin-left:4px;" onclick="deleteEvent(${e.id})">Delete</button>
@@ -647,6 +663,7 @@ async function createNewEvent(){
                 start_time,
                 end_time,
                 is_full_day: 0,
+                category: document.getElementById("createCategory").value || null,
                 target_hod_id: document.getElementById("createHodSelect").value || null
             })
         });
@@ -1273,10 +1290,10 @@ data.forEach(h=>{
 
 html+=`
 <tr>
-<td>${h.action}</td>
-<td>${h.title || h.entity}</td>
-<td>${h.name || "-"}</td>
-<td>${new Date(h.created_at).toLocaleString()}</td>
+<td>${escapeHtml(h.action)}</td>
+	<td>${escapeHtml(h.title || h.entity)}</td>
+	<td>${escapeHtml(h.name || "-")}</td>
+	<td>${escapeHtml(new Date(h.created_at).toLocaleString())}</td>
 <td>
 <button onclick="recoverEvent(${h.entity_id})">Recover</button>
 </td>

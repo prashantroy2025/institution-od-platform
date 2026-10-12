@@ -1,0 +1,78 @@
+.attendance-page { background: #eef4ff; min-height: 100vh; }
+.att-main { padding: 12px 14px 96px; display: flex; flex-direction: column; gap: 14px; }
+.att-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.att-title-row h1 { margin: 0; font-size: 26px; color: #0b2a6f; }
+.att-semester select { border: 1px solid #cfd9ee; border-radius: 12px; padding: 8px 10px; background: #fff; font-size: 14px; max-width: 170px; }
+.att-card { background: #fff; border-radius: 18px; padding: 16px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06); }
+.att-card h2 { margin: 0 0 12px; font-size: 18px; color: #0b2a6f; }
+.att-overview { display: flex; flex-direction: column; gap: 12px; }
+.att-overview-body { display: grid; grid-template-columns: 124px 1fr; gap: 14px; align-items: center; }
+.att-ring {
+    --p: 0; width: 118px; height: 118px; border-radius: 50%;
+    background: conic-gradient(#10b981 calc(var(--p) * 1%), #e5e7eb 0);
+    display: grid; place-items: center; position: relative;
+}
+.att-ring::before { content: ""; position: absolute; inset: 12px; background: #fff; border-radius: 50%; }
+.att-ring b { position: relative; font-size: 22px; color: #0f172a; }
+.att-counts { display: grid; gap: 8px; }
+.att-count { display: flex; justify-content: space-between; align-items: center; font-size: 15px; color: #334155; }
+.att-count strong { font-size: 18px; }
+.att-count.present strong { color: #059669; }
+.att-count.absent strong { color: #e11d48; }
+.att-count.total strong { color: #1e3a8a; }
+.att-count.muted strong { color: #64748b; }
+.att-alert { border-radius: 12px; padding: 10px 12px; font-size: 14px; background: #fee2e2; color: #9f1239; }
+.att-alert.ok { background: #dcfce7; color: #166534; }
+.att-alert.neutral { background: #e0ecff; color: #1e3a8a; }
+.att-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.att-shortcut {
+    display: flex; align-items: center; gap: 12px; min-height: 68px; padding: 12px;
+    background: #fff; border-radius: 16px; text-decoration: none; color: #0b2a6f; font-weight: 600; font-size: 15px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+.att-shortcut .ico { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; flex-shrink: 0; }
+.att-shortcut.tone-green .ico { background: #dcfce7; }
+.att-shortcut.tone-red .ico { background: #fee2e2; }
+.att-shortcut.tone-blue .ico { background: #dbeafe; }
+.att-shortcut.tone-grey .ico { background: #e2e8f0; }
+.att-list { list-style: none; margin: 0; padding: 0; }
+.att-row { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid #eef2f7; }
+.att-row:last-child { border-bottom: 0; }
+.att-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.att-row-main strong { color: #0b2a6f; overflow-wrap: anywhere; }
+.att-row-main small { color: #64748b; font-size: 13px; }
+.att-pill { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; background: #e2e8f0; color: #334155; }
+.att-pill.present, .att-pill.good { background: #dcfce7; color: #166534; }
+.att-pill.absent, .att-pill.bad, .att-pill.rejected { background: #fee2e2; color: #9f1239; }
+.att-pill.late, .att-pill.pending { background: #fef3c7; color: #92400e; }
+.att-pill.excused, .att-pill.approved, .att-pill.info { background: #e0ecff; color: #1e3a8a; }
+.att-mark { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+.att-mark.present { background: #16a34a; }
+.att-mark.absent { background: #e11d48; }
+.att-state { color: #475569; font-size: 14px; margin: 8px 0; }
+.att-state.error { color: #9f1239; }
+.att-button { border: 0; border-radius: 12px; padding: 10px 14px; background: #1d4ed8; color: #fff; font-weight: 600; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-block; }
+.att-button.secondary { background: #e0ecff; color: #1e3a8a; }
+.att-button:disabled { opacity: 0.6; cursor: not-allowed; }
+.att-form { display: grid; gap: 10px; }
+.att-form label { display: grid; gap: 4px; font-size: 13px; color: #334155; font-weight: 600; }
+.att-form input, .att-form select, .att-form textarea { border: 1px solid #cfd9ee; border-radius: 10px; padding: 9px 10px; font: inherit; font-weight: 400; color: #0f172a; background: #fff; }
+.att-bar { height: 8px; border-radius: 999px; background: #e5e7eb; overflow: hidden; margin-top: 6px; }
+.att-bar > span { display: block; height: 100%; background: #10b981; border-radius: 999px; }
+.att-bar > span.low { background: #e11d48; }
+.att-note { font-size: 13px; color: #64748b; margin: 0; }
+.att-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.att-table th, .att-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eef2f7; }
+.att-table th { color: #475569; font-weight: 600; }
+.att-filters { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.att-filters label { display: grid; gap: 4px; font-size: 13px; color: #334155; font-weight: 600; }
+.att-filters select, .att-filters input { border: 1px solid #cfd9ee; border-radius: 10px; padding: 8px 10px; font: inherit; font-weight: 400; background: #fff; }
+.att-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.attendance-page .stu-bottom a.active { color: #1d4ed8; }
+.attendance-page .stu-bell { position: relative; }
+.attendance-page .ev-unread { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 999px; background: #e11d48; color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+.attendance-page .ev-unread[hidden] { display: none; }
+@media (min-width: 720px) {
+    .att-wrap-wide { max-width: 760px; }
+    .att-shortcuts { grid-template-columns: 1fr 1fr 1fr 1fr; }
+}

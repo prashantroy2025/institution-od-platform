@@ -1,0 +1,22 @@
+const service = require('../services/academicStudentService');
+
+exports.subjects = async (req, res, next) => { try { res.json(await service.subjects(req.query, req.user)); } catch (error) { next(error); } };
+exports.faculty = async (req, res, next) => { try { res.json(await service.faculty(req.user)); } catch (error) { next(error); } };
+exports.mentor = async (req, res, next) => { try { res.json(await service.mentor(req.user)); } catch (error) { next(error); } };
+exports.syllabus = async (req, res, next) => { try { res.json(await service.syllabus(req.query, req.user)); } catch (error) { next(error); } };
+exports.manageSyllabus = async (req, res, next) => { try { res.json(await service.manageSyllabus(req.query, req.user)); } catch (error) { next(error); } };
+exports.createSyllabus = async (req, res, next) => { try { res.status(201).json(await service.createSyllabus(req.body, req.user)); } catch (error) { next(error); } };
+exports.updateSyllabus = async (req, res, next) => { try { res.json(await service.updateSyllabus(req.params.id, req.body, req.user)); } catch (error) { next(error); } };
+exports.deleteSyllabus = async (req, res, next) => { try { await service.deleteSyllabus(req.params.id, req.user); res.status(204).send(); } catch (error) { next(error); } };
+exports.calendar = async (req, res, next) => { try { res.json(await service.calendar(req.query, req.user)); } catch (error) { next(error); } };
+exports.manageCalendar = async (req, res, next) => { try { res.json(await service.manageCalendar(req.query, req.user)); } catch (error) { next(error); } };
+exports.createCalendarEvent = async (req, res, next) => { try { res.status(201).json(await service.createCalendarEvent(req.body, req.user)); } catch (error) { next(error); } };
+exports.updateCalendarEvent = async (req, res, next) => { try { res.json(await service.updateCalendarEvent(req.params.id, req.body, req.user)); } catch (error) { next(error); } };
+exports.deleteCalendarEvent = async (req, res, next) => { try { await service.deleteCalendarEvent(req.params.id, req.user); res.status(204).send(); } catch (error) { next(error); } };
+exports.register = async (req, res, next) => { try { res.status(201).json(await service.register(req.body, req.user)); } catch (error) { next(error); } };
+exports.registrations = async (req, res, next) => { try { res.json(await service.registrations(req.query, req.user)); } catch (error) { next(error); } };
+exports.reviewRegistration = async (req, res, next) => { try { res.json(await service.reviewRegistration(req.params.id, req.body, req.user)); } catch (error) { next(error); } };
+exports.submitRequest = async (req, res, next) => { try { res.status(201).json(await service.submitRequest(req.body, req.user, req.file)); } catch (error) { next(error); } };
+exports.requestDocument = async (req, res, next) => { try { const file=await service.requestDocument(req.params.id,req.user); res.setHeader('Content-Type',file.mime||'application/octet-stream'); res.setHeader('Content-Disposition',`attachment; filename="${String(file.name||'document').replace(/["\\\\\\r\\n]/g,'_')}"`); res.send(file.buffer); } catch (error) { next(error); } };
+exports.requests = async (req, res, next) => { try { res.json(await service.requests(req.query, req.user)); } catch (error) { next(error); } };
+exports.reviewRequest = async (req, res, next) => { try { res.json(await service.reviewRequest(req.params.id, req.body, req.user)); } catch (error) { next(error); } };

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Profile Photo · College ERP</title>
+<script src="config.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="profile.css">
+</head>
+<body class="profile-body">
+<div class="profile-app">
+
+<header class="app-header">
+    <div class="app-brand"><span class="brand-cap" aria-hidden="true">▲</span><strong>College ERP</strong></div>
+</header>
+
+<main class="page">
+    <div class="page-top">
+        <a class="back-link" id="backLink" href="profile.html" aria-label="Back to profile">‹</a>
+        <h1>Profile Photo</h1>
+    </div>
+    <p class="notice" id="notice" role="status" hidden></p>
+
+    <p class="state" id="loading" role="status">Loading your photo…</p>
+
+    <section class="card" id="errorCard" hidden>
+        <p class="state error" role="alert" id="errorText"></p>
+        <div style="margin-top:12px"><button class="secondary-btn" id="retryLoad" type="button">Retry</button></div>
+    </section>
+
+    <section class="card" id="photoCard" hidden aria-labelledby="photoTitle">
+        <h2 id="photoTitle">Your photo</h2>
+        <div class="stack" style="align-items:center;margin-top:12px">
+            <div class="photo-stage" id="preview" aria-label="Photo preview"></div>
+            <p class="hint" id="selectedName"></p>
+        </div>
+
+        <form id="photoForm" class="stack" style="margin-top:16px" novalidate>
+            <label>Choose a photo
+                <input id="photoInput" type="file" accept="image/png,image/jpeg">
+            </label>
+            <p class="hint">PNG or JPEG, up to 2 MB. Choosing a new photo replaces the current one.</p>
+            <p class="form-status" id="photoStatus" role="status" aria-live="polite"></p>
+            <div class="progress" id="progressBar" hidden role="progressbar" aria-label="Upload progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progressFill"></span></div>
+            <div class="form-row">
+                <button class="primary-btn" id="uploadBtn" type="submit" disabled>Upload photo</button>
+                <button class="secondary-btn" id="cancelUpload" type="button" hidden>Cancel upload</button>
+            </div>
+            <button class="secondary-btn" id="removeBtn" type="button" disabled>Remove photo (not available yet)</button>
+            <p class="hint">Removing a photo is not supported by the platform yet.</p>
+        </form>
+    </section>
+</main>
+
+<nav class="bottom-nav" aria-label="Main navigation"></nav>
+</div>
+
+<script src="erp-app.js"></script>
+<script src="profile-photo.js"></script>
+</body>
+</html>

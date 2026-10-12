@@ -251,8 +251,12 @@ button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--foc
 const token = localStorage.getItem("token")
 let qrScanner = null;
 
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+}
+
 function stateMarkup(title, message, type = "") {
-    return `<div class="state ${type}"><div><strong>${title}</strong><span>${message}</span></div></div>`;
+    return `<div class="state ${type}"><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(message)}</span></div></div>`;
 }
 
 function setPanelState(container, title, message, type = "") {
@@ -317,10 +321,10 @@ function renderEvents(data, container) {
         }
         div.innerHTML = `
             <div class="event-kicker">Campus activity</div>
-            <h3>${event.title}</h3>
+            <h3>${escapeHtml(event.title)}</h3>
             <div class="event-meta">
                 <span>📅 ${new Date(event.from_date).toLocaleDateString()}</span>
-                <span class="event-status ${participated ? 'status-positive' : 'status-neutral'}">${event.participation_status}</span>
+                <span class="event-status ${participated ? 'status-positive' : 'status-neutral'}">${escapeHtml(event.participation_status)}</span>
             </div>
             ${odBadge}
             ${!odStatus ? `<button type="button" class="btn apply" onclick="applyOD(${event.id}, '${(event.from_date || '').split('T')[0]}')">Apply for OD</button>` : ""}
@@ -405,7 +409,7 @@ const div=document.createElement("div")
 div.className="card"
 
 div.innerHTML=`
-<div class="od-row"><div><h3>${od.title}</h3><p>Applied on ${od.applied_date}</p></div><span class="event-status ${od.status.includes('Approved') ? 'status-positive' : od.status === 'Pending' ? 'status-pending' : 'status-negative'}">${od.status}</span></div>
+<div class="od-row"><div><h3>${escapeHtml(od.title)}</h3><p>Applied on ${od.applied_date}</p></div><span class="event-status ${od.status.includes('Approved') ? 'status-positive' : od.status === 'Pending' ? 'status-pending' : 'status-negative'}">${escapeHtml(od.status)}</span></div>
 `
 
 container.appendChild(div)
@@ -439,7 +443,7 @@ data.forEach(n=>{
 
 const div=document.createElement("div")
 div.className="notification"
-div.innerHTML=`<p>${n.message}</p><small>${n.is_read ? "Read" : "New update"}</small>`
+div.innerHTML=`<p>${escapeHtml(n.message)}</p><small>${n.is_read ? "Read" : "New update"}</small>`
 
 container.appendChild(div)
 

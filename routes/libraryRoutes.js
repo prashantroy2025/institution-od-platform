@@ -1,1 +1,35 @@
-const express=require('express');const r=express.Router();const c=require('../controllers/libraryController');const upload=require('../middleware/learningUploadMiddleware');const {verifyToken,allowRoles}=require('../middleware/authMiddleware');r.get('/catalog',verifyToken,allowRoles('super_admin','hod','organizer','student'),c.list);r.post('/books',verifyToken,allowRoles('super_admin','hod','organizer'),upload.single('file'),c.create);r.post('/issue',verifyToken,allowRoles('super_admin','hod','organizer'),c.issue);r.post('/loans/:id/return',verifyToken,allowRoles('super_admin','hod','organizer'),c.returnCopy);r.get('/my-loans',verifyToken,allowRoles('student'),c.myLoans);r.post('/books/:id/reserve',verifyToken,allowRoles('student'),c.reserve);r.get('/books/:id/download',verifyToken,allowRoles('super_admin','hod','organizer','student'),c.download);module.exports=r;
+const express = require('express');
+const router = express.Router();
+const controller = require('../controllers/libraryController');
+const upload = require('../middleware/learningUploadMiddleware');
+const { verifyToken, allowRoles } = require('../middleware/authMiddleware');
+const allRoles = allowRoles('super_admin', 'hod', 'organizer', 'student');
+const students = allowRoles('student');
+const staff = allowRoles('super_admin', 'hod', 'organizer');
+
+router.use(verifyToken);
+router.get('/catalog', allRoles, controller.list);
+router.get('/categories', allRoles, controller.categories);
+router.get('/books/:id', allRoles, controller.bookDetails);
+router.post('/books', staff, upload.single('file'), controller.create);
+router.post('/issue', staff, controller.issue);
+router.post('/loans/:id/return', staff, controller.returnCopy);
+router.get('/my-loans', students, controller.myLoans);
+router.post('/loans/:id/renew', students, controller.renew);
+router.post('/books/:id/reserve', students, controller.reserve);
+router.get('/reservations', students, controller.myReservations);
+router.delete('/reservations/:id', students, controller.cancelReservation);
+router.get('/reading-history', students, controller.readingHistory);
+router.get('/fines', students, controller.fines);
+router.get('/rules', allRoles, controller.rules);
+router.post('/rules', staff, controller.saveRule);
+router.get('/facilities', allRoles, controller.facilities);
+router.post('/facilities', staff, controller.createFacility);
+router.get('/bookings', students, controller.myBookings);
+router.post('/facilities/:id/bookings', students, controller.bookSpace);
+router.delete('/bookings/:id', students, controller.cancelBooking);
+router.get('/settings', allRoles, controller.settings);
+router.put('/settings', staff, controller.saveSettings);
+router.get('/books/:id/download', allRoles, controller.download);
+
+module.exports = router;

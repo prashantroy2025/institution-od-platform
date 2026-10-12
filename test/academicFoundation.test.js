@@ -97,3 +97,34 @@ test('academic route is mounted without changing existing workflow routes', () =
     assert.match(server, /app\.use\('\/api\/events', eventRoutes\)/);
     assert.match(server, /app\.use\('\/api\/qr', qrRoutes\)/);
 });
+
+test('student Academic endpoints are identity-scoped and staff decisions are role protected', () => {
+    const routes = fs.readFileSync('routes/academicRoutes.js', 'utf8');
+    for (const path of ['subjects','faculty','mentor','syllabus','registrations','calendar','requests']) assert.match(routes, new RegExp(`/student/${path}`));
+    assert.match(routes, /allowRoles\('student'\), studentController\.register/);
+    assert.match(routes, /allowRoles\('super_admin', 'hod'\), studentController\.reviewRegistration/);
+    assert.match(routes, /allowRoles\('super_admin', 'hod'\), studentController\.reviewRequest/);
+});
+
+test('Academic service migration adds rerunnable data structures without destructive SQL', () => {
+    const migration=fs.readFileSync('db/migrations/014_academic_services.sql','utf8');
+    for(const table of ['syllabus_units','academic_calendar_events','academic_course_registrations','academic_requests']) assert.match(migration,new RegExp(`CREATE TABLE IF NOT EXISTS ${table}`));
+    assert.match(migration,/UNIQUE KEY uq_academic_course_registration/);
+    assert.doesNotMatch(migration,/DROP TABLE|DROP DATABASE|TRUNCATE|DELETE FROM/i);
+});
+
+test('Academic landing exposes all twelve real service destinations', () => {
+    const page=fs.readFileSync('public/academic.html','utf8');
+    const script=fs.readFileSync('public/academic.js','utf8');
+    assert.match(page,/academic-management|serviceGrid/);
+    for(const key of ['subjects','assignments','materials','timetable','syllabus','faculty','calendar','results','classroom','mentor','registration','requests']) assert.match(script,new RegExp(`['\\\"]${key}['\\\"]`));
+    assert.match(fs.readFileSync('public/home.js','utf8'),/href: 'academic\.html'/);
+    assert.match(fs.readFileSync('public/dashboard.html','utf8'),/\['Academic','▣','academic\.html'/);
+});
+
+test('Academic demo seed is restricted to the development demo database', () => {
+    const seed=fs.readFileSync('scripts/seedAcademicDemoData.js','utf8');
+    assert.match(seed,/NODE_ENV.*development.*test/);
+    assert.match(seed,/database !== 'institution_od_demo'/);
+    assert.match(seed,/DEMO DATA/);
+});

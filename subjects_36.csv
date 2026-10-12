@@ -1,0 +1,37 @@
+demo_subject_id,subject_code,subject_name,department_code,semester,credits,is_demo
+SUB001,CSE001,Data Structures,CSE,1,4,true
+SUB002,CSE002,Operating Systems,CSE,2,3,true
+SUB003,CSE003,Computer Networks,CSE,3,3,true
+SUB004,CSE004,DBMS,CSE,4,4,true
+SUB005,CSE005,OOP,CSE,5,4,true
+SUB006,CSE006,Software Engineering,CSE,6,4,true
+SUB007,IT007,Web Technology,IT,7,4,true
+SUB008,IT008,Cloud Computing,IT,8,4,true
+SUB009,IT009,Computer Networks,IT,1,4,true
+SUB010,IT010,Database Systems,IT,2,3,true
+SUB011,IT011,Cyber Security,IT,3,3,true
+SUB012,IT012,Software Engineering,IT,4,4,true
+SUB013,ECE013,Digital Electronics,ECE,5,4,true
+SUB014,ECE014,Signals and Systems,ECE,6,3,true
+SUB015,ECE015,Microprocessors,ECE,7,3,true
+SUB016,ECE016,Communication Systems,ECE,8,3,true
+SUB017,ECE017,Control Systems,ECE,1,3,true
+SUB018,ECE018,Embedded Systems,ECE,2,4,true
+SUB019,ME019,Engineering Mechanics,ME,3,4,true
+SUB020,ME020,Thermodynamics,ME,4,4,true
+SUB021,ME021,Manufacturing,ME,5,3,true
+SUB022,ME022,Fluid Mechanics,ME,6,4,true
+SUB023,ME023,Machine Design,ME,7,3,true
+SUB024,ME024,CAD/CAM,ME,8,4,true
+SUB025,CE025,Surveying,CE,1,4,true
+SUB026,CE026,Structural Analysis,CE,2,4,true
+SUB027,CE027,Geotechnical Engineering,CE,3,4,true
+SUB028,CE028,Hydrology,CE,4,4,true
+SUB029,CE029,Concrete Technology,CE,5,4,true
+SUB030,CE030,Transportation,CE,6,4,true
+SUB031,EE031,Electrical Machines,EE,7,4,true
+SUB032,EE032,Power Systems,EE,8,4,true
+SUB033,EE033,Control Systems,EE,1,3,true
+SUB034,EE034,Power Electronics,EE,2,4,true
+SUB035,EE035,Circuit Theory,EE,3,3,true
+SUB036,EE036,Measurements,EE,4,3,true

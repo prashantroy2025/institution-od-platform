@@ -22,7 +22,7 @@ Audit date: 2026-10-09
 | Library | PARTIAL | Catalog/search, copies, issue/return, configurable baseline fine calculation, reservations, private digital download, audit, RBAC, and tests implemented. Added responsive `public/library.html` for catalog, student loans, reservations, and private downloads. Renewals/waitlists, admin UI, fine policy configuration, and richer reports remain. |
 | Shared ERP UI shell | PARTIAL | Existing login/dashboard shell preserved and extended with responsive `profile.html`, `attendance.html`, `messages.html`, and campus-feed-enabled `dashboard.html`. Mobile bottom navigation uses Home, Messages, Attendance, Profile. Browser automation is not configured in this repository. |
 | Student Profile | PARTIAL | Added `/api/profile` read/update, private document upload/download, emergency-contact/privacy updates, and `public/profile.html`. Academic fields remain read-only where no secure edit policy/endpoint exists. Sensitive identity documents are not collected. |
-| Student Attendance | PARTIAL | Added `/api/attendance/summary` and `public/attendance.html` using class-attendance records and timetable relationships. Present/Late/Excused count as attended per existing service rules; students are self-scoped. Today's schedule and faculty/HOD operational views still rely on legacy attendance/timetable pages. |
+| Student Attendance | PARTIAL | Dedicated dashboard `public/attendance.html` with semester selector, eligibility from `attendance_settings.shortage_threshold`, and eight shortcuts opening `public/attendance-view.html`. Attendance records, subject-wise, monthly, analytics, history, and today's classes use `/api/attendance/*` and class-attendance tables. Leave requests use migration `016_attendance_leave.sql`. Compensatory classes and HOD leave-decision UI remain unbuilt. See "Attendance module continuation" below. |
 | Home / Campus Feed | PARTIAL | Added additive persistent feed/follow/like/save/comment/report/block tables and `/api/community`; `public/dashboard.html` includes College Updates, Following, Classmates, official-post labels, text/media posting, pagination contract, and honest unavailable states. Search, full moderation UI, sharing, and People You May Know UI remain. |
 | Messages / Academic Groups | PARTIAL | Added persistent groups, direct conversations, membership, message history, unread/read state, replies, reactions, pins, attachments, authorization, and authenticated Socket.IO delivery hooks under `/api/messages`; `public/messages.html` supports conversations, eligible groups, join/open flow, messages, and attachments. Browser realtime/reconnect behavior remains manually unverified. |
 | Demo people import | PARTIAL | Added `data/demo/college_erp_demo_people_100.csv` and guarded `scripts/seedDemoPeople.js`; development/test-only, transactional, idempotent conflict-skipping, bcrypt-hashed random passwords, academic-ID resolution, registry cleanup. It does not seed attendance, marks, payments, documents, or announcements. |
@@ -45,6 +45,8 @@ Audit date: 2026-10-09
 - Profile/community/messaging migration: `db/migrations/010_profile_feed_messages.sql`; APIs: `/api/profile`, `/api/attendance/summary`, `/api/community`, `/api/messages`; UI: `public/profile.html`, `public/attendance.html`, `public/dashboard.html`, `public/messages.html`.
 - Focused structural verification: `test/profileFeedMessages.test.js`. Integration tests for the new MySQL endpoints, Socket.IO delivery, and private uploads are still required.
 - Focused verification: finance and library tests pass; migration/additive checks pass.
+- Fees dashboard: `public/fees.html` and `public/fees.js` are linked from the student home Fees tile, quick card, and drawer. Fee Status, semester selector (by fee-structure academic year), Upcoming Payment, Fee Details, Payment History, Scholarships/Concessions/Refund views, and offline payment submission use existing `/api/finance` endpoints. Invoice list rows include `structure_name` and `academic_year`; statements include `adjustments`.
+- Fees gaps: Pay Fee Online gateway (provider credentials and webhook secret not configured), Download Receipt (no receipt endpoint), Installment Plan (no schema), Scholarship/Concession application and approval workflows, Refund request workflow, Financial Notices. Browser verification of `fees.html` was not performed.
 - Final verification: focused profile/feed/message suite passed 5/5; full repository suite passed 34/34 with exit code 0. Node syntax checks and `git diff --check` passed. Browser automation and live MySQL/Socket.IO integration tests were not performed in this environment.
 
 ## Policy and external prerequisites
@@ -53,3 +55,111 @@ Audit date: 2026-10-09
 - Institutional grading, fee, admission eligibility, leave, payroll, fine, hostel, transport, and certificate policies require authoritative decisions before automation.
 - Email/SMS provider credentials and delivery semantics are not configured.
 - Backup storage, retention period, recovery objective, and deployment ownership are not configured.
+
+## Events module continuation checklist
+
+Audit date: 2026-10-09. Statuses below reflect source inspection; runtime/browser/database verification is tracked separately.
+
+| Requirement | Status | Evidence / remaining work |
+|---|---|---|
+| Student Home → dedicated Events route | PARTIALLY IMPLEMENTED | `home.js` service/drawer, event banner, OD quick card, and `dashboard.html` Events shortcut now target `events.html`; browser login-to-click test remains. |
+| Events layout isolation, header, tabs, responsive cards | PARTIALLY IMPLEMENTED | Existing `events.html` remains a separate page; header, search, tabs, filters, chips, empty/error/retry states and shared bottom navigation exist. Browser/responsive checks remain; event imagery and full event metadata are unavailable in the current schema. |
+| Upcoming published events | PARTIALLY IMPLEMENTED | Uses authenticated `/api/student/events`, limited to approved/non-deleted rows; list/search response now includes consistent organizer/time data and avoids duplicate cards from multiple OD rows. Live MySQL data and pagination remain unverified. |
+| My Participation | PARTIALLY IMPLEMENTED | Reads the authenticated student's event roster and OD records. The existing participant table represents organizer/QR attendance, not student registrations; registration lifecycle statuses are unavailable. |
+| Past Events | PARTIALLY IMPLEMENTED | Derived from actual event end dates in the browser with date-only parsing; institutional timezone is not configured and browser verification remains. |
+| Search and filters | PARTIALLY IMPLEMENTED | Title search calls real `/api/student/search-events`; participation filter Apply/Reset is local to real records. Category chips send `category=` to `/api/student/events` and `/api/student/search-events` (validated against `utils/eventCategories.js`). Events created without a category keep NULL and appear only under All. Date/status filters beyond the Upcoming/Past tabs are not implemented. |
+| Event details | PARTIALLY IMPLEMENTED | Added student-authorized `GET /api/student/events/:id` and a safe detail dialog for currently stored title/date/time/organizer/participation/OD values. Descriptions, banner images, venue, eligibility, capacity, registration dates, rules and category are absent from the existing schema. |
+| Student registration and cancellation | NOT IMPLEMENTED | No self-registration endpoint or registration-state schema exists. Do not repurpose `event_participants`: it is attendance/OD evidence. A separately authorized registration design and institutional eligibility/cancellation rules are still required. |
+| Organizer event management and participant records | PARTIALLY IMPLEMENTED | Existing organizer create/list, participant/CSV, QR and reporting flows are preserved. HOD assignment now validates active same-department HODs; end-to-end workflow is unverified. |
+| HOD approvals and OD workflow | PARTIALLY IMPLEMENTED | Active HOD approval predicates now enforce target assignment; OD requests require an approved published event, in-range date, recorded participant and active event-department HOD. HOD review/attendance automation remains existing; transaction and live-DB tests remain. |
+| QR attendance and audit integration | PARTIALLY IMPLEMENTED | Existing QR/attendance and audit tables/workflows retained. This work did not change attendance authorization or add audit records to all workflow actions; broader integration/security gaps remain. |
+| Authentication and private data | PARTIALLY IMPLEMENTED | Student detail/OD APIs remain role-protected and student-scoped. Organizer history is limited to that organizer's events; database-backed student/HOD/organizer event text is escaped at updated HTML sinks. Authorization regressions require runtime tests. |
+
+### Events work recorded for this continuation
+
+- Modified: `public/home.js`, `public/dashboard.html`, `public/events.html`, `public/events.js`, `public/events.css`, `public/organizer.html`, `controllers/studentController.js`, `controllers/eventController.js`, `controllers/hodController.js`, `routes/studentRoutes.js`, `public/student.html`, `public/hod.html`.
+- Added: `test/eventsModule.test.js`, `utils/eventCategories.js`, `db/migrations/015_event_categories.sql` (additive, nullable `events.category`).
+- Database/API changes: authenticated student event-detail route; optional event category on create, returned by student list/search/detail, and filterable via `category=`. No data changes.
+- Tests executed: `node --test test/eventsModule.test.js test/runMigrationsSafety.test.js` passed 22/22. Node syntax checks passed for changed controllers and `public/events.js`.
+- Not executed: migration 015 against a live MySQL database; browser checks of the Events page at mobile and desktop widths; full repository suite.
+- Outstanding blockers: no screenshot supplied for comparison; no authorized database access to apply migration 015 or run integration tests; existing schema has no registration table/fields, event image/description/venue/eligibility/capacity/rules; self-registration and cancellation need a product/policy decision (capacity, deadlines, cancellation window) before implementation; institutional timezone is unspecified.
+- Exact next incomplete task: apply migration 015 in a development database, run the full suite, and browser-check Home → Events, tabs, search, chips, and details; then decide the registration policy before building self-registration.
+
+## Attendance module continuation checklist
+
+Audit date: 2026-10-12. Statuses reflect source inspection plus the focused tests listed below.
+
+| Requirement | Status | Evidence / remaining work |
+|---|---|---|
+| Home shortcut → dedicated dashboard | COMPLETE (code) | `home.js` links to `attendance.html`; dashboard renders header, semester selector, overview, eight shortcuts, recent list, and bottom nav independently of API results. Browser click-through not verified. |
+| Semester selector | COMPLETE (code) | `GET /api/attendance/semesters` lists the student's batch-session semesters and the current one; selection drives all analytics, records, and today's classes. |
+| Present/Absent/Total and percentage | COMPLETE (code) | `GET /api/attendance/analytics`. Present/Late/Excused count as attended (existing rule); zero sessions return null percentage. |
+| Eligibility warning | COMPLETE (code) | Uses `attendance_settings.shortage_threshold` (default 75, super_admin-configurable). Reports classes needed or classes that can be missed, computed from real records. |
+| Mark Attendance (QR/Manual) | PARTIAL | Students cannot self-mark class attendance; today's classes show faculty-marked status. Event QR check-in links to `scan.html` (existing `/api/qr/scan`, server-validated). No class-session QR workflow exists; building one is a faculty-workflow design decision. |
+| Attendance History | COMPLETE (code) | `GET /api/attendance/records` with semester, subject, status, date filters, pagination. |
+| Subject-wise Attendance | COMPLETE (code) | Subject totals/percentages from analytics, with classes needed or can-miss. |
+| Monthly Report | COMPLETE (code) | Month-wise totals with subject breakdowns from analytics; CSV download generated client-side from the same data. |
+| Leave Application | PARTIAL | `POST/GET /api/attendance/leave`, document download, overlap prevention, audit logs, migration `016_attendance_leave.sql`. Approved leave does not alter attendance (no existing rule defines otherwise). HOD decision endpoint `POST /api/attendance/leave/:id/decision` exists; no HOD UI yet. |
+| OD Application | PARTIAL | Shows real `/api/student/my-od` status and links to Events; reuses existing approval. Attachments/supporting info are not in the existing OD schema, so none are shown. |
+| Attendance Analytics | COMPLETE (code) | Monthly trend, subject comparison, eligibility warnings from real records. |
+| Compensatory Classes | BLOCKED | No compensatory-class schema or institutional policy exists. The screen states this and shows no fabricated items. |
+| Permissions and audit | COMPLETE (code) | Student identity from token; student-only routes; HOD decisions restricted to assigned HOD; leave create/decision audited. |
+| Tests | PARTIAL | `test/attendanceStudent.test.js` (mocked DB: math, zero sessions, semester scope, roles, validation, overlap, decision guard). Full suite: 88 passed, 1 skipped (guarded live DB suite). |
+| Browser, responsive, live DB | NOT VERIFIED | No database access in this session; migration 016 not applied. Preview iframe was not mounted and a headless browser run was blocked by sandbox policy, so the dashboard and all eight views are unrendered. |
+
+### Attendance work recorded for this continuation
+
+- Added: `services/attendanceStudentService.js`, `controllers/attendanceStudentController.js`, `routes/attendanceStudentRoutes.js`, `public/attendance-view.html`, `public/attendance.js`, `public/attendance.css`, `db/migrations/016_attendance_leave.sql`, `test/attendanceStudent.test.js`.
+- Modified: `public/attendance.html` (rebuilt as dashboard), `server.js` (mount).
+- Frontend continuation (2026-10-12): all eight shortcuts now carry static `attendance-view.html?view=` hrefs so they work before the script runs; Recent Attendance rows show the ✓/✕ status markers from the reference screenshot. Verified by source inspection that every field the dashboard and views read matches the service responses, and that `/api/notifications/unread-count`, `/api/student/my-od`, and student-scoped `/api/timetable` exist. `test/attendanceStudent.test.js` passes 10/10.
+- Known differences from the reference screenshot: the eligibility copy reports classes needed (from real records) rather than a percentage-point gap; shortcut icons are text glyphs, not the colored artwork in the screenshot.
+- Exact next steps: browser-check `attendance.html` at 390px and 768px+ and all eight `attendance-view.html` views once preview is available; apply migrations 015 and 016 in a development database; run the live-DB suite with a disposable database; build the HOD leave-decision screen; decide the compensatory-class policy and schema.
+
+## Examinations dashboard continuation checklist
+
+Audit date: 2026-10-12. Statuses reflect source inspection and automated tests. Browser verification was not performed.
+
+| Requirement | Status | Evidence / remaining work |
+|---|---|---|
+| Student Home → Examinations | COMPLETE (code) | Existing `home.js` shortcut and quick card link to `examinations.html`, which is now the dashboard. |
+| Dashboard layout, 12 shortcuts, Upcoming section | COMPLETE (code) | `examinations.html` and `examinations.css`; shortcuts are static links so the grid renders without APIs. Upcoming shows up to 3 future exams from `/api/examinations` with countdowns from `scheduled_start`; View All opens the schedule. |
+| Exam Schedule | COMPLETE (code) | Upcoming and Past tabs; venue from `venue_name`; undated exams are listed under Upcoming. |
+| Admit Card | PARTIAL | Eligibility from registration and exam status; download uses `/api/examinations/:id/admit-card`, which checks the student's seat. Output is plain text because no PDF generator is in `package.json`. |
+| Previous Question Papers | BLOCKED | No question-paper storage or publication workflow exists. The screen states this and shows no records. |
+| Results | COMPLETE (code) | Published exams are loaded and each result is fetched through `/api/examinations/:id/result`; grade, pass/fail and declared status are shown. |
+| Syllabus & Exam Pattern | PARTIAL | Syllabus from `/api/academic/student/syllabus`; exam pattern from scheduled exams' pass and maximum marks. Grading bands are not in the list endpoint and are not shown here. |
+| Important Notices | PARTIAL | Published academic calendar events of type Examination or Registration Deadline. No separate notice feed exists. |
+| Exam Registration | PARTIAL | Registers through `POST /api/examinations/:id/register`, which now enforces the opening time and rejects duplicates with 409. No cancellation endpoint exists, so none is offered. |
+| Revaluation / Recheck | BLOCKED | No revaluation schema, eligibility rules or deadlines exist; academic request types do not include it. |
+| Hall Ticket Downloads | PARTIAL | Lists registered exams that are eligible and downloads through the same authorized endpoint. Plain-text output only. |
+| Internal Marks | BLOCKED | No internal assessment schema exists. Published end-examination marks appear under Results. |
+| Performance Analysis | COMPLETE (code) | Subject-wise and semester-wise percentages from declared marks returned by the server. |
+| Exam Guidelines | BLOCKED | No institution-configured guidelines store exists. |
+
+### Examinations work recorded for this continuation
+
+- Modified: `public/examinations.html` (replaced an incomplete page), `services/examinationService.js`.
+- Added: `public/examinations-view.html`, `public/examinations.js`, `public/examinations.css`.
+- Service changes: student exam list now returns subject code, venue, registration window, semester name and the student's own registration status. Registration checks the opening time and duplicates. Student seat lookups filter by the student's own registration in SQL instead of matching names.
+- Times are displayed in the viewer's timezone. The institutional timezone is not configured.
+
+### Examinations test results
+
+- `node --test` full suite: 87 passed, 1 failed, 1 skipped.
+- The failing test is `test/examinationIntegration.test.js`. Its create request returns 400 before any changed code runs. The diff leaves `create` and `normalize` untouched, so this predates this work and has not been diagnosed.
+- Not verified: browser behavior of all screens, live-database behavior of the changed list, registration and seat queries.
+
+### Examinations next steps
+
+- Diagnose the 400 from the integration test's create call, then rerun the suite.
+- Browser-check the dashboard and all 12 screens at 390px and desktop width.
+- Decide on the storage design for question papers, revaluation, internal marks and guidelines, and on a PDF generator for admit cards.
+
+### Messages frontend status
+
+- Frontend files: `public/messages.html` (inbox), `public/messages-thread.html` (thread, `?id=`), `public/messages.css`.
+- Static checks: inline scripts of both pages pass `node --check`.
+- Not verified: browser rendering at 390px and desktop width. The dev server has no dev command configured, and the preview launcher never mounted.
+- Database-dependent, deferred: migration `db/migrations/018_message_preferences.sql` is not applied. Until it is, the conversations list and the mute, pin, and archive updates fail, and the inbox shows its inline error with Retry. Apply it through `scripts/runMigrations.js` only after confirming the runner does not replay earlier migrations unsafely.
+- Unverified backend workflows against live MySQL: conversation details and participants, preference updates, authorized message search, recipient search, unread count, and per-user Socket.IO room delivery (`user:<id>` joined in `server.js`).
+- Not implemented: presence (online indicators) has no data source in the app; avatars use initials.

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Events · College ERP</title>
+<script src="config.js"></script>
+<script src="ui-feedback.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="theme-color" content="#2f6bff">
+<link rel="stylesheet" href="erp-ui.css">
+<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="events.css">
+</head>
+<body class="stu-home events-page">
+<div class="stu-wrap">
+
+  <header class="stu-topbar">
+    <a class="icon-btn" href="home.html" aria-label="Back to home">‹</a>
+    <div class="stu-brand"><span class="cap" aria-hidden="true">🎓</span><span class="title">College ERP</span></div>
+    <span class="spacer"></span>
+    <a class="icon-btn stu-bell" id="eventsBell" href="home.html" aria-label="Notifications"><span aria-hidden="true">🔔</span><span class="ev-unread" id="eventsUnread" hidden></span></a>
+    <a class="stu-avatar-btn" href="profile.html" aria-label="Open your profile"><span id="topAvatarInitial">?</span></a>
+  </header>
+
+  <main class="events-main">
+    <h1>Events</h1>
+
+    <div class="ev-tabs" role="tablist" aria-label="Event views">
+      <button type="button" class="ev-tab active" role="tab" aria-selected="true" data-tab="upcoming">Upcoming Events</button>
+      <button type="button" class="ev-tab" role="tab" aria-selected="false" data-tab="participation">My Participation</button>
+      <button type="button" class="ev-tab" role="tab" aria-selected="false" data-tab="past">Past Events</button>
+    </div>
+
+    <form class="ev-search" id="searchForm" role="search">
+      <label class="sr-only" for="searchInput">Search events</label>
+      <input id="searchInput" type="search" placeholder="Search events..." maxlength="100" autocomplete="off">
+      <button type="submit" class="ev-search-btn">Search</button>
+      <button type="button" class="ev-filter-btn" id="filterToggle" aria-expanded="false" aria-controls="filterPanel">Filter</button>
+    </form>
+
+    <section class="ev-filter-panel" id="filterPanel" hidden aria-label="Filter events">
+      <label>Participation
+        <select id="participationFilter">
+          <option value="all">All events</option>
+          <option value="participated">Participated</option>
+          <option value="not">Not participated</option>
+        </select>
+      </label>
+      <div class="ev-filter-actions">
+        <button type="button" class="ev-search-btn" id="applyFilter">Apply</button>
+        <button type="button" class="ev-filter-btn" id="resetFilter">Reset</button>
+      </div>
+    </section>
+
+    <div class="ev-chips" role="group" aria-label="Event categories">
+      <button type="button" class="ev-chip active" data-category="All" aria-pressed="true">All</button>
+      <button type="button" class="ev-chip" data-category="Technical" aria-pressed="false">Technical</button>
+      <button type="button" class="ev-chip" data-category="Cultural" aria-pressed="false">Cultural</button>
+      <button type="button" class="ev-chip" data-category="Workshop" aria-pressed="false">Workshop</button>
+      <button type="button" class="ev-chip" data-category="Hackathon" aria-pressed="false">Hackathon</button>
+      <button type="button" class="ev-chip" data-category="AI Event" aria-pressed="false">AI Event</button>
+    </div>
+
+    <p class="ev-notice" id="eventsNotice" role="status" aria-live="polite" hidden></p>
+
+    <section class="ev-list" id="eventList" aria-live="polite" aria-busy="true">
+      <p class="stu-state">Loading events…</p>
+    </section>
+    <dialog class="ev-detail" id="eventDetail" aria-labelledby="detailTitle">
+      <form method="dialog" class="ev-detail-close"><button type="submit" aria-label="Close event details">×</button></form>
+      <h2 id="detailTitle"></h2>
+      <div id="detailContent"></div>
+    </dialog>
+  </main>
+</div>
+
+<nav class="stu-bottom" aria-label="Primary">
+  <div class="inner">
+    <a href="home.html"><span class="g" aria-hidden="true">🏠</span>Home</a>
+    <a href="messages.html"><span class="g" aria-hidden="true">💬</span>Messages</a>
+    <a href="attendance.html"><span class="g" aria-hidden="true">📅</span>Attendance</a>
+    <a href="profile.html"><span class="g" aria-hidden="true">👤</span>Profile</a>
+  </div>
+</nav>
+
+<script src="erp-app.js"></script>
+<script src="events.js"></script>
+</body>
+</html>

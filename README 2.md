@@ -1,0 +1,2 @@
+# Demo data safety
+All records are fictional, tagged `is_demo=true`; emails use `.invalid`. Phone numbers are placeholders. SVG avatars are neutral illustrations, not photographs. These are for UI/testing only; grades and attendance are illustrative, not official records. Do not blind-import into the live or recovery database. First map columns to the actual schema, use the project's development/test-only importer, hash credentials there, and resolve real foreign keys. No passwords are included.

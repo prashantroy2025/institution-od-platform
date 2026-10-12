@@ -27,12 +27,24 @@ const ERP = (() => {
         if (options.body && !(options.body instanceof FormData) && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
         const response = await fetch(apiBase() + url, { ...options, headers });
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok) { const error = new Error(payload.message || `Request failed (${response.status})`); error.status = response.status; throw error; }
+        if (!response.ok) { if (response.status === 401) expireSession(); const error = new Error(payload.message || `Request failed (${response.status})`); error.status = response.status; throw error; }
         return payload;
+    }
+
+    async function blob(url) {
+        const response = await fetch(apiBase() + url, { headers: authHeaders() });
+        if (!response.ok) { if (response.status === 401) expireSession(); const payload = await response.json().catch(() => ({})); const error = new Error(payload.message || `Request failed (${response.status})`); error.status = response.status; throw error; }
+        return response.blob();
     }
 
     const signOut = () => { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); location.replace('login.html'); };
     const redirectToLogin = () => { location.replace('login.html'); };
+    function expireSession() { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); location.replace('login.html'); }
+    const goBack = fallback => {
+        const sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;
+        if (sameOrigin && history.length > 1) history.back();
+        else location.href = fallback;
+    };
 
     /* Page-level status region: announced to assistive tech via aria-live. */
     const status = (message, variant = 'info') => {
@@ -59,7 +71,7 @@ const ERP = (() => {
 
     const backLink = () => { document.querySelectorAll('[data-back]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); location.href = 'dashboard.html'; })); };
 
-    return { el, call, authHeaders, apiBase, token, remember, roleName, roleLabels, escapeHtml, signOut, redirectToLogin, status, setMessage, flash, bottomNav, backLink };
+    return { el, call, blob, authHeaders, apiBase, token, remember, roleName, roleLabels, escapeHtml, signOut, redirectToLogin, status, setMessage, flash, bottomNav, backLink, goBack };
 })();
 
 document.addEventListener('DOMContentLoaded', () => {

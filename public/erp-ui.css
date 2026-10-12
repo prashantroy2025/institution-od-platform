@@ -800,6 +800,9 @@ body:has(#status):not(:has(.sidebar)) .loader {
     flex-direction: column;
     gap: 0.6rem;
     max-width: min(24rem, calc(100vw - 2rem));
+    /* Transient notices must never swallow a tap meant for the control underneath
+       them; only the notice's own dismiss button stays interactive. */
+    pointer-events: none;
 }
 @media (min-width: 900px) { .ui-feedback-stack { bottom: 1.5rem; } }
 .ui-feedback {
@@ -815,6 +818,7 @@ body:has(#status):not(:has(.sidebar)) .loader {
     border-left: 4px solid #2563eb;
     font-size: 0.92rem;
     line-height: 1.5;
+    pointer-events: none;
     animation: ui-feedback-in 0.18s ease-out;
 }
 .ui-feedback.success { border-left-color: #059669; }
@@ -828,6 +832,7 @@ body:has(#status):not(:has(.sidebar)) .loader {
     line-height: 1;
     padding: 0.15rem 0.3rem;
     flex: 0 0 auto;
+    pointer-events: auto;
 }
 .ui-feedback > button:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 @keyframes ui-feedback-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

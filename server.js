@@ -120,6 +120,9 @@ app.use('/api/profile', profileRoutes);
 const attendanceSummaryRoutes = require('./routes/attendanceSummaryRoutes');
 app.use('/api/attendance', attendanceSummaryRoutes);
 
+const attendanceStudentRoutes = require('./routes/attendanceStudentRoutes');
+app.use('/api/attendance', attendanceStudentRoutes);
+
 const communityRoutes = require('./routes/communityRoutes');
 app.use('/api/community', communityRoutes);
 
@@ -212,6 +215,7 @@ io.use((socket, next) => {
   });
 });
 io.on('connection', (socket) => {
+  socket.join(`user:${socket.user.id}`);
   socket.on('conversation:join', async (conversationId) => {
     if (!Number.isInteger(Number(conversationId)) || Number(conversationId) < 1) return;
     const [rows] = await db.query('SELECT 1 FROM erp_message_conversation_members WHERE conversation_id=? AND user_id=? LIMIT 1', [conversationId, socket.user.id]);

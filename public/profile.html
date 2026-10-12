@@ -1,20 +1,125 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>My Profile · College ERP</title><script src="config.js"></script><script src="ui-feedback.js"></script><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="stylesheet" href="erp-ui.css"></head><body class="erp-dashboard"><main class="module-page profile-page"><header class="module-header"><div><p class="eyebrow">Account</p><h1>My Profile</h1><p>Review and update only the profile details supported by secure ERP endpoints.</p></div><button class="primary-btn" onclick="location.href='dashboard.html'">Back to home</button></header><section id="profileState" class="state">Loading profile…</section><div id="profileContent" hidden><section class="profile-hero-card"><div class="avatar avatar-large" id="avatar">?</div><div><h2 id="name"></h2><p id="role"></p><span class="status-pill">● Active</span></div><div class="completion"><strong id="completion">0%</strong><small>Profile complete</small></div></section><section class="profile-grid"><article class="section-card"><div class="section-title pastel-blue"><span>♙</span><h2>Personal Information</h2></div><dl id="personal" class="profile-list"></dl><p class="muted-note">Name, email and contact details are maintained by the institution and are read-only here.</p></article><article class="section-card"><div class="section-title pastel-green"><span>▣</span><h2>Academic Information</h2></div><dl id="academic" class="profile-list"></dl></article><article class="section-card"><div class="section-title pastel-orange"><span>☎</span><h2>Emergency Contact</h2><button class="secondary-btn" type="button" id="editEmergency">Edit</button></div><dl id="emergency" class="profile-list"></dl><div class="emergency-editor" id="emergencyForm" hidden><form id="emergencyFormInner"><label>Contact name<input id="emergencyName" maxlength="120" required></label><label>Contact number<input id="emergencyPhone" maxlength="24" required></label><label>Relationship<input id="emergencyRelation" maxlength="60" required></label><p class="field-error" id="emergencyFormError"></p><div class="editor-actions"><button class="primary-btn" type="submit">Save contact</button><button class="secondary-btn" type="button" id="cancelEmergency">Cancel</button></div></form></div>
-</article><article class="section-card"><div class="section-title pastel-purple"><span>▤</span><h2>Documents</h2></div><form id="documentForm" class="document-form"><input id="documentLabel" placeholder="Document label" maxlength="120" required><input id="documentFile" type="file" accept="application/pdf,image/png,image/jpeg" required><button class="primary-btn" type="submit">Upload private document</button></form><div id="documents" class="document-list"></div></article><article class="section-card"><div class="section-title pastel-blue"><span>◈</span><h2>Account &amp; Privacy</h2></div><form id="privacyForm"><label><input id="discover" type="checkbox"> Allow profile discovery by academic peers</label><label><input id="dm" type="checkbox"> Allow direct messages from academic peers</label><p class="field-error" id="privacyStatus"></p><button class="primary-btn" type="submit">Save privacy settings</button></form><p class="muted-note">Passwords, tokens, Aadhaar and unrelated sensitive identity documents are never displayed or collected here.</p></article></div></div></main><nav class="bottom-nav"><button data-bottom="home">⌂<br>Home</button><button data-bottom="messages">♡<br>Messages</button><button data-bottom="attendance">▦<br>Attendance</button><button class="active" data-bottom="profile">♙<br>Profile</button></nav>
-<script>
-function toast(message,isError){let host=document.getElementById('toastHost');if(!host){host=document.createElement('div');host.id='toastHost';host.className='toast-host';host.setAttribute('role','status');host.setAttribute('aria-live','polite');document.body.appendChild(host)}const el=document.createElement('div');el.className='toast'+(isError?' toast-error':'');el.textContent=message;host.appendChild(el);setTimeout(()=>el.remove(),4000)}
-const token=sessionStorage.getItem('token')||localStorage.getItem('token');if(!token)location.href='login.html';const auth={Authorization:'Bearer '+token};const $=id=>document.getElementById(id);let data;const val=v=>v||'Not available';
-function state(box,message,tone){box.className='state'+(tone==='error'?' error':'');box.textContent=message}
-const row=(k,v)=>`<div><dt>${k}</dt><dd>${val(v)}</dd></div>`;
-async function call(url,opt={}){const r=await fetch(API_BASE+url,{...opt,headers:{...auth,...(opt.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||'Request failed');return d}function render(){const p=data.profile||{};const emergency=data.emergency||{};$('name').textContent=data.name;$('role').textContent=data.role==='organizer'?'Faculty':data.role.replace('_',' ');$('avatar').textContent=data.name[0].toUpperCase();const personal=[row('Full name',data.name),row('Email',data.email),row('Phone',p.phone)];const academic=[row('Roll number',p.enrollment_no),row('Department',data.department_name),row('Programme',p.course_name),row('Batch',p.batch_name),row('Section',p.section_name),row('Employee ID',p.employee_code),row('Designation',p.designation)];$('personal').innerHTML=personal.join('');$('academic').innerHTML=academic.join('');$('emergency').innerHTML=[row('Contact name',emergency.name),row('Contact number',emergency.phone),row('Relationship',emergency.relation)].join('');$('discover').checked=Boolean(data.allow_profile_discovery??true);$('dm').checked=Boolean(data.allow_direct_messages??true);$('documents').innerHTML=data.documents.length?data.documents.map(d=>`<div class="document-row"><span>▤ ${d.label}</span><button class="text-button" onclick="location.href=API_BASE+'/api/profile/documents/${d.id}/download'">Download</button></div>`).join(''):'<div class="state">No private documents uploaded.</div>';const fields=[data.name,data.email,p.phone,data.department_name,p.enrollment_no,p.course_name,p.batch_name,p.section_name,emergency.name,emergency.phone].filter(Boolean);$('completion').textContent=Math.round(fields.length/10*100)+'%'}
-async function load(){try{data=await call('/api/profile');render();$('profileState').hidden=true;$('profileContent').hidden=false}catch(e){$('profileState').textContent=e.message;toast(e.message,true)}}
-function renderEmergency(){const e=data.emergency||{};$('emergencyName').value=e.name||'';$('emergencyPhone').value=e.phone||'';$('emergencyRelation').value=e.relation||''}
-function toggleEmergencyForm(open){$('emergencyForm').hidden=!open;$('editEmergency').hidden=open;$('emergencyFormError').textContent=''}
-async function saveEmergency(e){e.preventDefault();const payload={emergency_name:$('emergencyName').value.trim(),emergency_phone:$('emergencyPhone').value.trim(),emergency_relation:$('emergencyRelation').value.trim()};$('emergencyFormError').textContent='';try{data=await call('/api/profile',{method:'PATCH',headers:{...auth,'Content-Type':'application/json'},body:JSON.stringify(payload)});render();toggleEmergencyForm(false);toast('Emergency contact saved')}catch(err){$('emergencyFormError').textContent=err.message}}
-$('editEmergency').onclick=()=>{renderEmergency();toggleEmergencyForm(true);$('emergencyName').focus()};
-$('cancelEmergency').onclick=()=>toggleEmergencyForm(false);
-$('emergencyFormInner').onsubmit=saveEmergency;
-$('privacyForm').onsubmit=async e=>{e.preventDefault();$('privacyStatus').textContent='';try{data=await call('/api/profile',{method:'PATCH',headers:{...auth,'Content-Type':'application/json'},body:JSON.stringify({allow_profile_discovery:$('discover').checked,allow_direct_messages:$('dm').checked})});render();toast('Privacy settings saved')}catch(err){$('privacyStatus').textContent=err.message}};
-$('documentForm').onsubmit=async e=>{e.preventDefault();const f=new FormData();f.append('label',$('documentLabel').value);f.append('document',$('documentFile').files[0]);try{await call('/api/profile/documents',{method:'POST',body:f});data=await call('/api/profile');render();$('documentForm').reset();toast('Document uploaded securely')}catch(err){toast(err.message,true)}};
-document.querySelectorAll('[data-bottom]').forEach(b=>b.onclick=()=>location.href=b.dataset.bottom==='home'?'dashboard.html':b.dataset.bottom==='messages'?'messages.html':b.dataset.bottom==='attendance'?'attendance.html':'profile.html');
-load();
-</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Profile · College ERP</title>
+<script src="config.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="profile.css">
+</head>
+<body class="profile-body">
+<div class="profile-app">
+
+<header class="app-header">
+    <button class="icon-button" type="button" aria-label="Open dashboard menu" onclick="location.href='dashboard.html'">☰</button>
+    <div class="app-brand"><span class="brand-cap" aria-hidden="true">▲</span><strong>College ERP</strong></div>
+    <div class="header-actions">
+        <div class="bell-wrap">
+            <button class="icon-button bell" id="notifButton" type="button" aria-label="Notifications" aria-expanded="false" aria-controls="notifPanel">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="badge" id="notifBadge" hidden>0</span>
+            </button>
+            <div class="notif-panel" id="notifPanel" hidden>
+                <strong class="notif-title">Notifications</strong>
+                <div id="notifList"><p class="state">Loading notifications…</p></div>
+            </div>
+        </div>
+        <a class="avatar avatar-sm" href="profile.html" aria-label="Your profile" id="headerAvatar">?</a>
+    </div>
+</header>
+
+<main class="page">
+    <div class="page-top">
+        <a class="back-link" href="dashboard.html" aria-label="Back to dashboard">‹</a>
+        <h1>Profile</h1>
+        <a class="edit-button" href="profile-edit.html">✎ Edit Profile</a>
+    </div>
+
+    <p class="notice" id="profileNotice" role="status" hidden></p>
+
+    <section class="card identity-card" aria-labelledby="identityTitle">
+        <div class="identity-main">
+            <div class="avatar-wrap">
+                <div class="avatar avatar-xl" id="avatar" aria-label="Profile photo">?</div>
+                <a class="camera-action" href="profile-photo.html" aria-label="Change profile photo" title="Change profile photo">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                </a>
+            </div>
+            <div class="identity-info">
+                <h2 id="identityTitle" class="identity-name">
+                    <span id="name">Loading…</span>
+                    <span class="verified" id="verified" title="Student record verified" hidden>✓</span>
+                </h2>
+                <p class="muted" id="meta"></p>
+                <dl class="contact-list">
+                    <div><dt>Roll No</dt><dd id="roll">—</dd></div>
+                    <div><dt>Email</dt><dd id="email">—</dd></div>
+                    <div><dt>Phone</dt><dd id="phone">—</dd></div>
+                </dl>
+            </div>
+        </div>
+        <aside class="id-box" aria-label="Student ID">
+            <img id="studentQr" alt="Student ID QR code" width="132" height="132" hidden>
+            <span class="muted">Student ID</span>
+            <strong id="studentId">—</strong>
+            <p class="hint" id="idNote"></p>
+            <a class="text-link" href="profile-student-id.html">View ID card ›</a>
+        </aside>
+    </section>
+
+    <section class="tile-grid" aria-label="Academic placement">
+        <article class="card tile tone-blue"><span class="tile-icon" aria-hidden="true">♣</span><div><span class="muted">Department</span><strong id="department">—</strong></div></article>
+        <article class="card tile tone-green"><span class="tile-icon" aria-hidden="true">♙</span><div><span class="muted">Batch</span><strong id="batch">—</strong></div></article>
+        <article class="card tile tone-yellow"><span class="tile-icon" aria-hidden="true">▥</span><div><span class="muted">Section</span><strong id="section">—</strong></div></article>
+    </section>
+
+    <section class="card" aria-labelledby="academicTitle">
+        <div class="section-head">
+            <h2 id="academicTitle">Academic Summary</h2>
+            <a class="text-link" href="profile-details.html?section=academic">View Details ›</a>
+        </div>
+        <div class="summary-grid">
+            <div class="cgpa-ring" aria-label="CGPA pending integration">
+                <div class="ring"><strong id="cgpa">—</strong></div>
+                <span class="muted">CGPA</span>
+            </div>
+            <div class="metric"><span class="metric-icon tone-blue" aria-hidden="true">▤</span><strong id="credits">—</strong><span class="muted">Completed Credits</span></div>
+            <div class="metric"><span class="metric-icon tone-purple" aria-hidden="true">▣</span><strong id="currentSem">—</strong><span class="muted">Current Semester</span></div>
+            <div class="metric"><span class="metric-icon tone-green" aria-hidden="true">◔</span><strong id="attendance">—</strong><span class="muted">Attendance</span></div>
+            <div class="metric"><span class="metric-icon tone-pink" aria-hidden="true">!</span><strong id="backlogs">—</strong><span class="muted">Backlogs</span></div>
+        </div>
+        <p class="hint">CGPA, completed credits and backlogs will appear once the results module provides them.</p>
+    </section>
+
+    <section class="nav-grid" aria-label="Profile sections">
+        <a class="card nav-card tone-blue" href="profile-details.html?section=personal"><span class="nav-icon">♙</span><strong>Personal Information</strong><span aria-hidden="true">›</span></a>
+        <a class="card nav-card tone-yellow" href="profile-details.html?section=achievements"><span class="nav-icon">♛</span><strong>Achievements</strong><span aria-hidden="true">›</span></a>
+        <a class="card nav-card tone-pink" href="profile-details.html?section=skills"><span class="nav-icon">✱</span><strong>Skills &amp; Interests</strong><span aria-hidden="true">›</span></a>
+        <a class="card nav-card tone-purple" href="profile-details.html?section=privacy"><span class="nav-icon">◈</span><strong>Privacy &amp; Security</strong><span aria-hidden="true">›</span></a>
+    </section>
+
+    <section class="card" aria-labelledby="achievementsTitle">
+        <div class="section-head">
+            <h2 id="achievementsTitle">Recent Achievements</h2>
+            <a class="text-link" href="profile-details.html?section=achievements">View All ›</a>
+        </div>
+        <div class="mini-grid" id="achievements"><p class="state">Loading achievements…</p></div>
+    </section>
+
+    <section class="card" aria-labelledby="skillsTitle">
+        <div class="section-head">
+            <h2 id="skillsTitle">Skills &amp; Interests</h2>
+            <a class="text-link" href="profile-details.html?section=skills">View All ›</a>
+        </div>
+        <div class="chip-list" id="skills"><p class="state">Loading skills…</p></div>
+    </section>
+</main>
+
+<nav class="bottom-nav" aria-label="Main navigation"></nav>
+</div>
+
+<script src="erp-app.js"></script>
+<script src="profile.js"></script>
+</body>
+</html>

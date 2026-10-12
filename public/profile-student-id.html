@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Student ID · College ERP</title>
+<script src="config.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="profile.css">
+</head>
+<body class="profile-body">
+<div class="profile-app">
+
+<header class="app-header">
+    <div class="app-brand"><span class="brand-cap" aria-hidden="true">▲</span><strong>College ERP</strong></div>
+</header>
+
+<main class="page">
+    <div class="page-top">
+        <a class="back-link" id="backLink" href="profile.html" aria-label="Back to profile">‹</a>
+        <h1>Student ID</h1>
+    </div>
+
+    <p class="state" id="loading" role="status">Loading your student ID…</p>
+
+    <section class="card" id="errorCard" hidden>
+        <p class="state error" role="alert" id="errorText"></p>
+        <div style="margin-top:12px"><button class="secondary-btn" id="retryLoad" type="button">Retry</button></div>
+    </section>
+
+    <section class="card" id="idCard" hidden aria-labelledby="idTitle">
+        <h2 id="idTitle" class="identity-name"><span id="name">—</span></h2>
+        <dl class="facts" style="margin-top:12px">
+            <div><dt>Student ID</dt><dd id="collegeId">—</dd></div>
+        </dl>
+        <div class="qr-box" style="margin-top:16px">
+            <img id="qr" alt="Student ID QR code" hidden>
+            <p class="state error" id="qrError" hidden>The QR code could not be displayed. Use the student ID number above.</p>
+        </div>
+        <p class="hint" style="margin-top:12px">The QR code encodes only your signed student ID. It does not contain your password, session token or contact details.</p>
+    </section>
+</main>
+
+<nav class="bottom-nav" aria-label="Main navigation"></nav>
+</div>
+
+<script src="erp-app.js"></script>
+<script src="profile-student-id.js"></script>
+</body>
+</html>

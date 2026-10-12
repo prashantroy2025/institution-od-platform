@@ -169,14 +169,15 @@
 </div>
 
 <!-- ======================= MORE SERVICES PANEL ======================= -->
-<div class="stu-more" id="moreServices" role="dialog" aria-label="More services" aria-hidden="true">
+<div class="stu-more" id="moreServices" aria-hidden="true">
   <div class="back" data-close="more"></div>
-  <div class="panel">
-    <h3>More Services</h3>
-    <p class="sub" id="moreSub">Every module available in this installation.</p>
-    <input class="search" id="moreSearch" type="search" placeholder="Search services…" maxlength="40" aria-label="Search services">
-    <div id="moreList"></div>
-    <button class="cancel" data-close="more">Close</button>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreTitle" tabindex="-1">
+    <span class="handle" aria-hidden="true"></span>
+    <div class="head">
+      <h3 id="moreTitle">More Services</h3>
+      <button class="close" type="button" data-close="more" aria-label="Close More Services">✕</button>
+    </div>
+    <div class="grid" id="moreList"></div>
   </div>
 </div>
 

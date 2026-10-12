@@ -1,2 +1,72 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Attendance · College ERP</title><script src="config.js"></script><script src="ui-feedback.js"></script><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="stylesheet" href="erp-ui.css"></head><body class="erp-dashboard"><main class="module-page attendance-page"><header class="module-header"><div><p class="eyebrow">Academics</p><h1>My Attendance</h1><p id="summaryMeta">Loading authorized attendance records…</p></div><button class="primary-btn" onclick="location.href='dashboard.html'">Back to home</button></header><section class="section-card attendance-filters"><label>From <input id="from" type="date"></label><label>To <input id="to" type="date"></label><button class="primary-btn" onclick="load()">Apply filters</button></section><section id="state" class="state">Loading attendance…</section><div id="content" hidden><section class="attendance-overview"><div class="attendance-ring" id="percentage">—</div><div><p class="eyebrow">Overall attendance</p><h2 id="overallLabel">No records yet</h2><p id="thresholdLabel"></p></div><div class="attendance-stat"><strong id="present">0</strong><small>Present</small></div><div class="attendance-stat"><strong id="absent">0</strong><small>Absent</small></div><div class="attendance-stat"><strong id="late">0</strong><small>Late</small></div></section><section class="section-card"><div class="section-heading"><h2>Subject-wise attendance</h2><span class="muted-note">Excused counts as attended according to current attendance rules.</span></div><div id="subjects" class="attendance-subjects"></div></section><section class="section-card"><h2>Attendance history</h2><div id="history" class="attendance-history"></div></section></div></main><nav class="bottom-nav"><button data-bottom="home">⌂<br>Home</button><button data-bottom="messages">♡<br>Messages</button><button class="active" data-bottom="attendance">▦<br>Attendance</button><button data-bottom="profile">♙<br>Profile</button></nav>
-<script>const token=sessionStorage.getItem('token')||localStorage.getItem('token');if(!token)location.href='login.html';const auth={Authorization:'Bearer '+token};const $=id=>document.getElementById(id);async function load(){const q=new URLSearchParams();if($('from').value)q.set('from',$('from').value);if($('to').value)q.set('to',$('to').value);try{const r=await fetch(API_BASE+'/api/attendance/summary?'+q,{headers:auth});const d=await r.json();if(!r.ok)throw Error(d.message||'Unable to load attendance');$('state').hidden=true;$('content').hidden=false;const o=d.overall;const range=[$('from').value,$('to').value].filter(Boolean).join(' to ');$('summaryMeta').textContent=`${o.total} record${o.total===1?'':'s'} across ${d.subjects.length} subject${d.subjects.length===1?'':'s'}${range?` · range ${range}`:''}`;$('percentage').textContent=o.percentage===null?'—':o.percentage+'%';$('overallLabel').textContent=o.total?`${o.total} classes recorded`:'No attendance records yet';$('thresholdLabel').textContent=o.percentage!==null&&o.percentage<d.threshold?'Low-attendance alert: below the configured '+d.threshold+'% threshold.':'No low-attendance alert for this range.';$('present').textContent=o.present;$('absent').textContent=o.absent;$('late').textContent=o.late;$('subjects').innerHTML=d.subjects.length?d.subjects.map(s=>`<div class="subject-row"><div><strong>${s.subject_name}</strong><small>${s.attended||0} attended of ${s.classes_held} held</small></div><strong>${s.percentage===null?'—':s.percentage+'%'}</strong></div>`).join(''):'<div class="state">No subject attendance records exist for this range.</div>';$('history').innerHTML=d.history.length?d.history.map(h=>`<div class="history-row"><span>${h.attendance_date}</span><strong>${h.subject_name}</strong><span class="status-${h.status.toLowerCase()}">${h.status}</span><small>${h.start_time||''} ${h.classroom_name||''}</small></div>`).join(''):'<div class="state">No attendance history exists for this range.</div>'}catch(e){$('state').textContent=e.message}}document.querySelectorAll('[data-bottom]').forEach(b=>b.onclick=()=>location.href=b.dataset.bottom==='home'?'dashboard.html':b.dataset.bottom==='messages'?'messages.html':b.dataset.bottom==='attendance'?'attendance.html':'profile.html');load();</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Attendance · College ERP</title>
+<script src="config.js"></script>
+<script src="ui-feedback.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="theme-color" content="#2f6bff">
+<link rel="stylesheet" href="erp-ui.css">
+<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="attendance.css">
+</head>
+<body class="stu-home attendance-page" data-page="dashboard">
+<div class="stu-wrap att-wrap-wide">
+
+  <header class="stu-topbar">
+    <a class="icon-btn" href="home.html" aria-label="Back to home">‹</a>
+    <div class="stu-brand"><span class="cap" aria-hidden="true">🎓</span><span class="title">College ERP</span></div>
+    <span class="spacer"></span>
+    <a class="icon-btn stu-bell" id="attBell" href="home.html" aria-label="Notifications"><span aria-hidden="true">🔔</span><span class="ev-unread" id="attUnread" hidden></span></a>
+    <a class="stu-avatar-btn" href="profile.html" aria-label="Open your profile"><span id="topAvatarInitial">?</span></a>
+  </header>
+
+  <main class="att-main">
+    <div class="att-title-row">
+      <h1>Attendance</h1>
+      <label class="att-semester"><span class="sr-only">Semester</span>
+        <select id="semesterSelect" aria-label="Semester"><option>Loading…</option></select>
+      </label>
+    </div>
+
+    <p id="semesterState" class="att-state" hidden></p>
+
+    <section class="att-card att-overview" aria-labelledby="overviewTitle">
+      <h2 id="overviewTitle">Your Attendance</h2>
+      <div id="overviewBody"><p class="att-state">Loading attendance…</p></div>
+      <div id="eligibility" class="att-alert" role="status" hidden></div>
+    </section>
+
+    <nav class="att-shortcuts" aria-label="Attendance features">
+      <a class="att-shortcut tone-green" data-view="mark" href="attendance-view.html?view=mark"><span class="ico" aria-hidden="true">▦</span>Mark Attendance (QR/Manual)</a>
+      <a class="att-shortcut tone-green" data-view="history" href="attendance-view.html?view=history"><span class="ico" aria-hidden="true">⏰</span>Attendance History</a>
+      <a class="att-shortcut tone-green" data-view="subjects" href="attendance-view.html?view=subjects"><span class="ico" aria-hidden="true">▤</span>Subject-wise Attendance</a>
+      <a class="att-shortcut tone-blue" data-view="monthly" href="attendance-view.html?view=monthly"><span class="ico" aria-hidden="true">▮</span>Monthly Report</a>
+      <a class="att-shortcut tone-red" data-view="leave" href="attendance-view.html?view=leave"><span class="ico" aria-hidden="true">▣</span>Leave Application</a>
+      <a class="att-shortcut tone-red" data-view="od" href="attendance-view.html?view=od"><span class="ico" aria-hidden="true">▯</span>OD Application</a>
+      <a class="att-shortcut tone-blue" data-view="analytics" href="attendance-view.html?view=analytics"><span class="ico" aria-hidden="true">◷</span>Attendance Analytics</a>
+      <a class="att-shortcut tone-red" data-view="compensatory" href="attendance-view.html?view=compensatory"><span class="ico" aria-hidden="true">⛓</span>Compensatory Classes</a>
+    </nav>
+
+    <section class="att-card" aria-labelledby="recentTitle">
+      <h2 id="recentTitle">Recent Attendance</h2>
+      <div id="recentBody"><p class="att-state">Loading recent records…</p></div>
+    </section>
+  </main>
+</div>
+
+<nav class="stu-bottom" aria-label="Primary">
+  <div class="inner">
+    <a href="home.html"><span class="g" aria-hidden="true">🏠</span>Home</a>
+    <a href="messages.html"><span class="g" aria-hidden="true">💬</span>Messages</a>
+    <a href="attendance.html" class="active"><span class="g" aria-hidden="true">📅</span>Attendance</a>
+    <a href="profile.html"><span class="g" aria-hidden="true">👤</span>Profile</a>
+  </div>
+</nav>
+
+<script src="erp-app.js"></script>
+<script src="attendance.js"></script>
+</body>
+</html>

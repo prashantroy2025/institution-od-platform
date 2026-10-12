@@ -1,0 +1,60 @@
+.fees-page { background: #f4f7fd; }
+.fees-main { padding: 16px 16px 96px; display: grid; gap: 14px; }
+.fees-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fees-title-row h1 { margin: 0; font-size: 28px; color: #0f172a; }
+.fees-select { border: 1px solid #d6e0f5; border-radius: 12px; background: #fff; padding: 9px 12px; font: inherit; color: #1e3a8a; min-width: 150px; }
+.fees-card { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 6px 18px rgba(30, 64, 175, 0.07); }
+.fees-card h2 { margin: 0 0 12px; font-size: 18px; color: #0f172a; }
+.fee-status-body { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.fee-ring { position: relative; width: 116px; height: 116px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(#16a34a 0deg, #e5e7eb 0deg); }
+.fee-ring::before { content: ''; position: absolute; inset: 12px; border-radius: 50%; background: #fff; }
+.fee-ring span { position: relative; font-size: 22px; font-weight: 700; color: #0f172a; }
+.fee-amounts { display: grid; gap: 2px; }
+.fee-amounts strong { font-size: 18px; color: #0f172a; }
+.fee-amounts .fee-paid { color: #16a34a; }
+.fee-amounts .fee-label { margin-top: 8px; font-size: 13px; color: #64748b; }
+.fee-status-body .fees-pay-btn { grid-column: 1 / -1; }
+.fees-pay-btn { border: 0; border-radius: 12px; background: #1d6bf2; color: #fff; font: inherit; font-weight: 600; padding: 12px 16px; cursor: pointer; width: 100%; }
+.fees-pay-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+.fees-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.fees-tile { border: 2px solid transparent; border-radius: 16px; min-height: 104px; padding: 12px 8px; display: grid; justify-items: center; align-content: center; gap: 8px; font: inherit; font-size: 14px; font-weight: 600; color: #0f172a; cursor: pointer; text-align: center; }
+.fees-tile.active { border-color: #1d6bf2; }
+.tile-yellow { background: #fff8e6; }
+.tile-mint { background: #e9fbf1; }
+.tile-lilac { background: #f3edff; }
+.tile-rose { background: #ffeef1; }
+.tile-cream { background: #fff7e8; }
+.tile-blush { background: #fdeef0; }
+.tile-pink { background: #ffe9f2; }
+.tile-sky { background: #eaf1ff; }
+.tile-ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; color: #fff; }
+.ico-orange { background: #f59e0b; }
+.ico-purple { background: #8b3ffd; }
+.ico-red { background: #e11d48; }
+.upcoming-head { display: flex; align-items: center; justify-content: space-between; }
+.upcoming-head h2 { margin: 0; }
+.upcoming-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.upcoming-row small, .muted { display: block; color: #64748b; font-size: 13px; margin-top: 4px; }
+.overdue { color: #dc2626; font-weight: 600; }
+.fees-panel { display: grid; gap: 12px; }
+.fees-panel[hidden] { display: none; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; }
+.panel-head h2 { margin: 0; }
+.fees-note { margin: 0; padding: 10px 12px; border-radius: 12px; background: #eef4ff; color: #1e3a8a; font-size: 14px; }
+.fee-invoice { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
+.fee-invoice header { display: flex; justify-content: space-between; align-items: center; }
+.kv-list { display: grid; gap: 6px; }
+.kv { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: #334155; }
+.kv.strong { font-weight: 700; color: #0f172a; }
+.pay-form { display: grid; gap: 12px; }
+.pay-form label { display: grid; gap: 6px; font-size: 14px; color: #334155; }
+.pay-form input, .pay-form select { border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px; font: inherit; }
+.list-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid #e2e8f0; padding: 10px 0; }
+.list-row:last-child { border-bottom: 0; }
+.list-row small { display: block; color: #64748b; font-size: 12px; margin-top: 2px; }
+.status-pill { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #e2e8f0; color: #334155; white-space: nowrap; }
+.status-verified, .status-paid { background: #dcfce7; color: #166534; }
+.status-pending, .status-partially-paid { background: #fef3c7; color: #92400e; }
+.status-rejected, .status-refunded { background: #fee2e2; color: #991b1b; }
+.link { background: none; border: 0; color: #1d6bf2; font: inherit; font-weight: 600; cursor: pointer; padding: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Academic · College ERP</title>
+<link rel="stylesheet" href="erp-ui.css">
+<link rel="stylesheet" href="academic.css">
+<script src="config.js"></script>
+</head>
+<body class="academic-page">
+<header class="academic-topbar">
+  <a class="top-back" href="dashboard.html" aria-label="Back to dashboard">‹</a>
+  <a class="academic-brand" href="dashboard.html"><svg aria-hidden="true" viewBox="0 0 48 48"><path d="M3 16 24 5l21 11-21 11L3 16Zm7 7v10c8 7 20 7 28 0V23l-14 8-14-8Zm32-2v12h3V20l-3 1Z" fill="currentColor"/></svg><strong>College ERP</strong></a>
+  <span class="top-spacer"></span>
+  <button class="top-action notification-button" id="notificationButton" type="button" aria-label="Notifications"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="notificationBadge" hidden>0</span></button>
+  <a class="profile-link" href="profile.html" aria-label="Open profile"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a>
+</header>
+<aside id="notificationPanel" class="notification-panel" hidden aria-label="Notifications"><h2>Notifications</h2><div id="notificationList" role="status">Loading notifications…</div></aside>
+<main class="academic-main">
+  <div class="academic-title-row">
+    <a class="title-back" href="dashboard.html" aria-label="Back">‹</a>
+    <h1 id="pageTitle">Academic</h1>
+    <button id="searchToggle" class="search-toggle" type="button" aria-label="Search academic services">⌕</button>
+  </div>
+  <form id="searchForm" class="academic-search" role="search" hidden>
+    <label class="sr-only" for="serviceSearch">Search academic services</label>
+    <input id="serviceSearch" type="search" placeholder="Search subjects, services…" maxlength="80">
+    <button type="submit">Search</button>
+  </form>
+  <section id="landingView">
+    <div class="academic-hero">
+      <span class="hero-icon" aria-hidden="true">▤</span>
+      <div><h2>Academic</h2><p>Your complete academic resources</p></div>
+    </div>
+    <nav class="service-grid" id="serviceGrid" aria-label="Academic services"></nav>
+    <section class="upcoming-panel" aria-labelledby="upcomingTitle">
+      <div class="panel-heading"><h2 id="upcomingTitle">Upcoming Classes</h2><a href="academic.html?service=timetable">View All <span aria-hidden="true">›</span></a></div>
+      <div id="upcomingClasses" class="state" role="status">Loading your schedule…</div>
+    </section>
+  </section>
+  <section id="serviceView" class="service-view" hidden>
+    <div class="detail-heading"><button id="backToServices" class="back-to-services" type="button">‹ <span>Academic</span></button></div>
+    <div id="serviceContent" aria-live="polite"></div>
+  </section>
+  <p id="pageStatus" class="page-status" role="status" aria-live="polite" hidden></p>
+</main>
+<nav class="academic-bottom" aria-label="Primary navigation">
+  <a href="dashboard.html"><span aria-hidden="true">⌂</span>Home</a>
+  <a href="messages.html"><span aria-hidden="true">◌</span>Messages</a>
+  <a href="attendance.html"><span aria-hidden="true">▦</span>Attendance</a>
+  <a href="profile.html"><span aria-hidden="true">♙</span>Profile</a>
+</nav>
+<script src="erp-app.js"></script>
+<script src="academic.js"></script>
+</body>
+</html>

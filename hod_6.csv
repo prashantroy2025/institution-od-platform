@@ -1,0 +1,7 @@
+demo_person_id,full_name,email,role,department_code,department_name,designation,employee_code,phone,avatar_path,is_demo
+HOD001,Dr. Priya Mehta,drpriyamehta.hod@demo.college.invalid,hod,CSE,Computer Science and Engineering,Head of Department,DEMO-HOD-001,+91-90000-10000,/demo-avatars/demo-avatar-01.svg,true
+HOD002,Dr. Anil Rao,dranilrao.hod@demo.college.invalid,hod,IT,Information Technology,Head of Department,DEMO-HOD-002,+91-90000-10001,/demo-avatars/demo-avatar-02.svg,true
+HOD003,Dr. Kavita Sharma,drkavitasharma.hod@demo.college.invalid,hod,ECE,Electronics and Communication Engineering,Head of Department,DEMO-HOD-003,+91-90000-10002,/demo-avatars/demo-avatar-03.svg,true
+HOD004,Dr. Vikram Verma,drvikramverma.hod@demo.college.invalid,hod,ME,Mechanical Engineering,Head of Department,DEMO-HOD-004,+91-90000-10003,/demo-avatars/demo-avatar-04.svg,true
+HOD005,Dr. Neeraj Khanna,drneerajkhanna.hod@demo.college.invalid,hod,CE,Civil Engineering,Head of Department,DEMO-HOD-005,+91-90000-10004,/demo-avatars/demo-avatar-05.svg,true
+HOD006,Dr. Pallavi Das,drpallavidas.hod@demo.college.invalid,hod,EE,Electrical Engineering,Head of Department,DEMO-HOD-006,+91-90000-10005,/demo-avatars/demo-avatar-06.svg,true

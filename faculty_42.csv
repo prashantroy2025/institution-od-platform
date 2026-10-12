@@ -1,0 +1,43 @@
+demo_person_id,full_name,email,role,department_code,department_name,designation,employee_code,phone,avatar_path,is_demo
+FAC001,Neeraj Sharma,neerajsharma.faculty@demo.college.invalid,organizer,CSE,Computer Science and Engineering,Professor,DEMO-FAC-001,+91-91000-10000,/demo-avatars/demo-avatar-10.svg,true
+FAC002,Pallavi Das,pallavidas.faculty@demo.college.invalid,organizer,IT,Information Technology,Associate Professor,DEMO-FAC-002,+91-91000-10001,/demo-avatars/demo-avatar-11.svg,true
+FAC003,Sanjay Joshi,sanjayjoshi.faculty@demo.college.invalid,organizer,ECE,Electronics and Communication Engineering,Assistant Professor,DEMO-FAC-003,+91-91000-10002,/demo-avatars/demo-avatar-12.svg,true
+FAC004,Megha Bansal,meghabansal.faculty@demo.college.invalid,organizer,ME,Mechanical Engineering,Professor,DEMO-FAC-004,+91-91000-10003,/demo-avatars/demo-avatar-13.svg,true
+FAC005,Arvind Mehta,arvindmehta.faculty@demo.college.invalid,organizer,CE,Civil Engineering,Professor,DEMO-FAC-005,+91-91000-10004,/demo-avatars/demo-avatar-14.svg,true
+FAC006,Ritu Verma,rituverma.faculty@demo.college.invalid,organizer,EE,Electrical Engineering,Lecturer,DEMO-FAC-006,+91-91000-10005,/demo-avatars/demo-avatar-15.svg,true
+FAC007,Deepak Singh,deepaksingh.faculty@demo.college.invalid,organizer,CSE,Computer Science and Engineering,Professor,DEMO-FAC-007,+91-91000-10006,/demo-avatars/demo-avatar-16.svg,true
+FAC008,Nidhi Patel,nidhipatel.faculty@demo.college.invalid,organizer,IT,Information Technology,Professor,DEMO-FAC-008,+91-91000-10007,/demo-avatars/demo-avatar-17.svg,true
+FAC009,Manoj Kapoor,manojkapoor.faculty@demo.college.invalid,organizer,ECE,Electronics and Communication Engineering,Professor,DEMO-FAC-009,+91-91000-10008,/demo-avatars/demo-avatar-18.svg,true
+FAC010,Shalini Rao,shalinirao.faculty@demo.college.invalid,organizer,ME,Mechanical Engineering,Associate Professor,DEMO-FAC-010,+91-91000-10009,/demo-avatars/demo-avatar-19.svg,true
+FAC011,Amit Khanna,amitkhanna.faculty@demo.college.invalid,organizer,CE,Civil Engineering,Associate Professor,DEMO-FAC-011,+91-91000-10010,/demo-avatars/demo-avatar-20.svg,true
+FAC012,Swati Nair,swatinair.faculty@demo.college.invalid,organizer,EE,Electrical Engineering,Lecturer,DEMO-FAC-012,+91-91000-10011,/demo-avatars/demo-avatar-21.svg,true
+FAC013,Rajesh Roy,rajeshroy.faculty@demo.college.invalid,organizer,CSE,Computer Science and Engineering,Lecturer,DEMO-FAC-013,+91-91000-10012,/demo-avatars/demo-avatar-22.svg,true
+FAC014,Divya Mishra,divyamishra.faculty@demo.college.invalid,organizer,IT,Information Technology,Assistant Professor,DEMO-FAC-014,+91-91000-10013,/demo-avatars/demo-avatar-23.svg,true
+FAC015,Priya Sharma,priyasharma.faculty@demo.college.invalid,organizer,ECE,Electronics and Communication Engineering,Professor,DEMO-FAC-015,+91-91000-10014,/demo-avatars/demo-avatar-24.svg,true
+FAC016,Anil Das,anildas.faculty@demo.college.invalid,organizer,ME,Mechanical Engineering,Professor,DEMO-FAC-016,+91-91000-10015,/demo-avatars/demo-avatar-25.svg,true
+FAC017,Kavita Joshi,kavitajoshi.faculty@demo.college.invalid,organizer,CE,Civil Engineering,Lecturer,DEMO-FAC-017,+91-91000-10016,/demo-avatars/demo-avatar-26.svg,true
+FAC018,Vikram Bansal,vikrambansal.faculty@demo.college.invalid,organizer,EE,Electrical Engineering,Associate Professor,DEMO-FAC-018,+91-91000-10017,/demo-avatars/demo-avatar-27.svg,true
+FAC019,Neeraj Mehta,neerajmehta.faculty@demo.college.invalid,organizer,CSE,Computer Science and Engineering,Associate Professor,DEMO-FAC-019,+91-91000-10018,/demo-avatars/demo-avatar-28.svg,true
+FAC020,Pallavi Verma,pallaviverma.faculty@demo.college.invalid,organizer,IT,Information Technology,Professor,DEMO-FAC-020,+91-91000-10019,/demo-avatars/demo-avatar-29.svg,true
+FAC021,Sanjay Singh,sanjaysingh.faculty@demo.college.invalid,organizer,ECE,Electronics and Communication Engineering,Professor,DEMO-FAC-021,+91-91000-10020,/demo-avatars/demo-avatar-30.svg,true
+FAC022,Megha Patel,meghapatel.faculty@demo.college.invalid,organizer,ME,Mechanical Engineering,Professor,DEMO-FAC-022,+91-91000-10021,/demo-avatars/demo-avatar-31.svg,true
+FAC023,Arvind Kapoor,arvindkapoor.faculty@demo.college.invalid,organizer,CE,Civil Engineering,Assistant Professor,DEMO-FAC-023,+91-91000-10022,/demo-avatars/demo-avatar-32.svg,true
+FAC024,Ritu Rao,riturao.faculty@demo.college.invalid,organizer,EE,Electrical Engineering,Assistant Professor,DEMO-FAC-024,+91-91000-10023,/demo-avatars/demo-avatar-01.svg,true
+FAC025,Deepak Khanna,deepakkhanna.faculty@demo.college.invalid,organizer,CSE,Computer Science and Engineering,Assistant Professor,DEMO-FAC-025,+91-91000-10024,/demo-avatars/demo-avatar-02.svg,true
+FAC026,Nidhi Nair,nidhinair.faculty@demo.college.invalid,organizer,IT,Information Technology,Assistant Professor,DEMO-FAC-026,+91-91000-10025,/demo-avatars/demo-avatar-03.svg,true
+FAC027,Manoj Roy,manojroy.faculty@demo.college.invalid,organizer,ECE,Electronics and Communication Engineering,Professor,DEMO-FAC-027,+91-91000-10026,/demo-avatars/demo-avatar-04.svg,true
+FAC028,Shalini Mishra,shalinimishra.faculty@demo.college.invalid,organizer,ME,Mechanical Engineering,Professor,DEMO-FAC-028,+91-91000-10027,/demo-avatars/demo-avatar-05.svg,true
+FAC029,Amit Sharma,amitsharma.faculty@demo.college.invalid,organizer,CE,Civil Engineering,Lecturer,DEMO-FAC-029,+91-91000-10028,/demo-avatars/demo-avatar-06.svg,true
+FAC030,Swati Das,swatidas.faculty@demo.college.invalid,organizer,EE,Electrical Engineering,Professor,DEMO-FAC-030,+91-91000-10029,/demo-avatars/demo-avatar-07.svg,true
+FAC031,Rajesh Joshi,rajeshjoshi.faculty@demo.college.invalid,organizer,CSE,Computer Science and Engineering,Assistant Professor,DEMO-FAC-031,+91-91000-10030,/demo-avatars/demo-avatar-08.svg,true
+FAC032,Divya Bansal,divyabansal.faculty@demo.college.invalid,organizer,IT,Information Technology,Lecturer,DEMO-FAC-032,+91-91000-10031,/demo-avatars/demo-avatar-09.svg,true
+FAC033,Priya Mehta,priyamehta.faculty@demo.college.invalid,organizer,ECE,Electronics and Communication Engineering,Lecturer,DEMO-FAC-033,+91-91000-10032,/demo-avatars/demo-avatar-10.svg,true
+FAC034,Anil Verma,anilverma.faculty@demo.college.invalid,organizer,ME,Mechanical Engineering,Associate Professor,DEMO-FAC-034,+91-91000-10033,/demo-avatars/demo-avatar-11.svg,true
+FAC035,Kavita Singh,kavitasingh.faculty@demo.college.invalid,organizer,CE,Civil Engineering,Lecturer,DEMO-FAC-035,+91-91000-10034,/demo-avatars/demo-avatar-12.svg,true
+FAC036,Vikram Patel,vikrampatel.faculty@demo.college.invalid,organizer,EE,Electrical Engineering,Assistant Professor,DEMO-FAC-036,+91-91000-10035,/demo-avatars/demo-avatar-13.svg,true
+FAC037,Neeraj Kapoor,neerajkapoor.faculty@demo.college.invalid,organizer,CSE,Computer Science and Engineering,Lecturer,DEMO-FAC-037,+91-91000-10036,/demo-avatars/demo-avatar-14.svg,true
+FAC038,Pallavi Rao,pallavirao.faculty@demo.college.invalid,organizer,IT,Information Technology,Associate Professor,DEMO-FAC-038,+91-91000-10037,/demo-avatars/demo-avatar-15.svg,true
+FAC039,Sanjay Khanna,sanjaykhanna.faculty@demo.college.invalid,organizer,ECE,Electronics and Communication Engineering,Associate Professor,DEMO-FAC-039,+91-91000-10038,/demo-avatars/demo-avatar-16.svg,true
+FAC040,Megha Nair,meghanair.faculty@demo.college.invalid,organizer,ME,Mechanical Engineering,Assistant Professor,DEMO-FAC-040,+91-91000-10039,/demo-avatars/demo-avatar-17.svg,true
+FAC041,Arvind Roy,arvindroy.faculty@demo.college.invalid,organizer,CE,Civil Engineering,Professor,DEMO-FAC-041,+91-91000-10040,/demo-avatars/demo-avatar-18.svg,true
+FAC042,Ritu Mishra,ritumishra.faculty@demo.college.invalid,organizer,EE,Electrical Engineering,Professor,DEMO-FAC-042,+91-91000-10041,/demo-avatars/demo-avatar-19.svg,true

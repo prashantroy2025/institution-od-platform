@@ -1,62 +1,422 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Messages · College ERP</title><script src="config.js"></script><script src="ui-feedback.js"></script><link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="stylesheet" href="erp-ui.css"></head><body class="erp-dashboard"><main class="module-page messages-page"><header class="module-header"><div><p class="eyebrow">Connect</p><h1>Messages</h1><p>Academic groups and authorized conversations.</p></div><button class="primary-btn" id="newMessage">New message</button></header><p class="state" id="pageStatus" role="status" aria-live="polite" hidden></p><section class="message-layout"><aside class="conversation-panel"><input id="search" type="search" placeholder="Search conversations" aria-label="Search conversations"><div class="message-tabs" role="tablist"><button class="active" data-tab="all" role="tab" aria-selected="true">All</button><button data-tab="academic" role="tab" aria-selected="false">Academic Groups</button><button data-tab="direct" role="tab" aria-selected="false">Direct</button><button data-tab="official" role="tab" aria-selected="false">Official</button></div><form id="peerForm" class="peer-form" hidden><label for="peerId">Authorized academic peer ID</label><div class="peer-row"><input id="peerId" name="peerId" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 42" required><button class="primary-btn" type="submit">Start conversation</button><button class="text-button" type="button" id="cancelPeer">Cancel</button></div><p class="muted-note">Direct messages are only created for approved academic relationships; the server re-checks eligibility and privacy.</p></form><p class="realtime-badge" id="realtime">Connecting…</p><button class="text-button" id="refresh">Refresh</button><div id="conversations" class="conversation-list" aria-live="polite"><div class="state">Loading conversations…</div></div><h3>Academic Groups</h3><p class="muted-note">Groups are listed only when your enrollment or authorized role makes you eligible.</p><div id="groups" class="conversation-list"><div class="state">Loading groups…</div></div></aside><section class="chat-panel"><div id="chatHeader" class="chat-header">Select a conversation</div><div id="messages" class="chat-messages" aria-live="polite"><div class="state">Choose a group or conversation to view its history.</div></div><form id="replyForm" class="reply-banner" hidden><span id="replyTarget"></span><button class="text-button" type="button" id="cancelReply">Cancel</button></form><form id="messageForm" class="chat-composer" hidden><label class="visually-hidden" for="messageBody">Message</label><input id="messageBody" placeholder="Write a message…" maxlength="4000" required autocomplete="off"><input id="attachment" type="file" accept="application/pdf,image/png,image/jpeg,text/plain" aria-label="Attach a file"><button class="primary-btn" type="submit">Send</button></form></section></section></main><nav class="bottom-nav"><button data-bottom="home">⌂<br>Home</button><button class="active" data-bottom="messages">♡<br>Messages</button><button data-bottom="attendance">▦<br>Attendance</button><button data-bottom="profile">♙<br>Profile</button></nav>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Messages · College ERP</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="messages.css">
+<script src="config.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button class="icon-btn" id="topBack" type="button" aria-label="Back to dashboard">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5-10-5z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/><path d="M22 9v6"/></svg>
+      <span>College ERP</span>
+    </div>
+    <button class="icon-btn bell" id="bellBtn" type="button" aria-label="Show unread messages">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+      <span class="badge" id="bellBadge" hidden></span>
+    </button>
+    <button class="top-avatar" id="topAvatar" type="button" aria-label="Open profile">CE</button>
+  </header>
+
+  <main class="sheet">
+    <div class="sheet-head">
+      <button class="icon-btn back-arrow" id="sheetBack" type="button" aria-label="Back to dashboard">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <h1>Messages</h1>
+      <button class="icon-btn new-btn" id="newMessageBtn" type="button" aria-label="New message" aria-haspopup="dialog">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M12 8v5M9.5 10.5h5"/></svg>
+      </button>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Conversation categories">
+      <button class="tab" type="button" role="tab" data-tab="chats" aria-selected="true">Chats</button>
+      <button class="tab" type="button" role="tab" data-tab="groups" aria-selected="false">Groups</button>
+      <button class="tab" type="button" role="tab" data-tab="clubs" aria-selected="false">Club Groups</button>
+    </div>
+
+    <div class="search-row">
+      <label class="search">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="search" type="search" placeholder="Search messages, people, groups..." aria-label="Search messages, people, groups" autocomplete="off">
+      </label>
+      <button class="filter-btn" id="archivedBtn" type="button" aria-pressed="false" aria-label="Show archived conversations" title="Archived conversations">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 4h18l-1 6H4z"/><path d="M5 10v9h14v-9"/><path d="M10 14h4"/></svg>
+      </button>
+    </div>
+
+    <div class="chips" role="group" aria-label="Filter conversations">
+      <button class="chip" type="button" data-filter="all" aria-pressed="true">All</button>
+      <button class="chip" type="button" data-filter="unread" aria-pressed="false">Unread</button>
+      <button class="chip" type="button" data-filter="faculty" aria-pressed="false">Faculty</button>
+      <button class="chip" type="button" data-filter="students" aria-pressed="false">Students</button>
+      <button class="chip" type="button" data-filter="groups" aria-pressed="false">Groups</button>
+      <button class="chip chip-icon" id="sortBtn" type="button" aria-pressed="false" aria-label="Sort by unread first" title="Sort by unread first">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 16l4 4 4-4"/><path d="M17 20V4M13 8l4-4 4 4"/></svg>
+      </button>
+    </div>
+
+    <p class="state" id="archivedNote" hidden>Showing archived conversations. <button class="link-btn" id="archivedExit" type="button">Back to inbox</button></p>
+    <p class="state" id="inboxStatus" role="status" aria-live="polite" hidden></p>
+
+    <section id="listArea" aria-live="polite"><div class="state">Loading conversations...</div></section>
+    <section id="matchArea"></section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Primary">
+    <button class="nav-item" type="button" data-nav="dashboard.html">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="nav-item" type="button" data-nav="messages.html" aria-current="page">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Messages</span>
+      <span class="nav-badge" id="navBadge" hidden></span>
+    </button>
+    <button class="nav-item" type="button" data-nav="attendance.html">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      <span>Attendance</span>
+    </button>
+    <button class="nav-item" type="button" data-nav="profile.html">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      <span>Profile</span>
+    </button>
+  </nav>
+</div>
+
+<dialog class="dialog" id="newDialog" aria-labelledby="newDialogTitle">
+  <div class="dialog-inner">
+    <div class="dialog-head">
+      <h2 id="newDialogTitle">New message</h2>
+      <button class="icon-btn" id="closeDialog" type="button" aria-label="Close">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <label class="search compact">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="dialogSearch" type="search" placeholder="Search people or groups" aria-label="Search people or groups" autocomplete="off">
+    </label>
+    <div class="dialog-body" id="dialogBody"></div>
+  </div>
+</dialog>
+
 <script src="/socket.io/socket.io.js"></script>
-<script>const token=sessionStorage.getItem('token')||localStorage.getItem('token');if(!token)location.href='login.html';
-const auth={Authorization:'Bearer '+token};const $=id=>document.getElementById(id);
-let profile=null,conversationId=null,realtimeSocket=null,activeTab='all',conversationsCache=[],groupsCache=[],replyTo=null;
-async function call(url,opt={}){const r=await fetch(API_BASE+url,{...opt,headers:{...auth,...(opt.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||'Request failed');return d}
-function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-function status(message,isError){const el=$('pageStatus');el.textContent=message;el.hidden=false;el.className='state'+(isError?' error':'');if(!isError){clearTimeout(el._t);el._t=setTimeout(()=>{el.hidden=true},4000)}}
-function conversationItem(c,group=false){if(group)return '<div class="conversation-item"><strong>'+escapeHtml(c.name)+'</strong><small>'+escapeHtml(c.group_type)+' - '+c.member_count+' members</small>'+(c.is_member?'<button class="text-button" data-open="'+c.conversation_id+'">Open chat</button>':'<button class="text-button" data-join="'+c.id+'">Join group</button>')+'</div>';return '<button class="conversation-item" data-open="'+c.id+'"><strong>'+escapeHtml(c.group_name||'Direct conversation')+'</strong><small>'+escapeHtml(c.last_message||'No messages yet')+'</small>'+(c.unread_count?'<b>'+c.unread_count+'</b>':'')+'</button>'}
-function isStaff(){return ['super_admin','hod','organizer'].includes(profile&&profile.role)}
-function messageBubble(m){
-    const reactions=['👍','❤️','😂','🎉','🙏'];
-    const tools='<div class="message-tools"><button type="button" data-reply="'+m.id+'">Reply</button>'
-        +reactions.map(r=>'<button type="button" data-react="'+m.id+'" data-reaction="'+r+'" aria-pressed="'+(m.my_reaction===r?'true':'false')+'" aria-label="React with '+r+'">'+r+(m.my_reaction===r?' ✓':'')+'</button>').join('')
-        +(isStaff()?'<button type="button" data-pin="'+m.id+'" aria-pressed="'+(m.is_pinned?'true':'false')+'">'+(m.is_pinned?'Unpin':'Pin')+'</button>':'')
-        +(m.attachment_original_name?'<a class="message-attachment" href="'+API_BASE+'/api/messages/messages/'+m.id+'/attachment">Download '+escapeHtml(m.attachment_original_name)+'</a>':'')+'</div>';
-    const quote=m.reply_to_id?'<span class="message-reply">Reply to message #'+m.reply_to_id+'</span>':'';
-    return '<div class="message-bubble"><strong>'+escapeHtml(m.sender_name)+'</strong>'+quote+'<p>'+escapeHtml(m.body)+'</p><small>'+new Date(m.created_at).toLocaleString()+(m.is_pinned?' · Pinned':'')+(m.my_reaction?' · Your reaction '+escapeHtml(m.my_reaction):'')+'</small>'+tools+'</div>';
+<script>
+const token=sessionStorage.getItem('token')||localStorage.getItem('token');
+if(!token)location.href='login.html';
+const auth={Authorization:'Bearer '+token};
+const $=id=>document.getElementById(id);
+const ROLE_LABELS={student:'Student',organizer:'Organizer',hod:'HOD',super_admin:'Admin'};
+const GROUP_TYPES_BY_TAB={groups:['academic','official'],clubs:['community']};
+const PALETTE=['#e11d48','#7c3aed','#059669','#ea580c','#0ea5e9','#db2777','#4f46e5','#16a34a'];
+const state={tab:'chats',filter:'all',sort:'latest',archived:false,q:'',conversations:[],listError:null,groups:[],groupsError:null,loadSeq:0};
+
+async function call(url,opt={}){
+  const r=await fetch(API_BASE+url,{...opt,headers:{...auth,...(opt.headers||{})}});
+  const d=await r.json().catch(()=>({}));
+  if(r.status===401){localStorage.removeItem('token');sessionStorage.removeItem('token');location.href='login.html';throw new Error('Session expired')}
+  if(!r.ok)throw new Error(d.message||'Request failed ('+r.status+')');
+  return d;
 }
-function renderReplyDraft(){
-    const box=document.getElementById('replyForm');
-    if(!replyTo){box.hidden=true;document.getElementById('replyTarget').textContent='';return}
-    box.hidden=false;
-    document.getElementById('replyTarget').textContent='Replying to message #'+replyTo;
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function initials(name){const parts=String(name||'').trim().split(/\s+/).filter(Boolean);if(!parts.length)return '?';return (parts[0][0]+(parts.length>1?parts[parts.length-1][0]:'')).toUpperCase()}
+function colorFor(text){let h=0;for(const ch of String(text))h=(h*31+ch.charCodeAt(0))>>>0;return PALETTE[h%PALETTE.length]}
+const GROUP_ICON='<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 19a6 6 0 0 1 12 0M15 19a4.5 4.5 0 0 1 6 0"/></svg>';
+const MUTE_ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Muted"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>';
+const PIN_ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-label="Pinned"><path d="M16 3l5 5-2 1-3 3 1 4-2 2-3-3-5 5-1-1 5-5-3-3 2-2 4 1 3-3 1-2z"/></svg>';
+
+function formatTime(iso){
+  if(!iso)return '';
+  const d=new Date(iso);
+  const now=new Date();
+  if(d.toDateString()===now.toDateString())return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  const yesterday=new Date(now);yesterday.setDate(now.getDate()-1);
+  if(d.toDateString()===yesterday.toDateString())return 'Yesterday';
+  return d.toLocaleDateString([],{day:'numeric',month:'short'});
 }
-function conversationsForTab(){if(activeTab==='direct')return conversationsCache.filter(c=>c.conversation_type==='direct');if(activeTab==='official')return conversationsCache.filter(c=>c.group_type==='official');if(activeTab==='academic')return conversationsCache.filter(c=>['group','official'].includes(c.conversation_type));return conversationsCache}
-function visibleGroups(){
-    if(activeTab==='direct')return [];
-    if(activeTab==='academic')return groupsCache.filter(g=>g.is_member||isStaff()||g.group_type!=='community');
-    return groupsCache.filter(g=>g.is_member||isStaff());
+function errorBlock(message,retryAttr){return '<div class="state error" role="alert"><p>'+esc(message)+'</p><button class="ghost retry" type="button" '+retryAttr+'>Retry</button></div>'}
+function setStatus(message,isError){const el=$('inboxStatus');el.textContent=message;el.hidden=!message;el.className='state'+(isError?' error':'')}
+function threadUrl(id){return 'messages-thread.html?id='+encodeURIComponent(id)}
+
+function avatarHtml(item){
+  if(item.conversation_type==='direct'){
+    const name=item.peer_name||'Direct';
+    return '<span class="avatar" style="background:'+colorFor(name)+'">'+esc(initials(name))+'</span>';
+  }
+  const color=item.group_type==='community'?'#7c3aed':item.group_type==='official'?'#ea580c':'#1565e8';
+  return '<span class="avatar group" style="background:'+color+'">'+GROUP_ICON+'</span>';
 }
-function applySearch(list,fields){const q=$('search').value.trim().toLowerCase();if(!q)return list;return list.filter(item=>fields.some(f=>String(item[f]||'').toLowerCase().includes(q)))}
-async function loadConversations(){try{const d=await call('/api/messages/conversations');conversationsCache=d.items;renderConversations()}catch(e){$('conversations').innerHTML='<div class="state error">'+escapeHtml(e.message)+'</div>'}}
-async function loadGroups(){try{const d=await call('/api/messages/groups');groupsCache=d.items;renderGroups()}catch(e){$('groups').innerHTML='<div class="state error">'+escapeHtml(e.message)+'</div>'}}
-function renderConversations(){const items=applySearch(conversationsForTab(),['group_name','last_message']);$('conversations').innerHTML=items.length?items.map(x=>conversationItem(x)).join(''):'<div class="state">No conversations in this view yet.</div>';document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openConversation(b.dataset.open,b.closest('.conversation-item').querySelector('strong').textContent))}
-function renderGroups(){const items=applySearch(visibleGroups(),['name','group_type']);$('groups').innerHTML=items.length?items.map(x=>conversationItem(x,true)).join(''):'<div class="state">No eligible academic groups yet.</div>';document.querySelectorAll('[data-join]').forEach(b=>b.onclick=async()=>{try{status('Joining group...');await call('/api/messages/groups/'+b.dataset.join+'/join',{method:'POST'});await Promise.all([loadConversations(),loadGroups()]);status('Group joined.')}catch(e){status(e.message,true)}})}
-async function load(){await Promise.all([loadConversations(),loadGroups()])}
-async function openConversation(id,name){const previous=conversationId;conversationId=id;replyTo=null;if(realtimeSocket&&realtimeSocket.connected){if(previous&&previous!==id)realtimeSocket.emit('conversation:leave',previous);realtimeSocket.emit('conversation:join',id)}$('messageForm').hidden=false;$('chatHeader').textContent=name;try{const d=await call('/api/messages/conversations/'+id+'/messages');$('messages').innerHTML=d.items.length?d.items.map(messageBubble).join(''):'<div class="state">No messages yet.</div>';bindMessageTools();renderReplyDraft();$('messages').scrollTop=$('messages').scrollHeight;if(d.items.length){await call('/api/messages/conversations/'+id+'/read',{method:'POST',headers:{...auth,'Content-Type':'application/json'},body:JSON.stringify({message_id:d.items[d.items.length-1].id})});await loadConversations()}}catch(e){$('messages').innerHTML='<div class="state error">'+escapeHtml(e.message)+'</div>'}}
-function bindMessageTools(){
-    document.querySelectorAll('[data-react]').forEach(b=>b.onclick=async()=>{
-        if(!conversationId)return;
-        try{await call('/api/messages/messages/'+b.dataset.react+'/react',{method:'POST',headers:{...auth,'Content-Type':'application/json'},body:JSON.stringify({reaction:b.dataset.reaction})});await openConversation(conversationId,$('chatHeader').textContent)}catch(e){status(e.message,true)}
-    });
-    document.querySelectorAll('[data-pin]').forEach(b=>b.onclick=async()=>{
-        if(!conversationId)return;
-        try{await call('/api/messages/messages/'+b.dataset.pin+'/pin',{method:'POST'});await openConversation(conversationId,$('chatHeader').textContent)}catch(e){status(e.message,true)}
-    });
-    document.querySelectorAll('[data-reply]').forEach(b=>b.onclick=()=>{replyTo=Number(b.dataset.reply);renderReplyDraft();$('messageBody').focus()});
+function conversationRow(item){
+  const title=item.conversation_type==='direct'?(item.peer_name||'Direct conversation'):(item.group_name||'Group conversation');
+  const preview=item.last_message||'No messages yet';
+  const unread=Number(item.unread_count)||0;
+  return '<li><a class="row" href="'+threadUrl(item.id)+'">'
+    +avatarHtml(item)
+    +'<span class="row-body"><span class="row-title">'+esc(title)+'</span><span class="row-preview">'+esc(preview)+'</span></span>'
+    +'<span class="row-meta"><span class="row-time">'+esc(formatTime(item.last_message_at||item.created_at))+'</span>'
+    +'<span class="row-icons">'+(item.is_muted?MUTE_ICON:'')+(item.is_pinned?PIN_ICON:'')+(unread?'<span class="count" aria-label="'+unread+' unread">'+(unread>99?'99+':unread)+'</span>':'')+'</span></span>'
+    +'</a></li>';
 }
-$('cancelReply').onclick=()=>{replyTo=null;renderReplyDraft()};
-$('messageForm').onsubmit=async e=>{e.preventDefault();if(!conversationId)return;const f=new FormData();f.append('body',$('messageBody').value);if(replyTo)f.append('reply_to_id',String(replyTo));if($('attachment').files[0])f.append('attachment',$('attachment').files[0]);try{await call('/api/messages/conversations/'+conversationId+'/messages',{method:'POST',body:f});$('messageForm').reset();replyTo=null;renderReplyDraft();await openConversation(conversationId,$('chatHeader').textContent);await loadConversations()}catch(err){status(err.message,true)}};
-$('newMessage').onclick=()=>{$('peerForm').hidden=!$('peerForm').hidden;if(!$('peerForm').hidden)$('peerId').focus()};
-$('cancelPeer').onclick=()=>{$('peerForm').hidden=true;$('peerForm').reset()};
-$('peerForm').onsubmit=async e=>{e.preventDefault();try{const c=await call('/api/messages/direct',{method:'POST',headers:{...auth,'Content-Type':'application/json'},body:JSON.stringify({target_id:$('peerId').value})});$('peerForm').hidden=true;$('peerForm').reset();await loadConversations();await openConversation(c.id,'Direct conversation')}catch(err){status(err.message,true)}};
-$('refresh').onclick=()=>load();
-$('search').oninput=()=>{renderConversations();renderGroups()};
-document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>{const on=x===b;x.classList.toggle('active',on);x.setAttribute('aria-selected',on?'true':'false')});renderConversations();renderGroups()});
-function connectRealtime(){if(typeof io!=='function'){$('realtime').textContent='Realtime unavailable';return}const socket=io(API_BASE,{auth:{token},transports:['websocket','polling']});realtimeSocket=socket;$('realtime').textContent='Connecting...';socket.on('connect',()=>{$('realtime').textContent='Live';$('realtime').classList.add('connected');if(conversationId)socket.emit('conversation:join',conversationId)});socket.on('connect_error',()=>{$('realtime').textContent='Offline - showing saved history';$('realtime').classList.remove('connected')});socket.on('disconnect',()=>{$('realtime').textContent='Offline - reconnecting...';$('realtime').classList.remove('connected')});socket.on('message:new',()=>{if(conversationId)openConversation(conversationId,$('chatHeader').textContent);loadConversations()});window.addEventListener('beforeunload',()=>socket.disconnect())}
-async function boot(){try{profile=await call('/api/auth/me')}catch(e){status(e.message,true)}await load();connectRealtime()}
-document.querySelectorAll('[data-bottom]').forEach(b=>b.onclick=()=>location.href=b.dataset.bottom==='home'?'dashboard.html':b.dataset.bottom==='messages'?'messages.html':b.dataset.bottom==='attendance'?'attendance.html':'profile.html');
+function joinableRow(group){
+  const color=group.group_type==='community'?'#7c3aed':group.group_type==='official'?'#ea580c':'#1565e8';
+  return '<li class="row" style="cursor:default">'
+    +'<span class="avatar group" style="background:'+color+'">'+GROUP_ICON+'</span>'
+    +'<span class="row-body"><span class="row-title">'+esc(group.name)+'</span><span class="row-preview">'+esc(group.group_type)+' · '+esc(group.member_count)+' members</span></span>'
+    +'<button class="join-pill" type="button" data-join="'+esc(group.id)+'">Join</button>'
+    +'</li>';
+}
+function joinableGroups(){
+  const types=GROUP_TYPES_BY_TAB[state.tab];
+  if(!types||state.archived||!(state.filter==='all'||state.filter==='groups'))return [];
+  const q=state.q.toLowerCase();
+  return state.groups.filter(g=>!g.is_member&&types.includes(g.group_type)&&(!q||String(g.name).toLowerCase().includes(q)));
+}
+
+function renderList(){
+  const area=$('listArea');
+  if(state.listError){area.innerHTML=errorBlock('Could not load conversations: '+state.listError,'data-retry-list');return}
+  let html='';
+  if(state.conversations.length){
+    html+='<ul class="list">'+state.conversations.map(conversationRow).join('')+'</ul>';
+  }else{
+    const empty=state.q?'No conversations match your search.':state.archived?'No archived conversations.':'No conversations in this view yet.';
+    html+='<div class="state">'+esc(empty)+'</div>';
+  }
+  const joinable=joinableGroups();
+  if(state.groupsError){
+    html+=errorBlock('Could not load groups: '+state.groupsError,'data-retry-groups');
+  }else if(joinable.length){
+    html+='<div class="section-label">Join groups</div><ul class="list">'+joinable.map(joinableRow).join('')+'</ul>';
+  }
+  area.innerHTML=html;
+}
+
+async function loadConversations(){
+  const seq=++state.loadSeq;
+  const params=new URLSearchParams({tab:state.tab,limit:'100'});
+  if(state.filter!=='all')params.set('filter',state.filter);
+  if(state.sort==='unread')params.set('sort','unread');
+  if(state.archived)params.set('archived','1');
+  if(state.q)params.set('q',state.q);
+  try{
+    const d=await call('/api/messages/conversations?'+params);
+    if(seq!==state.loadSeq)return;
+    state.conversations=d.items||[];
+    state.listError=null;
+  }catch(e){
+    if(seq!==state.loadSeq)return;
+    state.conversations=[];
+    state.listError=e.message;
+  }
+  renderList();
+}
+async function loadGroups(){
+  try{
+    const d=await call('/api/messages/groups?limit=100');
+    state.groups=d.items||[];
+    state.groupsError=null;
+  }catch(e){
+    state.groupsError=e.message;
+  }
+  renderList();
+}
+async function loadUnread(){
+  try{
+    const d=await call('/api/messages/unread-count');
+    const total=Number(d.unread_count)||0;
+    const label=total>99?'99+':String(total);
+    for(const el of [$('bellBadge'),$('navBadge')]){el.textContent=label;el.hidden=total===0}
+  }catch(e){
+    setStatus('Could not load unread count: '+e.message,true);
+  }
+}
+async function loadMatches(){
+  const area=$('matchArea');
+  if(state.q.length<2){area.innerHTML='';return}
+  try{
+    const d=await call('/api/messages/search?q='+encodeURIComponent(state.q));
+    const items=d.items||[];
+    area.innerHTML='<div class="section-label">Messages</div>'+(items.length
+      ?'<ul class="list">'+items.map(m=>'<li><a class="row" href="'+threadUrl(m.conversation_id)+'"><span class="avatar" style="background:'+colorFor(m.sender_name)+'">'+esc(initials(m.sender_name))+'</span><span class="row-body"><span class="row-title">'+esc(m.group_name||m.sender_name)+'</span><span class="row-preview">'+esc(m.sender_name)+': '+esc(m.body)+'</span></span><span class="row-meta"><span class="row-time">'+esc(formatTime(m.created_at))+'</span></span></a></li>').join('')+'</ul>'
+      :'<div class="state">No messages match your search.</div>');
+  }catch(e){
+    area.innerHTML=errorBlock('Could not search messages: '+e.message,'data-retry-matches');
+  }
+}
+async function refreshAll(){await Promise.all([loadConversations(),loadUnread(),loadMatches()])}
+
+function syncChipsForTab(){
+  const chatsOnly=state.tab==='chats';
+  document.querySelectorAll('[data-filter="faculty"],[data-filter="students"]').forEach(b=>{b.disabled=!chatsOnly});
+  if(!chatsOnly&&(state.filter==='faculty'||state.filter==='students'))state.filter='all';
+  document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.filter===state.filter?'true':'false'));
+}
+
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+  state.tab=b.dataset.tab;
+  document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));
+  syncChipsForTab();
+  setStatus('');
+  loadConversations();
+}));
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{
+  if(b.disabled)return;
+  state.filter=b.dataset.filter;
+  syncChipsForTab();
+  setStatus('');
+  loadConversations();
+}));
+$('sortBtn').addEventListener('click',()=>{
+  state.sort=state.sort==='unread'?'latest':'unread';
+  $('sortBtn').setAttribute('aria-pressed',state.sort==='unread'?'true':'false');
+  loadConversations();
+});
+$('archivedBtn').addEventListener('click',()=>{
+  state.archived=!state.archived;
+  $('archivedBtn').setAttribute('aria-pressed',state.archived?'true':'false');
+  $('archivedNote').hidden=!state.archived;
+  loadConversations();
+});
+$('archivedExit').addEventListener('click',()=>$('archivedBtn').click());
+$('bellBtn').addEventListener('click',()=>{
+  state.filter='unread';
+  syncChipsForTab();
+  loadConversations();
+});
+
+let searchTimer=null;
+$('search').addEventListener('input',()=>{
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(()=>{
+    state.q=$('search').value.trim();
+    loadConversations();
+    loadMatches();
+  },300);
+});
+
+$('listArea').addEventListener('click',async e=>{
+  if(e.target.closest('[data-retry-list]')){loadConversations();return}
+  if(e.target.closest('[data-retry-groups]')){loadGroups();return}
+  const join=e.target.closest('[data-join]');
+  if(!join)return;
+  join.disabled=true;
+  try{
+    const d=await call('/api/messages/groups/'+join.dataset.join+'/join',{method:'POST'});
+    setStatus('Joined group.');
+    await Promise.all([loadGroups(),loadConversations(),loadUnread()]);
+    if(d.conversation_id)location.href=threadUrl(d.conversation_id);
+  }catch(err){
+    join.disabled=false;
+    setStatus(err.message,true);
+  }
+});
+$('matchArea').addEventListener('click',e=>{if(e.target.closest('[data-retry-matches]'))loadMatches()});
+
+const dialog=$('newDialog');
+$('newMessageBtn').addEventListener('click',()=>{
+  dialog.showModal();
+  $('dialogSearch').value='';
+  renderDialogHint();
+  $('dialogSearch').focus();
+});
+$('closeDialog').addEventListener('click',()=>dialog.close());
+dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});
+
+function renderDialogHint(){$('dialogBody').innerHTML='<div class="state">Type at least 2 characters to find eligible people and groups.</div>'}
+let dialogSeq=0,dialogTimer=null;
+$('dialogSearch').addEventListener('input',()=>{
+  clearTimeout(dialogTimer);
+  dialogTimer=setTimeout(runDialogSearch,300);
+});
+async function runDialogSearch(){
+  const q=$('dialogSearch').value.trim();
+  const seq=++dialogSeq;
+  if(q.length<2){renderDialogHint();return}
+  const body=$('dialogBody');
+  body.innerHTML='<div class="state">Searching...</div>';
+  const people=await call('/api/messages/recipients?q='+encodeURIComponent(q)).then(value=>({ok:true,value}),error=>({ok:false,error}));
+  if(seq!==dialogSeq)return;
+  let html='';
+  if(people.ok){
+    const items=people.value.items||[];
+    html+='<div class="section-label">People</div>'+(items.length
+      ?'<ul class="list">'+items.map(p=>'<li class="row" style="cursor:default"><span class="avatar" style="background:'+colorFor(p.name)+'">'+esc(initials(p.name))+'</span><span class="row-body"><span class="row-title">'+esc(p.name)+'</span><span class="row-preview">'+esc(ROLE_LABELS[p.role]||p.role)+(p.department_name?' · '+esc(p.department_name):'')+'</span></span><button class="join-pill" type="button" data-message="'+esc(p.id)+'">Message</button></li>').join('')+'</ul>'
+      :'<div class="state">No eligible people found.</div>');
+  }else{
+    html+=errorBlock('Could not search people: '+people.error.message,'data-retry-dialog');
+  }
+  const matches=state.groups.filter(g=>String(g.name).toLowerCase().includes(q.toLowerCase()));
+  if(matches.length){
+    html+='<div class="section-label">Groups</div><ul class="list">'+matches.map(g=>'<li class="row" style="cursor:default"><span class="avatar group" style="background:#1565e8">'+GROUP_ICON+'</span><span class="row-body"><span class="row-title">'+esc(g.name)+'</span><span class="row-preview">'+esc(g.group_type)+' · '+esc(g.member_count)+' members</span></span>'+(g.is_member&&g.conversation_id?'<button class="join-pill" type="button" data-open-conversation="'+esc(g.conversation_id)+'">Open</button>':'<button class="join-pill" type="button" data-join-dialog="'+esc(g.id)+'">Join</button>')+'</li>').join('')+'</ul>';
+  }
+  body.innerHTML=html;
+}
+$('dialogBody').addEventListener('click',async e=>{
+  if(e.target.closest('[data-retry-dialog]')){runDialogSearch();return}
+  const message=e.target.closest('[data-message]');
+  const open=e.target.closest('[data-open-conversation]');
+  const join=e.target.closest('[data-join-dialog]');
+  try{
+    if(message){
+      message.disabled=true;
+      const d=await call('/api/messages/direct',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target_id:Number(message.dataset.message)})});
+      location.href=threadUrl(d.id);
+    }else if(open){
+      location.href=threadUrl(open.dataset.openConversation);
+    }else if(join){
+      join.disabled=true;
+      const d=await call('/api/messages/groups/'+join.dataset.joinDialog+'/join',{method:'POST'});
+      location.href=threadUrl(d.conversation_id);
+    }
+  }catch(err){
+    const note=document.createElement('div');
+    note.className='state error';
+    note.setAttribute('role','alert');
+    note.textContent=err.message;
+    $('dialogBody').prepend(note);
+    if(message)message.disabled=false;
+    if(join)join.disabled=false;
+  }
+});
+
+$('topBack').addEventListener('click',()=>location.href='dashboard.html');
+$('sheetBack').addEventListener('click',()=>location.href='dashboard.html');
+$('topAvatar').addEventListener('click',()=>location.href='profile.html');
+document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>{location.href=b.dataset.nav}));
+
+function connectRealtime(){
+  if(typeof io!=='function')return;
+  const socket=io(API_BASE,{auth:{token},transports:['websocket','polling']});
+  let timer=null;
+  const refresh=()=>{clearTimeout(timer);timer=setTimeout(refreshAll,400)};
+  socket.on('conversation:updated',refresh);
+  socket.on('message:new',refresh);
+  socket.on('connect_error',()=>setStatus('Live updates unavailable. Showing saved conversations.',true));
+  socket.on('connect',()=>{if($('inboxStatus').classList.contains('error'))setStatus('')});
+  window.addEventListener('beforeunload',()=>socket.disconnect());
+}
+
+async function boot(){
+  try{
+    const me=await call('/api/auth/me');
+    const name=me.name||me.profile?.name||'';
+    if(name)$('topAvatar').textContent=initials(name);
+    state.profile=me;
+  }catch(e){
+    setStatus('Could not load your profile: '+e.message,true);
+  }
+  syncChipsForTab();
+  await Promise.all([loadConversations(),loadGroups(),loadUnread()]);
+  connectRealtime();
+}
 boot();
-</script></body></html>
+</script>
+</body>
+</html>

@@ -1,2 +1,273 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Library · College ERP</title><script src="config.js"></script><link rel="stylesheet" href="erp-ui.css"></head><body><main class="module-page"><header class="module-header"><div><p class="eyebrow">Library</p><h1>Catalog &amp; loans</h1><p>Search the catalog, review availability and manage authorized reservations.</p></div><button class="primary-btn" onclick="location.href='dashboard.html'">Back to dashboard</button></header><section class="section-card filters"><input id="search" placeholder="Search title or ISBN"><button class="primary-btn" onclick="load()">Search</button></section><section id="message" class="state">Loading catalog…</section><section id="catalog" class="module-list"></section><section class="section-card"><h2>My loans</h2><div id="loans" class="state">Loading loans…</div></section></main><script>
-const token=sessionStorage.getItem('token')||localStorage.getItem('token');const role=localStorage.getItem('role')||sessionStorage.getItem('role');if(!token)location.href='login.html';const auth={Authorization:'Bearer '+token};const $=id=>document.getElementById(id);async function call(url,opt={}){const r=await fetch(API_BASE+url,{...opt,headers:{...auth,...(opt.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||'Request failed');return d}async function load(){try{const d=await call('/api/library/catalog?search='+encodeURIComponent($('search').value));$('message').hidden=true;$('catalog').innerHTML=d.items.length?d.items.map(b=>`<article class="section-card"><div class="module-row"><div><p class="eyebrow">${b.category_name||'Catalog item'}</p><h2>${b.title}</h2><p>${b.publisher||'Publisher unavailable'} · ${b.available}/${b.copies} available</p></div><button class="primary-btn" onclick="reserve(${b.id})">Reserve</button></div>${b.digital_storage_key?`<button class="secondary-btn" onclick="downloadBook(${b.id})">Download digital resource</button>`:''}</article>`).join(''):'<div class="state">No catalog items matched your search.</div>'}catch(e){$('message').textContent=e.message}if(role==='student')try{const loans=await call('/api/library/my-loans');$('loans').innerHTML=loans.length?loans.map(l=>`<p><strong>${l.title}</strong> · Due ${l.due_at} · ${l.status}</p>`).join(''):'No loans found.'}catch(e){$('loans').textContent=e.message}else $('loans').textContent='Loan history is available to students.'}async function reserve(id){try{const d=await call('/api/library/books/'+id+'/reserve',{method:'POST'});alert(`Reservation status: ${d.status}`);load()}catch(e){alert(e.message)}}async function downloadBook(id){const r=await fetch(API_BASE+'/api/library/books/'+id+'/download',{headers:auth});if(!r.ok){alert((await r.json()).message||'Download unavailable');return}const blob=await r.blob(),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='library-resource';a.click();URL.revokeObjectURL(a.href)}load();</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Library · College ERP</title>
+<script src="config.js"></script>
+<script src="ui-feedback.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="erp-ui.css">
+<style>
+body.library-app{min-height:100vh;margin:0;padding-bottom:88px;background:#f7faff;color:#10183e}.lib-header{height:74px;padding:0 clamp(16px,4vw,34px);display:flex;align-items:center;gap:14px;color:#fff;background:linear-gradient(110deg,#0756a2,#0877bf)}.lib-header button,.lib-header a{color:inherit}.lib-back,.lib-icon-button{width:40px;height:40px;border:0;background:transparent;font-size:28px;cursor:pointer}.lib-brand{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:750;white-space:nowrap}.lib-cap{width:40px;height:32px;flex:none}.lib-spacer{flex:1}.lib-notify{position:relative}.lib-notify span{position:absolute;top:-4px;right:-1px;display:grid;place-items:center;min-width:19px;height:19px;border-radius:20px;background:#f02f50;color:#fff;font-size:11px;font-weight:800}.lib-avatar{width:42px;height:42px;border:2px solid #fff;border-radius:50%;display:grid;place-items:center;color:#0c4584;background:linear-gradient(145deg,#ffe4c2,#fff);font-weight:800;text-decoration:none}.lib-main{width:min(100%,760px);margin:0 auto;padding:18px 22px 30px}.lib-title-row{display:flex;align-items:center;gap:16px;margin:0 0 18px}.lib-title-row h1{margin:0;font-size:35px;letter-spacing:-.045em;color:#111646}.lib-back-light{width:40px;height:40px;border:0;background:none;color:#111646;font-size:37px;line-height:1;cursor:pointer}.lib-search{display:flex;gap:8px;align-items:center;padding:7px 9px 7px 16px;border:1px solid #e8ebf3;border-radius:17px;background:#fff;box-shadow:0 5px 15px #132b5210}.lib-search .search-mark{font-size:25px;color:#59647b}.lib-search input{width:100%;min-width:0;border:0;outline:0;box-shadow:none;padding:8px 4px;font-size:18px}.lib-search input:focus{box-shadow:none}.lib-search button{min-width:42px;height:42px;border:0;border-radius:13px;color:#1263c8;background:#edf4ff;font-size:22px;cursor:pointer}.lib-search button:focus-visible{outline:2px solid #1263c8}.lib-section{margin-top:18px}.lib-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.lib-tile{min-height:126px;padding:13px 9px 12px;border:0;border-radius:16px;color:#111646;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;cursor:pointer;transition:transform .16s,box-shadow .16s}.lib-tile:hover{transform:translateY(-2px);box-shadow:0 9px 18px #14295a1a}.lib-tile .tile-icon{font-size:42px;line-height:1;font-weight:700}.lib-tile .tile-label{font-size:17px;line-height:1.2;letter-spacing:-.04em}.tile-green{background:#e9fbf5}.tile-green .tile-icon{color:#00a86b}.tile-orange{background:#fff4ec}.tile-orange .tile-icon{color:#eb7108}.tile-purple{background:#f3efff}.tile-purple .tile-icon{color:#7a19dc}.tile-blue{background:#eef1ff}.tile-blue .tile-icon{color:#6a18e6}.tile-cream{background:#fff9eb}.tile-cream .tile-icon{color:#08a66a}.tile-mint{background:#e9fbf6}.tile-mint .tile-icon{color:#09a77c}.tile-pink{background:#fff0fb}.tile-pink .tile-icon{color:#7417d8}.tile-rose{background:#fff0f1}.tile-rose .tile-icon{color:#eb1747}.tile-rule{background:#fff1f4}.tile-rule .tile-icon{color:#ed1249}.lib-tile-wide{grid-column:1/-1;min-height:82px;flex-direction:row;justify-content:flex-start;padding-left:clamp(20px,9vw,70px);gap:24px;background:#ffefff}.lib-tile-wide .tile-icon{color:#7b17dc}.lib-issued{margin-top:16px;padding:16px 18px 5px;border:1px solid #eef0f6;border-radius:20px;background:#fff;box-shadow:0 5px 18px #1c31510b}.lib-issued-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:9px;border-bottom:1px solid #f0f1f6}.lib-issued-head h2{margin:0;font-size:22px;letter-spacing:-.04em}.lib-issued-head a{color:#0967cc;font-weight:700;text-decoration:none}.lib-loan{display:grid;grid-template-columns:94px minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #f1f2f6}.lib-loan:last-child{border-bottom:0}.lib-cover{width:94px;height:112px;display:grid;place-items:center;padding:8px;border-radius:8px;color:#fff;background:linear-gradient(140deg,#123451,#ed5838 58%,#112d48);text-align:center;font-size:12px;font-weight:750;overflow:hidden}.lib-cover img{width:100%;height:100%;object-fit:cover;border-radius:5px}.lib-loan h3{margin:0 0 2px;color:#111646;font-size:17px;line-height:1.25}.lib-loan p{margin:1px 0;color:#667085;font-size:15px}.lib-loan .due{color:#cf2638}.lib-renew{min-width:100px;padding:12px 15px;border:0;border-radius:12px;color:#075fc4;background:#eaf2ff;font-weight:700;cursor:pointer}.lib-renew:disabled{opacity:.5;cursor:not-allowed}.lib-card{margin-top:14px;padding:17px;border:1px solid #e9edf5;border-radius:17px;background:#fff}.lib-card h2,.lib-card h3{margin:0;color:#111646}.lib-card p{color:#667085}.lib-screen-head{display:flex;align-items:center;gap:8px;margin:0 0 16px}.lib-screen-head h1{margin:0;font-size:29px;letter-spacing:-.04em}.lib-screen-head button{border:0;background:none;color:#17204b;font-size:30px;cursor:pointer}.lib-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.65fr);gap:8px;margin:12px 0}.lib-filters input,.lib-filters select,.lib-inline-form input,.lib-inline-form select{width:100%;padding:10px 12px;border:1px solid #e4e9f2;border-radius:11px;background:#fff}.lib-row{display:flex;justify-content:space-between;align-items:center;gap:12px}.lib-row p{margin:3px 0}.lib-muted{color:#68758a}.lib-state{padding:17px 12px;color:#69748a;text-align:center}.lib-book-list{display:grid;gap:11px}.lib-book-card{padding:14px;border:1px solid #e9edf5;border-radius:15px;background:#fff}.lib-book-card h3{margin:0 0 3px;color:#10183e}.lib-book-card p{margin:3px 0;color:#667085}.lib-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.lib-primary,.lib-secondary,.lib-danger{min-height:39px;padding:9px 13px;border:0;border-radius:10px;font-weight:700;cursor:pointer}.lib-primary{color:#fff;background:#1767d0}.lib-secondary{color:#1558a8;background:#eaf2ff}.lib-danger{color:#b42318;background:#fff0ef}.lib-inline-form{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.lib-inline-form input,.lib-inline-form select{flex:1 1 145px}.lib-rule{padding:13px 0;border-bottom:1px solid #edf0f5}.lib-rule:last-child{border-bottom:0}.lib-rule h3{font-size:17px}.lib-rule p{white-space:pre-wrap}.lib-config{padding:14px;border-radius:13px;color:#684900;background:#fff5d9}.lib-footer-nav{position:fixed;z-index:10;right:0;bottom:0;left:0;display:grid;grid-template-columns:repeat(4,1fr);padding:7px 8px max(8px,env(safe-area-inset-bottom));border:1px solid #eef0f5;border-radius:20px 20px 0 0;background:#ffffffed;backdrop-filter:blur(14px)}.lib-footer-nav a{display:grid;justify-items:center;gap:2px;padding:4px;color:#576176;text-decoration:none;font-size:12px}.lib-footer-nav a.active{color:#0969d6;font-weight:800}.lib-footer-nav span{font-size:22px}.lib-toast{position:fixed;z-index:20;top:84px;left:50%;transform:translateX(-50%);padding:10px 16px;border-radius:11px;color:#fff;background:#172033;box-shadow:0 6px 20px #17203330}.lib-modal{position:fixed;z-index:30;inset:0;display:grid;place-items:center;padding:18px;background:#08142d7a}.lib-modal-card{position:relative;width:min(100%,520px);max-height:80vh;overflow:auto;padding:24px;border-radius:18px;background:#fff;box-shadow:0 20px 60px #10204440}.lib-modal-card h2{margin:0 36px 12px 0}.lib-modal-close{position:absolute;top:13px;right:15px;border:0;background:transparent;color:#24304a;font-size:28px;cursor:pointer}.lib-status{margin:9px 0;color:#667085}.lib-status.error{color:#b42318}.lib-pagination{display:flex;justify-content:center;gap:12px;padding:12px}
+@media(min-width:800px){.lib-main{padding-top:28px}.lib-header{height:66px}.lib-footer-nav{position:static;width:min(100%,760px);margin:0 auto 18px;border-radius:16px}.lib-loan{grid-template-columns:94px minmax(0,1fr) auto}}
+@media(max-width:520px){.lib-main{padding:14px 12px 22px}.lib-title-row h1{font-size:32px}.lib-tiles{gap:9px}.lib-tile{min-height:119px;padding:10px 5px}.lib-tile .tile-label{font-size:15px}.lib-tile .tile-icon{font-size:38px}.lib-tile-wide{min-height:76px;padding-left:18px}.lib-issued{padding:13px 12px 3px}.lib-issued-head h2{font-size:19px}.lib-loan{grid-template-columns:70px minmax(0,1fr);gap:10px}.lib-cover{width:70px;height:94px}.lib-loan h3{font-size:15px}.lib-loan p{font-size:13px}.lib-renew{grid-column:2;justify-self:start;padding:9px 12px}.lib-brand{font-size:17px}.lib-cap{font-size:27px}}
+</style>
+</head>
+<body class="library-app">
+<header class="lib-header">
+<button class="lib-back" id="topBack" aria-label="Back to previous dashboard">‹</button>
+<div class="lib-brand"><svg class="lib-cap" viewBox="0 0 34 26" aria-hidden="true"><path d="M1 8 17 1l16 7-16 7L1 8Zm6 3v7c6 5 14 5 20 0v-7l-10 4.5L7 11Zm23-2v9" fill="currentColor" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></svg><span>College ERP</span></div>
+<span class="lib-spacer"></span>
+<button class="lib-icon-button lib-notify" id="notificationsButton" aria-label="Notifications"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="notificationBadge" hidden></span></button>
+<a class="lib-avatar" id="profileLink" href="profile.html" aria-label="Student profile">?</a>
+</header>
+<main class="lib-main">
+<div id="libraryRoot" aria-live="polite"></div>
+</main>
+<nav class="lib-footer-nav" aria-label="Main navigation">
+<a href="home.html" class="active"><span>⌂</span>Home</a><a href="messages.html"><span>☏</span>Messages</a><a href="attendance.html"><span>▦</span>Attendance</a><a href="profile.html"><span>♙</span>Profile</a>
+</nav>
+<script>
+(() => {
+'use strict';
+const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+if (!token) { location.href = 'login.html'; return; }
+const auth = { Authorization: `Bearer ${token}` };
+const root = document.getElementById('libraryRoot');
+const query = new URLSearchParams(location.search);
+const feature = query.get('feature') || 'dashboard';
+let profile = null;
+let categories = [];
+let notificationCount = 0;
+const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+const call = async (url, options = {}) => {
+    const response = await fetch(API_BASE + url, { ...options, headers: { ...auth, ...(options.headers || {}) } });
+    const type = response.headers.get('content-type') || '';
+    const data = type.includes('application/json') ? await response.json() : null;
+    if (!response.ok) throw new Error(data?.message || `Request failed (${response.status})`);
+    return data;
+};
+const api = (url, method = 'GET', body) => call(url, { method, ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) });
+const rootPath = 'library.html';
+const featurePath = (key, extra = '') => `${rootPath}?feature=${encodeURIComponent(key)}${extra}`;
+const status = (message, error = false) => { let node = document.getElementById('libStatus'); if (!node) { node = document.createElement('p'); node.id = 'libStatus'; node.className = 'lib-status'; root.prepend(node); } node.textContent = message; node.classList.toggle('error', error); };
+const date = value => value ? new Date(String(value).replace(' ', 'T')).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+const money = value => `₹${(Number(value || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const bookTile = (key, label, icon, tone) => `<button class="lib-tile ${tone}" data-feature="${key}"><span class="tile-icon" aria-hidden="true">${icon}</span><span class="tile-label">${label}</span></button>`;
+const head = title => `<div class="lib-screen-head"><button type="button" data-back aria-label="Back to Library">‹</button><h1>${title}</h1></div>`;
+const tileItems = [
+    ['catalogue','Search Catalogue','⌕','tile-green'],['issued','My Issued Books','▤','tile-orange'],['renew','Renew Books','◴','tile-purple'],
+    ['reservations','Reservations','⚑','tile-blue'],['digital','Digital Library','▣','tile-cream'],['ebooks','E-Books & Journals','▱','tile-mint'],
+    ['history','Reading History','◷','tile-pink'],['fines','Fines & Payments','₹','tile-rose'],['rules','Library Rules','▣','tile-rule'],
+    ['spaces','Study Spaces & Facilities','▦','lib-tile-wide']
+];
+function dashboardMarkup() {
+    return `<div class="lib-title-row"><button class="lib-back-light" data-back aria-label="Back to home">‹</button><h1>Library</h1></div>
+    <form id="dashboardSearch" class="lib-search"><span class="search-mark" aria-hidden="true">⌕</span><input id="dashboardQuery" value="${escape(query.get('search') || '')}" placeholder="Search books, authors, subjects..." aria-label="Search books, authors, and subjects"><button type="submit" aria-label="Search catalogue">⌕</button><button type="button" id="dashboardScan" aria-label="Scan catalogue">▣</button></form>
+    <section class="lib-section" aria-label="Library features"><div class="lib-tiles">${tileItems.map((item, index) => bookTile(item[0],item[1],item[2],item[3])).join('')}</div></section>
+    <section class="lib-issued"><div class="lib-issued-head"><h2>Currently Issued</h2><a href="${featurePath('issued')}">View All ›</a></div><div id="issuedPreview" class="lib-state">Loading your loans…</div></section>`;
+}
+function bookCover(book) { return '<div class="lib-cover" aria-label="Book cover unavailable">Cover<br>unavailable</div>'; }
+function loanRows(rows, renewEnabled = false, limit = rows.length, policyConfigured = true) {
+    const shown = rows.filter(row => row.status === 'Issued').slice(0, limit);
+    if (!shown.length) return '<div class="lib-state">You have no currently issued books.</div>';
+    return shown.map(row => `<article class="lib-loan">${bookCover(row)}<div><h3>${escape(row.title)}</h3><p>${escape(row.authors || row.publisher || 'Author details unavailable')}</p><p>Issued: ${date(row.issued_at)}</p><p class="due">Due: ${date(row.due_at)}</p></div>${renewEnabled ? `<button class="lib-renew" data-renew="${Number(row.id)}" ${!policyConfigured ? 'disabled title="Renewal policy is not configured"' : new Date(String(row.due_at).replace(' ','T')) < new Date() ? 'disabled title="Overdue loans cannot be renewed"' : ''}>Renew</button>` : ''}</article>`).join('');
+}
+async function loadPreview() {
+    const box = document.getElementById('issuedPreview');
+    if (!box) return;
+    try { const [rows, policy] = await Promise.all([call('/api/library/my-loans'), call('/api/library/settings')]); box.innerHTML = loanRows(rows, true, 2, policy.configured); }
+    catch (error) { box.innerHTML = `<div class="lib-state">${escape(error.message)}</div>`; }
+}
+function renderDashboard() { root.innerHTML = dashboardMarkup(); document.getElementById('dashboardSearch').onsubmit = event => { event.preventDefault(); location.href = featurePath('catalogue', `&search=${encodeURIComponent(document.getElementById('dashboardQuery').value.trim())}`); }; document.getElementById('dashboardScan').onclick = () => { location.href = featurePath('catalogue', '&scan=1'); }; loadPreview(); }
+async function loadCategories() { try { categories = await call('/api/library/categories'); } catch { categories = []; } }
+function bookCard(book, options = {}) {
+    const author = book.authors || book.publisher || 'Author details unavailable';
+    const available = Number(book.available || 0);
+    return `<article class="lib-book-card"><div class="lib-row"><div><h3>${escape(book.title)}</h3><p>${escape(author)}</p><p>${escape(book.category_name || 'Library catalogue')} · ${available} of ${Number(book.copies || 0)} copies available</p>${book.isbn ? `<p>ISBN ${escape(book.isbn)}</p>` : ''}</div><button class="lib-secondary" data-details="${Number(book.id)}">Details</button></div><div class="lib-actions">${options.showReserve && available === 0 ? `<button class="lib-primary" data-reserve="${Number(book.id)}">Reserve</button>` : ''}${book.has_digital ? `<button class="lib-secondary" data-download="${Number(book.id)}">Open resource</button>` : ''}</div></article>`;
+}
+function renderCatalogue(featureKey) {
+    const initialSearch = query.get('search') || '';
+    const title = featureKey === 'catalogue' ? 'Search Catalogue' : featureKey === 'digital' ? 'Digital Library' : 'E-Books & Journals';
+    root.innerHTML = `${head(title)}<form id="catalogueFilters" class="lib-filters"><input id="catalogueSearch" value="${escape(initialSearch)}" placeholder="Search books, authors, subjects" aria-label="Search catalogue"><select id="categoryFilter" aria-label="Filter by category"><option value="">All categories</option>${categories.map(item => `<option value="${Number(item.id)}">${escape(item.name)}</option>`).join('')}</select><label><input id="availableFilter" type="checkbox"> Available only</label><button class="lib-primary" type="submit">Search</button></form>${featureKey === 'catalogue' ? '<button id="scanButton" class="lib-secondary" type="button">Scan ISBN</button><input id="scanInput" inputmode="numeric" placeholder="Enter or scan ISBN" aria-label="ISBN scanner input" hidden>' : '<p class="lib-status">Only digital items configured in the Library catalogue are listed here. Journal records appear when provided by your institution.</p>'}<div id="catalogueResults" class="lib-book-list lib-section"><div class="lib-state">Loading catalogue…</div></div><div id="cataloguePagination" class="lib-pagination"></div>`;
+    const form = document.getElementById('catalogueFilters');
+    form.onsubmit = event => { event.preventDefault(); loadCatalogue(featureKey); };
+    const search = document.getElementById('catalogueSearch');
+    let timer;
+    search.oninput = () => { clearTimeout(timer); timer = setTimeout(() => loadCatalogue(featureKey), 250); };
+    document.getElementById('categoryFilter').onchange = () => loadCatalogue(featureKey);
+    document.getElementById('availableFilter').onchange = () => loadCatalogue(featureKey);
+    if (featureKey === 'catalogue') {
+        document.getElementById('scanButton').onclick = async () => {
+            const field = document.getElementById('scanInput');
+            field.hidden = false;
+            field.focus();
+            if ('BarcodeDetector' in window) {
+                try {
+                    const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128'] });
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    const video = document.createElement('video'); video.srcObject = stream; await video.play();
+                    const scan = async () => { const codes = await detector.detect(video); if (codes[0]) { field.value = codes[0].rawValue; search.value = codes[0].rawValue; stream.getTracks().forEach(track => track.stop()); loadCatalogue(featureKey); } else if (!stream.getTracks().some(track => track.readyState === 'live')) return; else requestAnimationFrame(scan); };
+                    requestAnimationFrame(scan);
+                } catch { status('Camera scanning is unavailable here. Type the ISBN in the field.', true); }
+            } else status('Camera scanning is not supported by this browser. Type the ISBN in the field.');
+        };
+        document.getElementById('scanInput').oninput = event => { search.value = event.target.value; loadCatalogue(featureKey); };
+        if (query.get('scan') === '1') document.getElementById('scanButton').click();
+    }
+    loadCatalogue(featureKey);
+}
+async function loadCatalogue(featureKey, offset = 0) {
+    const results = document.getElementById('catalogueResults');
+    if (!results) return;
+    results.innerHTML = '<div class="lib-state">Searching catalogue…</div>';
+    const params = new URLSearchParams({ search: document.getElementById('catalogueSearch').value.trim(), limit: '20', offset: String(offset) });
+    if (document.getElementById('categoryFilter').value) params.set('category_id', document.getElementById('categoryFilter').value);
+    if (document.getElementById('availableFilter').checked) params.set('available_only', '1');
+    if (featureKey !== 'catalogue') params.set('digital_only', '1');
+    try {
+        const data = await call(`/api/library/catalog?${params}`);
+        results.innerHTML = data.items.length ? data.items.map(book => bookCard(book,{showReserve:true})).join('') : '<div class="lib-state">No catalogue items match these filters.</div>';
+        const paging = document.getElementById('cataloguePagination');
+        paging.innerHTML = `${offset ? '<button class="lib-secondary" data-page="prev">Previous</button>' : ''}${offset + data.pagination.limit < data.pagination.total ? '<button class="lib-secondary" data-page="next">Next</button>' : ''}`;
+        paging.querySelector('[data-page="prev"]')?.addEventListener('click', () => loadCatalogue(featureKey, Math.max(0, offset - data.pagination.limit)));
+        paging.querySelector('[data-page="next"]')?.addEventListener('click', () => loadCatalogue(featureKey, offset + data.pagination.limit));
+    } catch (error) { results.innerHTML = `<div class="lib-state">${escape(error.message)}</div>`; }
+}
+async function renderLoans(renewEnabled) {
+    root.innerHTML = `${head(renewEnabled ? 'Renew Books' : 'My Issued Books')}<section class="lib-card"><div id="loansList" class="lib-state">Loading your loans…</div></section>`;
+    const box = document.getElementById('loansList');
+    try {
+        const [rows, policy] = await Promise.all([call('/api/library/my-loans'), call('/api/library/settings')]);
+        const selected = renewEnabled ? rows.filter(row => row.status === 'Issued') : rows;
+        const content = selected.length ? selected.map(row => `<article class="lib-book-card"><div class="lib-row"><div><h3>${escape(row.title)}</h3><p>${escape(row.authors || row.publisher || 'Author details unavailable')}</p><p>Issued: ${date(row.issued_at)} · Due: ${date(row.due_at)}</p><p>Status: ${escape(row.status)}</p></div>${renewEnabled && row.status === 'Issued' && policy.configured ? `<button class="lib-primary" data-renew="${Number(row.id)}" ${new Date(String(row.due_at).replace(' ','T')) < new Date() ? 'disabled' : ''}>Renew</button>` : ''}</div></article>`).join('') : '<div class="lib-state">No books to show.</div>';
+        box.innerHTML = renewEnabled && !policy.configured ? '<div class="lib-config">Renewals are not configured by the institution yet.</div>' : content;
+    } catch (error) { box.innerHTML = `<div class="lib-state">${escape(error.message)}</div>`; }
+}
+async function renderReservations() {
+    root.innerHTML = `${head('Reservations')}<section class="lib-card"><div id="reservationsList" class="lib-state">Loading reservations…</div></section><section class="lib-card"><h2>Reserve a book</h2><form id="reservationSearch" class="lib-inline-form"><input id="reservationQuery" placeholder="Search unavailable books" aria-label="Search books to reserve"><button class="lib-primary">Search</button></form><div id="reservationResults" class="lib-book-list"></div></section>`;
+    const list = document.getElementById('reservationsList');
+    try { const rows = await call('/api/library/reservations'); list.innerHTML = rows.length ? rows.map(item => `<article class="lib-book-card"><div class="lib-row"><div><h3>${escape(item.title)}</h3><p>Requested ${date(item.created_at)} · ${Number(item.available) ? 'Available for pickup' : 'Waiting'}</p><p>Status: ${escape(item.status)}</p></div>${item.status === 'Waiting' ? `<button class="lib-danger" data-cancel-reservation="${Number(item.id)}">Cancel</button>` : ''}</div></article>`).join('') : '<div class="lib-state">You have no reservations.</div>'; } catch (error) { list.innerHTML = `<div class="lib-state">${escape(error.message)}</div>`; }
+    document.getElementById('reservationSearch').onsubmit = async event => { event.preventDefault(); const params = new URLSearchParams({ search: document.getElementById('reservationQuery').value.trim(), available_only: '1', limit: '20' }); const box = document.getElementById('reservationResults'); try { const data = await call(`/api/library/catalog?${params}`); box.innerHTML = data.items.length ? data.items.map(book => bookCard(book,{showReserve:true})).join('') : '<div class="lib-state">No books need a reservation right now.</div>'; } catch (error) { box.innerHTML = `<div class="lib-state">${escape(error.message)}</div>`; } };
+}
+async function renderHistory() {
+    root.innerHTML = `${head('Reading History')}<section class="lib-card"><div id="historyList" class="lib-state">Loading reading history…</div></section>`;
+    const box = document.getElementById('historyList');
+    try { const rows = await call('/api/library/reading-history'); box.innerHTML = rows.length ? rows.map(item => `<article class="lib-rule"><div class="lib-row"><h3>${escape(item.title)}</h3><span>${escape(item.activity_type)}</span></div><p>${date(item.activity_at)} · ${escape(item.status)}${item.due_at ? ` · Due ${date(item.due_at)}` : ''}</p></article>`).join('') : '<div class="lib-state">No recorded borrowing or digital access activity yet.</div>'; } catch (error) { box.innerHTML = `<div class="lib-state">${escape(error.message)}</div>`; }
+}
+async function renderFines() {
+    root.innerHTML = `${head('Fines & Payments')}<section class="lib-card"><div id="finesList" class="lib-state">Loading fines…</div></section>`;
+    const box = document.getElementById('finesList');
+    try {
+        const rows = await call('/api/library/fines');
+        if (!rows.length) { box.innerHTML = '<div class="lib-state">No library fines are recorded on your account.</div>'; return; }
+        box.innerHTML = rows.map(row => {
+            const outstanding = Math.max(0, Number(row.fine_paise) - Number(row.paid_paise || 0));
+            const pending = Math.max(0, Number(row.submitted_paise || 0) - Number(row.paid_paise || 0));
+            return `<article class="lib-book-card"><div class="lib-row"><div><h3>${escape(row.title)}</h3><p>Assessed: ${money(row.fine_paise)} · Paid: ${money(row.paid_paise)}</p><p>Finance status: ${escape(row.invoice_status || 'Invoice not configured')}</p></div><strong>${money(outstanding)}</strong></div>${row.invoice_id && pending > 0 ? '<p>Payment is awaiting Finance verification.</p>' : row.invoice_id && outstanding > 0 ? `<form class="lib-inline-form" data-payment="${Number(row.invoice_id)}" data-amount="${outstanding}"><input name="reference_no" maxlength="120" placeholder="Offline payment reference" required aria-label="Payment reference"><button class="lib-primary">Submit payment for verification</button></form>` : row.invoice_id ? '<p>Payment verified by Finance.</p>' : '<p class="lib-config">A Finance invoice is not configured for this fine. Contact the Library or Finance office.</p>'}<div data-payment-history="${Number(row.invoice_id || 0)}"></div></article>`;
+        }).join('');
+        const invoices = [...new Set(rows.filter(row => row.invoice_id).map(row => row.invoice_id))];
+        await Promise.all(invoices.map(async invoiceId => { try { const statement = await call(`/api/finance/invoices/${invoiceId}/statement`); const target = box.querySelector(`[data-payment-history="${invoiceId}"]`); target.innerHTML = statement.payments.length ? `<p>Payments: ${statement.payments.map(payment => `${escape(payment.status)} · ${money(payment.amount_paise)}`).join(' · ')}</p>` : ''; } catch {} }));
+    } catch (error) { box.innerHTML = `<div class="lib-state">${escape(error.message)}</div>`; }
+}
+async function renderRules() {
+    root.innerHTML = `${head('Library Rules')}<section class="lib-card"><div id="rulesList" class="lib-state">Loading institutional policies…</div></section>`;
+    const box = document.getElementById('rulesList');
+    try { const data = await call('/api/library/rules'); box.innerHTML = data.configured ? data.items.map(rule => `<article class="lib-rule"><h3>${escape(rule.title)}</h3><p>${escape(rule.body)}</p></article>`).join('') : '<div class="lib-config">Institutional Library rules have not been configured yet.</div>'; } catch (error) { box.innerHTML = `<div class="lib-state">${escape(error.message)}</div>`; }
+}
+async function renderSpaces() {
+    root.innerHTML = `${head('Study Spaces & Facilities')}<section class="lib-card"><div id="facilitiesList" class="lib-state">Loading configured facilities…</div></section><section class="lib-card"><h2>Your bookings</h2><div id="bookingsList" class="lib-state">Loading bookings…</div></section>`;
+    const facilities = document.getElementById('facilitiesList');
+    try {
+        const data = await call('/api/library/facilities');
+        facilities.innerHTML = data.configured ? data.items.map(place => `<article class="lib-book-card"><h3>${escape(place.name)}</h3><p>${escape(place.description || 'No description provided.')}</p><p>${escape(place.location || 'Location not provided')} · Capacity ${Number(place.capacity)}</p><p>${place.opens_at ? `${escape(String(place.opens_at).slice(0,5))}–${escape(String(place.closes_at).slice(0,5))}` : 'Hours not specified'}</p>${place.booking_enabled ? `<form class="lib-inline-form" data-book-space="${Number(place.id)}"><input name="booking_date" type="date" min="${new Date().toISOString().slice(0,10)}" required aria-label="Booking date"><input name="starts_at" type="time" required aria-label="Start time"><input name="ends_at" type="time" required aria-label="End time"><button class="lib-primary">Book space</button></form>` : '<p class="lib-config">Bookings are not enabled for this facility.</p>'}</article>`).join('') : '<div class="lib-config">Study spaces and facilities have not been configured by the institution.</div>';
+    } catch (error) { facilities.innerHTML = `<div class="lib-state">${escape(error.message)}</div>`; }
+    const bookingBox = document.getElementById('bookingsList');
+    try { const rows = await call('/api/library/bookings'); bookingBox.innerHTML = rows.length ? rows.map(item => `<article class="lib-book-card"><div class="lib-row"><div><h3>${escape(item.facility_name)}</h3><p>${date(item.booking_date)} · ${escape(String(item.starts_at).slice(0,5))}–${escape(String(item.ends_at).slice(0,5))}</p><p>${escape(item.location || '')} · ${escape(item.status)}</p></div>${item.status === 'Booked' ? `<button class="lib-danger" data-cancel-booking="${Number(item.id)}">Cancel</button>` : ''}</div></article>`).join('') : '<div class="lib-state">You have no study-space bookings.</div>'; } catch (error) { bookingBox.innerHTML = `<div class="lib-state">${escape(error.message)}</div>`; }
+}
+async function showBookDetails(id) {
+    try {
+        const book = await call(`/api/library/books/${id}`);
+        const modal = document.createElement('div');
+        modal.className = 'lib-modal';
+        modal.innerHTML = `<section class="lib-modal-card" role="dialog" aria-modal="true" aria-labelledby="bookModalTitle"><button type="button" class="lib-modal-close" aria-label="Close">×</button><p class="lib-muted">${escape(book.category_name || 'Library catalogue')}</p><h2 id="bookModalTitle">${escape(book.title)}</h2><p>${escape(book.authors || 'Author details unavailable')}</p><p>${Number(book.available)} of ${Number(book.copies)} copies available</p>${book.isbn ? `<p>ISBN ${escape(book.isbn)}</p>` : ''}${book.publisher ? `<p>${escape(book.publisher)}${book.publication_year ? ` · ${Number(book.publication_year)}` : ''}</p>` : ''}</section>`;
+        document.body.appendChild(modal);
+        modal.querySelector('button').onclick = () => modal.remove();
+        modal.onclick = event => { if (event.target === modal) modal.remove(); };
+    } catch (error) { notify(error.message); }
+}
+function notify(message) {
+    let node = document.querySelector('.lib-toast');
+    if (!node) { node = document.createElement('div'); node.className = 'lib-toast'; node.setAttribute('role', 'status'); document.body.appendChild(node); }
+    node.textContent = message; clearTimeout(notify.timer); notify.timer = setTimeout(() => node.remove(), 3500);
+}
+async function refresh() {
+    if (feature === 'dashboard') return renderDashboard();
+    if (feature === 'catalogue' || feature === 'digital' || feature === 'ebooks') { await loadCategories(); return renderCatalogue(feature); }
+    if (feature === 'issued' || feature === 'renew') return renderLoans(feature === 'renew');
+    if (feature === 'reservations') return renderReservations();
+    if (feature === 'history') return renderHistory();
+    if (feature === 'fines') return renderFines();
+    if (feature === 'rules') return renderRules();
+    if (feature === 'spaces') return renderSpaces();
+    root.innerHTML = `${head('Library')}<div class="lib-card">This Library screen is unavailable.</div>`;
+}
+document.getElementById('topBack').onclick = () => { if (history.length > 1 && document.referrer && new URL(document.referrer).origin === location.origin) history.back(); else location.href = 'home.html'; };
+document.getElementById('notificationsButton').onclick = async () => {
+    try {
+        const items = await call('/api/notifications/my-notifications');
+        const modal = document.createElement('div');
+        modal.className = 'lib-modal';
+        modal.innerHTML = `<section class="lib-modal-card" role="dialog" aria-modal="true" aria-labelledby="notificationTitle"><button type="button" class="lib-modal-close" aria-label="Close">×</button><h2 id="notificationTitle">Notifications</h2><div>${items.length ? items.map(item => `<article class="lib-rule"><h3>${escape(item.title || 'College ERP')}</h3><p>${escape(item.message || '')}</p><small>${date(item.created_at)} · ${item.is_read ? 'Read' : 'Unread'}</small>${item.is_read ? '' : `<button class="lib-secondary" data-read="${Number(item.id)}">Mark as read</button>`}</article>`).join('') : '<p class="lib-state">No notifications.</p>'}</div></section>`;
+        document.body.appendChild(modal);
+        modal.querySelector('.lib-modal-close').onclick = () => modal.remove();
+        modal.onclick = event => { if (event.target === modal) modal.remove(); };
+        modal.addEventListener('click', async event => {
+            const button = event.target.closest('[data-read]');
+            if (!button) return;
+            try { await api('/api/notifications/mark-read', 'POST', { id: Number(button.dataset.read) }); button.closest('.lib-rule').querySelector('small').textContent = 'Read'; button.remove(); }
+            catch (error) { notify(error.message); }
+        });
+    } catch (error) { notify(error.message); }
+};
+root.addEventListener('click', async event => {
+    const featureButton = event.target.closest('[data-feature]');
+    if (featureButton) { location.href = featurePath(featureButton.dataset.feature); return; }
+    if (event.target.closest('[data-back]')) { location.href = feature === 'dashboard' ? 'home.html' : 'library.html'; return; }
+    const renewButton = event.target.closest('[data-renew]');
+    if (renewButton) { renewButton.disabled = true; try { const result = await api(`/api/library/loans/${renewButton.dataset.renew}/renew`, 'POST', {}); notify(`Renewed. New due date: ${date(result.due_at)}`); await refresh(); } catch (error) { renewButton.disabled = false; notify(error.message); } return; }
+    const reserveButton = event.target.closest('[data-reserve]');
+    if (reserveButton) { reserveButton.disabled = true; try { await api(`/api/library/books/${reserveButton.dataset.reserve}/reserve`, 'POST', {}); notify('Reservation created'); if (feature === 'reservations') await renderReservations(); else reserveButton.textContent = 'Reserved'; } catch (error) { reserveButton.disabled = false; notify(error.message); } return; }
+    const cancelReservation = event.target.closest('[data-cancel-reservation]');
+    if (cancelReservation) { try { await api(`/api/library/reservations/${cancelReservation.dataset.cancelReservation}`, 'DELETE'); await renderReservations(); } catch (error) { notify(error.message); } return; }
+    const cancelBooking = event.target.closest('[data-cancel-booking]');
+    if (cancelBooking) { try { await api(`/api/library/bookings/${cancelBooking.dataset.cancelBooking}`, 'DELETE'); await renderSpaces(); } catch (error) { notify(error.message); } return; }
+    const details = event.target.closest('[data-details]');
+    if (details) { await showBookDetails(details.dataset.details); return; }
+    const download = event.target.closest('[data-download]');
+    if (download) { try { const response = await fetch(API_BASE + `/api/library/books/${download.dataset.download}/download`, { headers: auth }); if (!response.ok) { const result = await response.json().catch(() => ({})); throw new Error(result.message || 'Download unavailable'); } const blob = await response.blob(); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'library-resource'; link.click(); URL.revokeObjectURL(link.href); notify('Resource opened'); } catch (error) { notify(error.message); } }
+});
+root.addEventListener('submit', async event => {
+    const payment = event.target.closest('[data-payment]');
+    if (payment) { event.preventDefault(); try { const data = new FormData(payment); await api('/api/finance/payments', 'POST', { invoice_id: Number(payment.dataset.payment), amount_paise: payment.dataset.amount, method: 'Offline', reference_no: data.get('reference_no').trim() }); notify('Payment submitted to Finance for verification'); await renderFines(); } catch (error) { notify(error.message); } return; }
+    const booking = event.target.closest('[data-book-space]');
+    if (booking) { event.preventDefault(); const data = new FormData(booking); try { await api(`/api/library/facilities/${booking.dataset.bookSpace}/bookings`, 'POST', Object.fromEntries(data)); notify('Study-space booking confirmed'); await renderSpaces(); } catch (error) { notify(error.message); } }
+});
+(async () => {
+    try {
+        const response = await call('/api/auth/me');
+        profile = response;
+        document.getElementById('profileLink').textContent = String(profile.name || '?').trim().charAt(0).toUpperCase() || '?';
+        document.getElementById('profileLink').title = profile.name || 'Student profile';
+        try { const count = await call('/api/notifications/unread-count'); notificationCount = Number(count.unread_notifications || count.count || count.unread_count || 0); if (notificationCount) { const badge = document.getElementById('notificationBadge'); badge.textContent = String(notificationCount); badge.hidden = false; } } catch {}
+        document.title = `${feature === 'dashboard' ? 'Library' : tileItems.find(item => item[0] === feature)?.[1] || 'Library'} · College ERP`;
+        await refresh();
+    } catch (error) {
+        root.innerHTML = `<div class="lib-card lib-state">${escape(error.message)}</div>`;
+    }
+})();
+})();
+</script>
+</body>
+</html>

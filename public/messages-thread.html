@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Conversation · College ERP</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="messages.css">
+<script src="config.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="thread-top">
+    <button class="icon-btn" id="backBtn" type="button" aria-label="Back to messages">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="title-wrap">
+      <h1 id="threadTitle">Conversation</h1>
+      <small id="threadSub"></small>
+    </div>
+    <button class="icon-btn" id="infoBtn" type="button" aria-expanded="false" aria-controls="details" aria-label="Show participants">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+    </button>
+  </header>
+
+  <div class="thread-actions" role="group" aria-label="Conversation preferences">
+    <button class="chip" id="muteBtn" type="button" aria-pressed="false" disabled>Mute</button>
+    <button class="chip" id="pinBtn" type="button" aria-pressed="false" disabled>Pin chat</button>
+    <button class="chip" id="archiveBtn" type="button" aria-pressed="false" disabled>Archive</button>
+  </div>
+
+  <section class="details" id="details" hidden>
+    <strong>Participants</strong>
+    <div id="participants"><div class="state">Loading participants...</div></div>
+  </section>
+
+  <p class="state" id="threadStatus" role="status" aria-live="polite" hidden></p>
+  <section class="thread-messages" id="messages" aria-live="polite"><div class="state">Loading messages...</div></section>
+
+  <form class="composer" id="composer" hidden>
+    <div class="reply-bar" id="replyBar" hidden>
+      <span id="replyText"></span>
+      <button class="link-btn" id="cancelReply" type="button">Cancel</button>
+    </div>
+    <div class="file-name" id="fileName"></div>
+    <div class="composer-row">
+      <label class="attach-label" title="Attach a file" aria-label="Attach a file">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/></svg>
+        <input type="file" id="attachment" accept=".pdf,.png,.jpg,.jpeg,.txt">
+      </label>
+      <textarea id="body" rows="1" maxlength="4000" placeholder="Type a message" aria-label="Type a message"></textarea>
+      <button class="primary" id="sendBtn" type="submit">Send</button>
+    </div>
+    <p class="file-name" id="composerNote" hidden></p>
+  </form>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const token=sessionStorage.getItem('token')||localStorage.getItem('token');
+if(!token)location.href='login.html';
+const auth={Authorization:'Bearer '+token};
+const $=id=>document.getElementById(id);
+const REACTIONS=['👍','❤️','😂','🎉','🙏'];
+const conversationId=Number(new URLSearchParams(location.search).get('id'));
+const state={me:null,conversation:null,replyTo:null,messages:[],loadSeq:0};
+
+async function call(url,opt={}){
+  const r=await fetch(API_BASE+url,{...opt,headers:{...auth,...(opt.headers||{})}});
+  const d=await r.json().catch(()=>({}));
+  if(r.status===401){localStorage.removeItem('token');sessionStorage.removeItem('token');location.href='login.html';throw new Error('Session expired')}
+  if(!r.ok)throw new Error(d.message||'Request failed ('+r.status+')');
+  return d;
+}
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function isStaff(){return ['super_admin','hod','organizer'].includes(state.me&&state.me.role)}
+function errorBlock(message,retryAttr){return '<div class="state error" role="alert"><p>'+esc(message)+'</p><button class="ghost retry" type="button" '+retryAttr+'>Retry</button></div>'}
+function setStatus(message,isError){const el=$('threadStatus');el.textContent=message;el.hidden=!message;el.className='state'+(isError?' error':'')}
+function formatTime(iso){return iso?new Date(iso).toLocaleString([],{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):''}
+function conversationTitle(c){return c.conversation_type==='direct'?(c.peer_name||'Direct conversation'):(c.group_name||'Group conversation')}
+
+function isComposerLocked(){return !!state.conversation&&state.conversation.conversation_type==='official'&&!isStaff()}
+function setPreferenceButton(button,on,labelOn,labelOff){
+  button.setAttribute('aria-pressed',on?'true':'false');
+  button.textContent=on?labelOn:labelOff;
+}
+function renderConversation(){
+  const c=state.conversation;
+  $('threadTitle').textContent=conversationTitle(c);
+  $('threadSub').textContent=c.conversation_type==='direct'?(c.peer_role||'Direct message'):(c.group_type||'Group')+' · '+(c.member_count||0)+' members';
+  setPreferenceButton($('muteBtn'),!!c.is_muted,'Muted','Mute');
+  setPreferenceButton($('pinBtn'),!!c.is_pinned,'Pinned','Pin chat');
+  $('muteBtn').disabled=false;$('pinBtn').disabled=false;$('archiveBtn').disabled=false;
+  const locked=isComposerLocked();
+  $('composer').hidden=false;
+  $('body').disabled=locked;$('sendBtn').disabled=locked;$('attachment').disabled=locked;
+  $('composerNote').hidden=!locked;
+  $('composerNote').textContent=locked?'Only authorized staff can post in official channels.':'';
+}
+
+async function loadConversation(){
+  try{
+    state.conversation=await call('/api/messages/conversations/'+conversationId);
+    renderConversation();
+    setStatus('');
+  }catch(e){
+    $('threadTitle').textContent='Conversation unavailable';
+    $('threadSub').textContent='';
+    setStatus('Could not load this conversation: '+e.message,true);
+  }
+}
+
+async function loadParticipants(){
+  const area=$('participants');
+  try{
+    const d=await call('/api/messages/conversations/'+conversationId+'/participants');
+    area.innerHTML=d.items.length?'<ul>'+d.items.map(p=>'<li>'+esc(p.name)+(p.department_name?' · '+esc(p.department_name):'')+(p.member_role&&p.member_role!=='member'?' ('+esc(p.member_role)+')':'')+'</li>').join('')+'</ul>':'<div class="state">No participants found.</div>';
+  }catch(e){
+    area.innerHTML=errorBlock('Could not load participants: '+e.message,'data-retry-participants');
+  }
+}
+
+function bubbleHtml(m){
+  const mine=state.me&&Number(m.sender_id)===Number(state.me.id);
+  const tools='<div class="bubble-tools">'
+    +'<button type="button" data-reply="'+m.id+'">Reply</button>'
+    +REACTIONS.map(r=>'<button type="button" data-react="'+m.id+'" data-reaction="'+r+'" aria-pressed="'+(m.my_reaction===r?'true':'false')+'" aria-label="React with '+r+'">'+r+'</button>').join('')
+    +(isStaff()?'<button type="button" data-pin="'+m.id+'" aria-pressed="'+(m.is_pinned?'true':'false')+'">'+(m.is_pinned?'Unpin':'Pin')+'</button>':'')
+    +(m.attachment_original_name?'<button type="button" data-attachment="'+m.id+'" data-name="'+esc(m.attachment_original_name)+'">Download '+esc(m.attachment_original_name)+'</button>':'')
+    +'</div>';
+  const reply=m.reply_to_id?'<div class="reply-ref">In reply to message #'+esc(m.reply_to_id)+'</div>':'';
+  return '<div class="bubble'+(mine?' mine':'')+'" data-message-id="'+m.id+'">'
+    +'<span class="who">'+(mine?'You':esc(m.sender_name))+'</span>'
+    +reply
+    +(m.body?'<p>'+esc(m.body)+'</p>':'')
+    +'<small>'+esc(formatTime(m.created_at))+(m.is_pinned?' · Pinned':'')+(m.my_reaction?' · '+esc(m.my_reaction):'')+'</small>'
+    +tools+'</div>';
+}
+
+async function loadMessages(){
+  const seq=++state.loadSeq;
+  const area=$('messages');
+  try{
+    const d=await call('/api/messages/conversations/'+conversationId+'/messages?limit=100');
+    if(seq!==state.loadSeq)return;
+    state.messages=d.items||[];
+    area.innerHTML=state.messages.length?state.messages.map(bubbleHtml).join(''):'<div class="state">No messages yet. Say hello.</div>';
+    area.scrollTop=area.scrollHeight;
+    const last=state.messages[state.messages.length-1];
+    if(last)await call('/api/messages/conversations/'+conversationId+'/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message_id:last.id})});
+  }catch(e){
+    if(seq!==state.loadSeq)return;
+    area.innerHTML=errorBlock('Could not load messages: '+e.message,'data-retry-messages');
+  }
+}
+
+async function savePreference(field,value){
+  try{
+    state.conversation=await call('/api/messages/conversations/'+conversationId+'/preferences',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[field]:value})});
+    renderConversation();
+    return true;
+  }catch(e){
+    setStatus('Could not update conversation: '+e.message,true);
+    return false;
+  }
+}
+$('muteBtn').addEventListener('click',()=>savePreference('is_muted',!state.conversation.is_muted));
+$('pinBtn').addEventListener('click',()=>savePreference('is_pinned',!state.conversation.is_pinned));
+$('archiveBtn').addEventListener('click',async()=>{
+  if(await savePreference('is_archived',true))location.href='messages.html';
+});
+
+$('infoBtn').addEventListener('click',()=>{
+  const details=$('details');
+  const open=details.hidden;
+  details.hidden=!open;
+  $('infoBtn').setAttribute('aria-expanded',open?'true':'false');
+  if(open)loadParticipants();
+});
+$('participants').addEventListener('click',e=>{if(e.target.closest('[data-retry-participants]'))loadParticipants()});
+$('backBtn').addEventListener('click',()=>location.href='messages.html');
+
+function setReply(id){
+  state.replyTo=id;
+  $('replyBar').hidden=!id;
+  $('replyText').textContent=id?'Replying to message #'+id:'';
+  if(id)$('body').focus();
+}
+$('cancelReply').addEventListener('click',()=>setReply(null));
+$('attachment').addEventListener('change',()=>{
+  const file=$('attachment').files[0];
+  $('fileName').textContent=file?'Attached: '+file.name:'';
+});
+
+$('composer').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const body=$('body').value.trim();
+  const file=$('attachment').files[0];
+  if(!body&&!file){setStatus('Write a message or attach a file.',true);return}
+  const form=new FormData();
+  form.append('body',body);
+  if(state.replyTo)form.append('reply_to_id',String(state.replyTo));
+  if(file)form.append('attachment',file);
+  $('sendBtn').disabled=true;
+  try{
+    await call('/api/messages/conversations/'+conversationId+'/messages',{method:'POST',body:form});
+    $('composer').reset();
+    $('fileName').textContent='';
+    setReply(null);
+    setStatus('');
+    await loadMessages();
+  }catch(err){
+    setStatus('Message not sent: '+err.message,true);
+  }finally{
+    $('sendBtn').disabled=isComposerLocked();
+  }
+});
+
+$('messages').addEventListener('click',async e=>{
+  if(e.target.closest('[data-retry-messages]')){loadMessages();return}
+  const reply=e.target.closest('[data-reply]');
+  const react=e.target.closest('[data-react]');
+  const pin=e.target.closest('[data-pin]');
+  const attachment=e.target.closest('[data-attachment]');
+  try{
+    if(reply)setReply(Number(reply.dataset.reply));
+    else if(react){await call('/api/messages/messages/'+react.dataset.react+'/react',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reaction:react.dataset.reaction})});await loadMessages()}
+    else if(pin){await call('/api/messages/messages/'+pin.dataset.pin+'/pin',{method:'POST'});await loadMessages()}
+    else if(attachment)await downloadAttachment(attachment.dataset.attachment,attachment.dataset.name);
+  }catch(err){
+    setStatus(err.message,true);
+  }
+});
+
+async function downloadAttachment(messageId,name){
+  const r=await fetch(API_BASE+'/api/messages/messages/'+messageId+'/attachment',{headers:auth});
+  if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.message||'Could not download attachment')}
+  const url=URL.createObjectURL(await r.blob());
+  const a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function connectRealtime(){
+  if(typeof io!=='function')return;
+  const socket=io(API_BASE,{auth:{token},transports:['websocket','polling']});
+  const joinRoom=()=>{if(Number.isInteger(conversationId)&&conversationId>0)socket.emit('conversation:join',conversationId)};
+  socket.on('connect',joinRoom);
+  socket.on('message:new',d=>{if(Number(d.conversation_id)===conversationId)loadMessages()});
+  socket.on('conversation:updated',d=>{if(Number(d.conversation_id)===conversationId)loadConversation()});
+  socket.on('connect_error',()=>setStatus('Live updates unavailable. Refresh to see new messages.',true));
+  window.addEventListener('beforeunload',()=>{socket.emit('conversation:leave',conversationId);socket.disconnect()});
+}
+
+async function boot(){
+  if(!Number.isInteger(conversationId)||conversationId<1){
+    $('threadTitle').textContent='Conversation unavailable';
+    $('messages').innerHTML=errorBlock('This conversation link is invalid.','data-none');
+    return;
+  }
+  try{state.me=await call('/api/auth/me')}catch(e){setStatus('Could not load your profile: '+e.message,true)}
+  await loadConversation();
+  await loadMessages();
+  connectRealtime();
+}
+boot();
+</script>
+</body>
+</html>

@@ -21,8 +21,20 @@
     transport:{ title: 'Transport',      icon: '🚌', tone: 'svc-cyan',   desc: 'Bus routes, timings and transport requests will be available here. This module is not yet enabled for your campus.' },
     hostel:   { title: 'Hostel',         icon: '🏠', tone: 'svc-teal',   desc: 'Room allocation, mess and hostel services will be available here. This module is not yet enabled for your campus.' },
     certificates:{ title: 'Certificates',icon: '📜', tone: 'svc-purple', desc: 'Bonafide, character and other certificates will be requestable here. This module is not yet enabled for your campus.' },
-    academic: { title: 'Academic',       icon: '📚', tone: 'svc-green',  desc: 'Your courses, learning materials and academic records live here. You can open Assignments & Materials from the dashboard.' }
+    academic: { title: 'Academic',       icon: '📚', tone: 'svc-green',  desc: 'Your courses, learning materials and academic records live here. You can open Assignments & Materials from the dashboard.' },
+    placement: { title: 'Placement & Training', icon: '💼', tone: 'svc-blue', desc: 'Jobs, internships and training programs will be listed here. This module is not yet enabled for your campus.' },
+    clubs: { title: 'Clubs & Societies', icon: '👥', tone: 'svc-green', desc: 'Club memberships and society activities will be available here. This module is not yet enabled for your campus.' },
+    grievance: { title: 'Grievance / Support', icon: '❓', tone: 'svc-purple', desc: 'Raise a complaint and track its status here. This module is not yet enabled for your campus.' },
+    'transport-hostel': { title: 'Transport / Hostel', icon: '🚌', tone: 'svc-cyan', desc: 'Bus routes, timings and hostel details will be available here. This module is not yet enabled for your campus.' },
+    health: { title: 'Health & Medical', icon: '🏥', tone: 'svc-red', desc: 'Medical facility information and your health records will be available here. This module is not yet enabled for your campus.' },
+    'campus-map': { title: 'Campus Map', icon: '📍', tone: 'svc-teal', desc: 'Navigate the campus and find important locations here. This module is not yet enabled for your campus.' },
+    feedback: { title: 'Feedback', icon: '📣', tone: 'svc-orange', desc: 'Share feedback and suggestions with the college here. This module is not yet enabled for your campus.' },
+    alumni: { title: 'Alumni Connect', icon: '🎓', tone: 'svc-indigo', desc: 'Connect with the alumni network here. This module is not yet enabled for your campus.' },
+    'lost-found': { title: 'Lost & Found', icon: '🔍', tone: 'svc-pink', desc: 'Report or search for lost items here. This module is not yet enabled for your campus.' },
+    settings: { title: 'Settings', icon: '⚙️', tone: 'svc-slate', desc: 'App settings and preferences will be available here. This module is not yet enabled for your campus.' },
+    other: { title: 'Other Services', icon: '⋯', tone: 'svc-grid8', desc: 'Additional tools and resources will be listed here. This module is not yet enabled for your campus.' }
   };
+  document.querySelectorAll('[data-back-home]').forEach(node => node.addEventListener('click', () => location.href = 'home.html'));
   const key = (params.get('module') || '').toLowerCase();
   const info = map[key];
   const titleEl = document.getElementById('csTitle');

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Academic Management · College ERP</title><link rel="stylesheet" href="erp-ui.css"><link rel="stylesheet" href="academic.css"><script src="config.js"></script></head>
+<body class="academic-page">
+<header class="academic-topbar"><a class="top-back" href="dashboard.html" aria-label="Back">‹</a><a class="academic-brand" href="dashboard.html"><svg aria-hidden="true" viewBox="0 0 48 48"><path d="M3 16 24 5l21 11-21 11L3 16Zm7 7v10c8 7 20 7 28 0V23l-14 8-14-8Zm32-2v12h3V20l-3 1Z" fill="currentColor"/></svg><strong>College ERP</strong></a><span class="top-spacer"></span><a class="profile-link" href="profile.html" aria-label="Profile"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></a></header>
+<main class="academic-main">
+  <div class="academic-title-row"><h1>Academic Management</h1></div>
+  <nav id="manageTabs" class="subject-tabs" aria-label="Management sections"><button class="subject-tab active" data-panel="registrations">Course Registrations</button><button class="subject-tab" data-panel="requests">Academic Requests</button><button class="subject-tab" data-panel="syllabus">Syllabus</button><button class="subject-tab" data-panel="calendar">Calendar</button></nav>
+  <p id="manageStatus" class="page-status" role="status" aria-live="polite"></p>
+  <section id="managePanel" class="upcoming-panel"></section>
+</main>
+<script src="erp-app.js"></script><script src="academic-management.js"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fees · College ERP</title>
+<script src="config.js"></script>
+<script src="ui-feedback.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="theme-color" content="#2f6bff">
+<link rel="stylesheet" href="erp-ui.css">
+<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="fees.css">
+</head>
+<body class="stu-home fees-page">
+<div class="stu-wrap">
+
+  <header class="stu-topbar">
+    <a class="icon-btn" href="home.html" aria-label="Back to home">‹</a>
+    <div class="stu-brand"><span class="cap" aria-hidden="true">🎓</span><span class="title">College ERP</span></div>
+    <span class="spacer"></span>
+    <a class="icon-btn stu-bell" href="home.html" aria-label="Notifications (home)">
+      <span aria-hidden="true">🔔</span>
+    </a>
+    <a class="stu-avatar-btn" href="profile.html" aria-label="Open your profile">
+      <span id="topAvatarInitial">?</span>
+    </a>
+  </header>
+
+  <main class="fees-main">
+    <div class="fees-title-row">
+      <h1>Fees</h1>
+      <label class="sr-only" for="semesterSelect">Semester</label>
+      <select id="semesterSelect" class="fees-select" disabled><option>Loading…</option></select>
+    </div>
+
+    <p class="stu-state" id="pageState" role="status">Loading your fee records…</p>
+
+    <section class="fees-card fee-status" aria-label="Fee status">
+      <h2>Fee Status</h2>
+      <div class="fee-status-body">
+        <div class="fee-ring" id="feeRing" role="img" aria-label="Payment progress">
+          <span id="feePercent">--</span>
+        </div>
+        <div class="fee-amounts">
+          <span class="fee-label">Paid Amount</span>
+          <strong class="fee-paid" id="paidAmount">—</strong>
+          <span class="fee-label">Total Fee</span>
+          <strong id="totalFee">—</strong>
+        </div>
+        <button class="fees-pay-btn" id="feeStatusPay" type="button" disabled>Pay Now</button>
+      </div>
+    </section>
+
+    <nav class="fees-grid" aria-label="Fee services">
+      <button type="button" class="fees-tile tile-yellow" data-section="details"><span class="tile-ico ico-orange">📄</span><span>Fee Details</span></button>
+      <button type="button" class="fees-tile tile-mint" data-section="pay"><span class="tile-ico ico-orange">💳</span><span>Pay Fee Online</span></button>
+      <button type="button" class="fees-tile tile-lilac" data-section="receipt"><span class="tile-ico ico-purple">⬇</span><span>Download Receipt</span></button>
+      <button type="button" class="fees-tile tile-rose" data-section="installment"><span class="tile-ico ico-red">📋</span><span>Installment Plan</span></button>
+      <button type="button" class="fees-tile tile-cream" data-section="scholarships"><span class="tile-ico ico-orange">🎓</span><span>Scholarships</span></button>
+      <button type="button" class="fees-tile tile-blush" data-section="concessions"><span class="tile-ico ico-red">₹</span><span>Concessions</span></button>
+      <button type="button" class="fees-tile tile-cream" data-section="history"><span class="tile-ico ico-orange">🕘</span><span>Payment History</span></button>
+      <button type="button" class="fees-tile tile-pink" data-section="refunds"><span class="tile-ico ico-red">↺</span><span>Refund Status</span></button>
+      <button type="button" class="fees-tile tile-sky" data-section="notices"><span class="tile-ico ico-orange">⚠</span><span>Financial Notices</span></button>
+    </nav>
+
+    <section class="fees-card upcoming" aria-label="Upcoming payment">
+      <div class="upcoming-head">
+        <h2>Upcoming Payment</h2>
+        <button class="link" id="viewAllBtn" type="button">View All ›</button>
+      </div>
+      <div id="upcomingBody"><p class="stu-state">Loading…</p></div>
+    </section>
+
+    <section class="fees-card fees-panel" id="panel" aria-live="polite" hidden></section>
+  </main>
+
+  <p class="stu-state" id="feesNotice" role="status" aria-live="polite"></p>
+</div>
+
+<nav class="stu-bottom" aria-label="Primary">
+  <div class="inner">
+    <a href="home.html" class="active" aria-current="page"><span class="g" aria-hidden="true">🏠</span>Home</a>
+    <a href="messages.html"><span class="g" aria-hidden="true">💬</span>Messages</a>
+    <a href="attendance.html"><span class="g" aria-hidden="true">📅</span>Attendance</a>
+    <a href="profile.html"><span class="g" aria-hidden="true">👤</span>Profile</a>
+  </div>
+</nav>
+
+<script src="erp-app.js"></script>
+<script src="fees.js"></script>
+</body>
+</html>

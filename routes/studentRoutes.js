@@ -18,6 +18,13 @@ studentController.getEvents
 );
 
 router.get(
+    "/events/:id",
+    verifyToken,
+    allowRoles("student"),
+    studentController.getEventDetails
+);
+
+router.get(
 "/my-od",
 verifyToken,
 allowRoles("student"),

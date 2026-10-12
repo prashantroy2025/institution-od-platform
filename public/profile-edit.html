@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Edit Profile · College ERP</title>
+<script src="config.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="profile.css">
+</head>
+<body class="profile-body">
+<div class="profile-app">
+
+<header class="app-header">
+    <div class="app-brand"><span class="brand-cap" aria-hidden="true">▲</span><strong>College ERP</strong></div>
+</header>
+
+<main class="page">
+    <div class="page-top">
+        <a class="back-link" id="backLink" href="profile.html" aria-label="Back to profile">‹</a>
+        <h1>Edit Profile</h1>
+    </div>
+    <p class="notice" id="notice" role="status" hidden></p>
+
+    <p class="state" id="loading" role="status">Loading your profile…</p>
+
+    <section class="card" id="loadError" hidden>
+        <p class="state error" role="alert"><span id="loadErrorText"></span></p>
+        <div style="margin-top:12px"><button class="secondary-btn" id="retryLoad" type="button">Retry</button></div>
+    </section>
+
+    <form class="card stack" id="editForm" hidden novalidate aria-labelledby="editTitle">
+        <h2 id="editTitle">Contact and emergency details</h2>
+        <p class="hint">Only these details can be changed here. Roll number, verification status and academic records are maintained by the institution.</p>
+        <label>Address<textarea name="address" rows="3" maxlength="500"></textarea></label>
+        <div class="form-grid">
+            <label>Emergency contact name<input name="emergency_name" maxlength="160" autocomplete="off"></label>
+            <label>Emergency contact phone<input name="emergency_phone" maxlength="40" inputmode="tel" autocomplete="off"></label>
+            <label class="wide">Relationship<input name="emergency_relation" maxlength="80" autocomplete="off"></label>
+        </div>
+        <p class="form-status" id="formStatus" role="status" aria-live="polite"></p>
+        <div class="form-row">
+            <button class="primary-btn" id="saveBtn" type="submit">Save changes</button>
+            <button class="secondary-btn" id="cancelBtn" type="button">Cancel</button>
+        </div>
+        <section class="card" id="discardPanel" hidden aria-labelledby="discardTitle">
+            <h2 id="discardTitle">Discard unsaved changes?</h2>
+            <p class="hint">Your edits have not been saved.</p>
+            <div class="form-row" style="margin-top:10px">
+                <button class="secondary-btn" id="keepEditing" type="button">Keep editing</button>
+                <button class="danger-btn" id="discardChanges" type="button">Discard changes</button>
+            </div>
+        </section>
+    </form>
+</main>
+
+<nav class="bottom-nav" aria-label="Main navigation"></nav>
+</div>
+
+<script src="erp-app.js"></script>
+<script src="profile-edit.js"></script>
+</body>
+</html>

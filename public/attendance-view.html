@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Attendance · College ERP</title>
+<script src="config.js"></script>
+<script src="ui-feedback.js"></script>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="theme-color" content="#2f6bff">
+<link rel="stylesheet" href="erp-ui.css">
+<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="attendance.css">
+</head>
+<body class="stu-home attendance-page" data-page="view">
+<div class="stu-wrap att-wrap-wide">
+
+  <header class="stu-topbar">
+    <a class="icon-btn" id="backLink" href="attendance.html" aria-label="Back to attendance">‹</a>
+    <div class="stu-brand"><span class="cap" aria-hidden="true">🎓</span><span class="title">College ERP</span></div>
+    <span class="spacer"></span>
+    <a class="icon-btn stu-bell" href="home.html" aria-label="Notifications"><span aria-hidden="true">🔔</span></a>
+    <a class="stu-avatar-btn" href="profile.html" aria-label="Open your profile"><span id="topAvatarInitial">?</span></a>
+  </header>
+
+  <main class="att-main">
+    <div class="att-title-row">
+      <h1 id="viewTitle">Attendance</h1>
+      <label class="att-semester"><span class="sr-only">Semester</span>
+        <select id="semesterSelect" aria-label="Semester"><option>Loading…</option></select>
+      </label>
+    </div>
+    <p id="semesterState" class="att-state" hidden></p>
+    <section id="viewRoot" class="att-card" aria-live="polite"><p class="att-state">Loading…</p></section>
+  </main>
+</div>
+
+<nav class="stu-bottom" aria-label="Primary">
+  <div class="inner">
+    <a href="home.html"><span class="g" aria-hidden="true">🏠</span>Home</a>
+    <a href="messages.html"><span class="g" aria-hidden="true">💬</span>Messages</a>
+    <a href="attendance.html" class="active"><span class="g" aria-hidden="true">📅</span>Attendance</a>
+    <a href="profile.html"><span class="g" aria-hidden="true">👤</span>Profile</a>
+  </div>
+</nav>
+
+<script src="erp-app.js"></script>
+<script src="attendance.js"></script>
+</body>
+</html>

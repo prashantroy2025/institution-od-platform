@@ -330,6 +330,19 @@ async function checkStudentHome(page, role, viewport, errors) {
 
     // Saving must round-trip: the saved post is the student's own record.
     const saveBefore = await page.$eval(`.stu-post[data-id="${postId}"] [data-act="save"]`, el => el.getAttribute('aria-pressed'));
+    if (process.env.DBG_PROBE) {
+        const p = await page.evaluate(sel => {
+            const node = document.querySelector(sel);
+            if (!node) return { missing: true };
+            const r = node.getBoundingClientRect();
+            const x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+            const top = document.elementFromPoint(x, y);
+            const nav = document.querySelector('.stu-bottom').getBoundingClientRect();
+            const row = node.closest('.actions').getBoundingClientRect();
+            return { rect: { l: Math.round(r.left), r: Math.round(r.right), t: Math.round(r.top) }, rowRight: Math.round(row.right), navTop: Math.round(nav.top), atPoint: top ? `${top.tagName.toLowerCase()}.${top.className}`.slice(0, 50) : null, isNode: top === node };
+        }, `.stu-post[data-id="${postId}"] [data-act="save"]`);
+        record(role, viewport, 'probe save button', true, JSON.stringify(p));
+    }
     await clickClearOfFixedNav(page, `.stu-post[data-id="${postId}"] [data-act="save"]`);
     await page.waitForFunction(({ id, before }) => {
         const row = document.querySelector(`.stu-post[data-id="${id}"]`);
@@ -341,6 +354,45 @@ async function checkStudentHome(page, role, viewport, errors) {
     // Comments post to the API and are rendered for the post.
     await clickClearOfFixedNav(page, `.stu-post[data-id="${postId}"] [data-act="comment"]`);
     await page.waitForSelector(`.stu-post[data-id="${postId}"] .comments:not([hidden])`, { timeout: 5000 });
+    if (process.env.DBG_PROBE) {
+        const p = await page.evaluate(sel => {
+            const row = document.querySelector(sel);
+            const input = row ? row.querySelector('.comments input') : null;
+            return {
+                hasRow: Boolean(row), hasInput: Boolean(input),
+                inputName: input ? input.name : null,
+                value: input ? input.value : null,
+                crows: row ? row.querySelectorAll('.crow').length : 0,
+                errors: window.__pageErrors || []
+            };
+        }, `.stu-post[data-id="${postId}"]`);
+        record(role, viewport, 'probe comment area', true, JSON.stringify(p));
+    }
+    await page.evaluate(() => {
+        window.__pageErrors = [];
+        window.addEventListener('error', e => window.__pageErrors.push(String(e.message)));
+        window.addEventListener('unhandledrejection', e => window.__pageErrors.push('rejection: ' + String(e.reason && e.reason.message || e.reason)));
+    });
+    if (process.env.DBG_PROBE) {
+        await page.type(`.stu-post[data-id="${postId}"] .comments input`, 'probe');
+        const typed = await page.evaluate(sel => {
+            const row = document.querySelector(sel);
+            const input = row.querySelector('.comments input');
+            const form = row.querySelector('[data-form="comment"]');
+            return { value: input.value, hasForm: Boolean(form), formBodyIsInput: form.body === input, formElements: [...form.elements].map(e => e.name) };
+        }, `.stu-post[data-id="${postId}"]`);
+        record(role, viewport, 'probe after typing', true, JSON.stringify(typed));
+        const submitted = await page.evaluate(sel => {
+            const row = document.querySelector(sel);
+            const form = row.querySelector('[data-form="comment"]');
+            let fired = false;
+            form.addEventListener('submit', () => { fired = true; }, { once: true });
+            form.querySelector('input').value = 'probe2';
+            form.requestSubmit();
+            return { fired, crows: row.querySelectorAll('.crow').length, value: form.querySelector('input').value };
+        }, `.stu-post[data-id="${postId}"]`);
+        record(role, viewport, 'probe requestSubmit', true, JSON.stringify(submitted));
+    }
     await page.type(`.stu-post[data-id="${postId}"] .comments input`, `verify comment ${Date.now()}`);
     await page.keyboard.press('Enter');
     await page.waitForFunction(id => {

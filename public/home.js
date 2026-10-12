@@ -31,13 +31,13 @@
     /* Full service catalogue. Only real destination pages are linked; anything
        without an implementation renders a labelled, navigable placeholder. */
     const SERVICES = [
-        { key: 'academic', label: 'Academic', icon: '📚', tone: 'svc-blue', href: 'learning.html' },
+        { key: 'academic', label: 'Academic', icon: '📚', tone: 'svc-blue', href: 'academic.html' },
         { key: 'attendance', label: 'Attendance', icon: '📅', tone: 'svc-green', href: 'attendance.html' },
         { key: 'examinations', label: 'Examinations', icon: '📝', tone: 'svc-red', href: 'examinations.html' },
         { key: 'assignments', label: 'Assignments', icon: '📋', tone: 'svc-orange', href: 'learning.html?view=assignments' },
         { key: 'library', label: 'Library', icon: '📖', tone: 'svc-purple', href: 'library.html' },
-        { key: 'fees', label: 'Fees', icon: '₹', tone: 'svc-green', href: 'finance.html' },
-        { key: 'events', label: 'Events', icon: '🎉', tone: 'svc-red', href: 'student.html' },
+        { key: 'fees', label: 'Fees', icon: '₹', tone: 'svc-green', href: 'fees.html' },
+        { key: 'events', label: 'Events', icon: '🎉', tone: 'svc-red', href: 'events.html' },
         { key: 'notices', label: 'Notices', icon: '📢', tone: 'svc-blue', href: 'notices.html' },
         { key: 'transport', label: 'Transport', icon: '🚌', tone: 'svc-cyan', href: 'transport.html' },
         { key: 'hostel', label: 'Hostel', icon: '🏠', tone: 'svc-pink', href: 'hostel.html' },
@@ -54,6 +54,23 @@
         hostel: 'hostel.html',
         certificates: 'certificates.html'
     };
+
+    /* Cards in the More Services bottom sheet, in display order. Existing modules
+       are linked directly; the rest open the labelled placeholder page. */
+    const MORE_SERVICES = [
+        { label: 'Placement & Training', desc: 'Jobs, Internships, Training Programs', icon: '💼', tone: 'more-blue', href: 'coming-soon.html?module=placement' },
+        { label: 'Clubs & Societies', desc: 'Join Clubs, Activities', icon: '👥', tone: 'more-green', href: 'coming-soon.html?module=clubs' },
+        { label: 'Grievance / Support', desc: 'Raise a Complaint, Track Status', icon: '❓', tone: 'more-purple', href: 'coming-soon.html?module=grievance' },
+        { label: 'Transport / Hostel', desc: 'Bus Routes, Hostel Details', icon: '🚌', tone: 'more-blue', href: 'coming-soon.html?module=transport-hostel' },
+        { label: 'Health & Medical', desc: 'Medical Facility, Health Records', icon: '🏥', tone: 'more-red', href: 'coming-soon.html?module=health' },
+        { label: 'ID Card / Certificates', desc: 'Download ID, Bonafide, Certificates', icon: '📇', tone: 'more-blue', href: 'profile-student-id.html' },
+        { label: 'Campus Map', desc: 'Navigate Campus, Important Locations', icon: '📍', tone: 'more-mint', href: 'coming-soon.html?module=campus-map' },
+        { label: 'Feedback', desc: 'Give Feedback, Suggestions', icon: '📣', tone: 'more-orange', href: 'coming-soon.html?module=feedback' },
+        { label: 'Alumni Connect', desc: 'Connect with Alumni Network', icon: '🎓', tone: 'more-lilac', href: 'coming-soon.html?module=alumni' },
+        { label: 'Lost & Found', desc: 'Report or Search Lost Items', icon: '🔍', tone: 'more-pink', href: 'coming-soon.html?module=lost-found' },
+        { label: 'Settings', desc: 'App Settings, Preferences', icon: '⚙️', tone: 'more-slate', href: 'coming-soon.html?module=settings' },
+        { label: 'Other Services', desc: 'Additional Tools and Resources', icon: '⋯', tone: 'more-gray', href: 'coming-soon.html?module=other' }
+    ];
 
     const FEED_LABELS = { for_you: 'For You', official: 'Official', events: 'Events', following: 'Following', all: 'All' };
     const FEED_NOTES = {
@@ -160,9 +177,9 @@
             const items = (data.items || []).filter(i => i.status !== 'Paid');
             const outstanding = items.reduce((sum, i) => sum + (BigInt(i.total_paise || 0) - BigInt(i.discount_paise || 0) - BigInt(i.waiver_paise || 0)), 0n);
             const value = items.length ? money(outstanding.toString()) : 'No dues';
-            return quickCard({ tone: 'purple', icon: '<span class="stu-qicon tone-purple">₹</span>', key: 'Fees', value, sub: items.length ? `${items.length} unpaid invoice${items.length === 1 ? '' : 's'}` : 'All invoices settled', href: 'finance.html' });
+            return quickCard({ tone: 'purple', icon: '<span class="stu-qicon tone-purple">₹</span>', key: 'Fees', value, sub: items.length ? `${items.length} unpaid invoice${items.length === 1 ? '' : 's'}` : 'All invoices settled', href: 'fees.html' });
         } catch (e) {
-            return quickCard({ tone: 'purple', icon: '<span class="stu-qicon tone-purple">₹</span>', key: 'Fees', value: 'Unavailable', sub: 'Could not load invoices', href: 'finance.html' });
+            return quickCard({ tone: 'purple', icon: '<span class="stu-qicon tone-purple">₹</span>', key: 'Fees', value: 'Unavailable', sub: 'Could not load invoices', href: 'fees.html' });
         }
     }
 
@@ -185,10 +202,10 @@
             const rows = data || [];
             const approved = rows.filter(o => o.status === 'Auto Approved' || o.status === 'HOD Approved').length;
             const pending = rows.filter(o => o.status === 'Pending').length;
-            if (!rows.length) return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'No requests', sub: 'Apply OD from the Events page', href: 'student.html' });
-            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: `${approved} approved`, sub: pending ? `${pending} awaiting HOD approval` : 'No pending requests', href: 'student.html' });
+            if (!rows.length) return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'No requests', sub: 'View events and OD requests', href: 'events.html' });
+            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: `${approved} approved`, sub: pending ? `${pending} awaiting HOD approval` : 'No pending requests', href: 'events.html' });
         } catch (e) {
-            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'Unavailable', sub: 'Could not load OD requests', href: 'student.html' });
+            return quickCard({ tone: 'green', icon: '<span class="stu-qicon tone-green">✅</span>', key: 'OD', value: 'Unavailable', sub: 'Could not load OD requests', href: 'events.html' });
         }
     }
 
@@ -245,22 +262,13 @@
         }));
     }
 
-    function renderMoreServices(filter = '') {
-        const term = filter.trim().toLowerCase();
-        const matches = SERVICES.filter(s => !term || s.label.toLowerCase().includes(term));
-        const nodes = matches.map((service, index) => {
-            const tone = SERVICE_TONES[(SERVICES.indexOf(service)) % SERVICE_TONES.length];
-            return `<a href="${esc(service.href)}" data-href="${esc(service.href)}">
-                <span class="ico ${tone}">${service.icon}</span>${esc(service.label)}
-            </a>`;
-        }).join('');
-        $('moreList').innerHTML = nodes || '<div class="stu-empty">No services match your search.</div>';
-        $('moreList').querySelectorAll('a[data-href]').forEach(node => node.addEventListener('click', event => {
-            event.preventDefault();
-            closeOverlay('more');
-            openService(node.dataset.href);
-        }));
-        $('moreSub').textContent = `${matches.length} of ${SERVICES.length} services`;
+    function renderMoreServices() {
+        $('moreList').innerHTML = MORE_SERVICES.map(service => `
+            <a class="more-card ${service.tone}" href="${esc(service.href)}">
+                <span class="more-ico" aria-hidden="true">${service.icon}</span>
+                <strong>${esc(service.label)}</strong>
+                <small>${esc(service.desc)}</small>
+            </a>`).join('');
     }
 
     /* ------------------------------ event banner ------------------------------ */
@@ -284,7 +292,7 @@
             od ? `OD: ${esc(od)}` : ''
         ].filter(Boolean).map(t => `<span class="tag">${t}</span>`).join('');
         const cta = $('bannerCta');
-        cta.firstChild.textContent = participated ? 'View details ' : 'Register Now ';
+        cta.firstChild.textContent = participated ? 'View events ' : 'Explore events ';
         $('bannerDots').innerHTML = events.slice(0, 5).map((_, i) => `<span class="dot ${i === bannerIndex % events.length ? 'active' : ''}"></span>`).join('');
     }
 
@@ -435,8 +443,12 @@
                 try {
                     await safe(() => ERP.call(`/api/community/feed/${id}/comments`, { method: 'POST', body: { body } }));
                     form.reset();
-                    await loadComments(id, node.querySelector('.comments'));
-                    await loadFeed(false);
+                    // Reload the thread and refresh the count in place. Re-fetching the
+                    // whole feed here would re-render the post and wipe the thread.
+                    const posted = await loadComments(id, node.querySelector('.comments'));
+                    const total = Array.isArray(posted) ? posted.length : (posted.items || []).length;
+                    const counter = node.querySelector('[data-act="comment"] .actcount');
+                    if (counter) counter.textContent = String(total);
                 } catch (e) { err(e.message); }
             });
         });
@@ -449,7 +461,8 @@
             const data = await safe(() => ERP.call(`/api/community/feed/${id}/comments`));
             const items = Array.isArray(data) ? data : (data.items || []);
             list.innerHTML = items.length ? items.map(c => `<div class="crow"><b>${esc(c.author_name)}</b> ${esc(c.body)}<small>${new Date(c.created_at).toLocaleString()}</small></div>`).join('') : '<div class="stu-empty">No comments yet.</div>';
-        } catch (e) { list.innerHTML = `<div class="stu-state error">${esc(e.message)}</div>`; }
+            return data;
+        } catch (e) { list.innerHTML = `<div class="stu-state error">${esc(e.message)}</div>`; return { items: [] }; }
     }
 
     /* ------------------------------ composer ------------------------------ */
@@ -573,17 +586,37 @@
 
     /* ------------------------------ overlays ------------------------------ */
 
+    let moreTrigger = null;
+
     const openOverlay = name => {
         if (name === 'drawer') { $('drawer').classList.add('open'); $('drawerBack').classList.add('open'); $('drawer').setAttribute('aria-hidden', 'false'); }
         if (name === 'sheet') { $('sheetBack').classList.add('open'); $('sheetBack').setAttribute('aria-hidden', 'false'); }
-        if (name === 'more') { $('moreServices').classList.add('open'); $('moreServices').setAttribute('aria-hidden', 'false'); renderMoreServices($('moreSearch').value); }
+        if (name === 'more') {
+            moreTrigger = document.activeElement;
+            $('moreServices').classList.add('open');
+            $('moreServices').setAttribute('aria-hidden', 'false');
+            $('moreServices').querySelector('.close').focus();
+        }
     };
 
     const closeOverlay = name => {
         if (name === 'drawer') { $('drawer').classList.remove('open'); $('drawerBack').classList.remove('open'); $('drawer').setAttribute('aria-hidden', 'true'); }
         if (name === 'sheet') { $('sheetBack').classList.remove('open'); $('sheetBack').setAttribute('aria-hidden', 'true'); }
-        if (name === 'more') { $('moreServices').classList.remove('open'); $('moreServices').setAttribute('aria-hidden', 'true'); }
+        if (name === 'more' && $('moreServices').classList.contains('open')) {
+            $('moreServices').classList.remove('open');
+            $('moreServices').setAttribute('aria-hidden', 'true');
+            if (moreTrigger && moreTrigger.isConnected) moreTrigger.focus();
+            moreTrigger = null;
+        }
     };
+
+    function trapMoreFocus(event) {
+        const focusable = [...$('moreServices').querySelectorAll('button, a[href]')];
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
 
     function bindOverlays() {
         $('menuBtn').addEventListener('click', () => openOverlay('drawer'));
@@ -591,7 +624,6 @@
         $('allServicesBtn').addEventListener('click', () => openOverlay('more'));
         $('quickCreateBtn').addEventListener('click', () => openOverlay('sheet'));
         document.querySelectorAll('[data-close]').forEach(node => node.addEventListener('click', () => closeOverlay(node.dataset.close)));
-        $('moreSearch').addEventListener('input', event => renderMoreServices(event.target.value));
         $('sheetBack').querySelectorAll('[data-create]').forEach(button => button.addEventListener('click', () => {
             closeOverlay('sheet');
             const kind = button.dataset.create;
@@ -602,8 +634,11 @@
         }));
         $('signOutBtn').addEventListener('click', ERP.signOut);
         $('editProfileBtn').addEventListener('click', () => location.href = 'profile.html');
-        $('bannerCta').addEventListener('click', () => location.href = 'student.html');
-        document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeOverlay('drawer'); closeOverlay('sheet'); closeOverlay('more'); $('notifPanel').classList.remove('open'); } });
+        $('bannerCta').addEventListener('click', () => location.href = 'events.html');
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') { closeOverlay('drawer'); closeOverlay('sheet'); closeOverlay('more'); $('notifPanel').classList.remove('open'); }
+            else if (event.key === 'Tab' && $('moreServices').classList.contains('open')) trapMoreFocus(event);
+        });
     }
 
     function bindDrawerNav() {
@@ -614,8 +649,8 @@
             ['📝', 'Examinations', 'examinations.html'],
             ['📋', 'Assignments', 'learning.html?view=assignments'],
             ['📖', 'Library', 'library.html'],
-            ['₹', 'Fees', 'finance.html'],
-            ['🎉', 'Events & OD', 'student.html'],
+            ['₹', 'Fees', 'fees.html'],
+            ['🎉', 'Events & OD', 'events.html'],
             ['💬', 'Messages', 'messages.html'],
             ['👤', 'Profile', 'profile.html']
         ];
@@ -641,7 +676,7 @@
             form.classList.toggle('open');
             if (form.classList.contains('open')) $('feedSearchInput').focus();
         });
-        $('topSearchBtn').addEventListener('click', () => { openOverlay('more'); $('moreSearch').focus(); });
+        $('topSearchBtn').addEventListener('click', () => openOverlay('more'));
         $('feedSearchForm').addEventListener('submit', event => {
             event.preventDefault();
             feed.search = $('feedSearchInput').value.trim();
@@ -663,6 +698,7 @@
     async function boot() {
         try {
             renderServices();
+            renderMoreServices();
             bindComposer();
             bindFeedControls();
             bindOverlays();
