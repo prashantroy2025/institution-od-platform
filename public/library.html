@@ -213,7 +213,7 @@ async function refresh() {
     if (feature === 'spaces') return renderSpaces();
     root.innerHTML = `${head('Library')}<div class="lib-card">This Library screen is unavailable.</div>`;
 }
-document.getElementById('topBack').onclick = () => { if (history.length > 1 && document.referrer && new URL(document.referrer).origin === location.origin) history.back(); else location.href = 'home.html'; };
+document.getElementById('topBack').onclick = () => { location.href = 'home.html'; };
 document.getElementById('notificationsButton').onclick = async () => {
     try {
         const items = await call('/api/notifications/my-notifications');

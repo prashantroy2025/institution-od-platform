@@ -50,7 +50,6 @@ async function load() {
 }
 
 $('retryLoad').addEventListener('click', load);
-$('backLink').addEventListener('click', event => { event.preventDefault(); ERP.goBack('profile-details.html?section=achievements'); });
 
 ERP.bottomNav('profile');
 load();

@@ -47,7 +47,10 @@ test('community and messaging services enforce official, academic-peer, and memb
     assert.match(messages, /is_member/);
     assert.doesNotMatch(messages, /\) `?member`?[,\s]/);
     const ui = fs.readFileSync(path.join(ROOT, 'public/messages.html'), 'utf8');
-    assert.match(ui, /c\.is_member/);
+    // Conversations in the inbox are server-scoped to the authenticated member
+    // (WHERE cm.user_id=?), so they never need a per-row is_member flag; group
+    // membership is surfaced as g.is_member and consumed by the "join groups" UI.
+    assert.match(messages, /WHERE cm\.user_id=\?/);
     assert.match(ui, /g\.is_member/);
 });
 

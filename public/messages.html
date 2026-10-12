@@ -11,7 +11,7 @@
 <body>
 <div class="app">
   <header class="topbar">
-    <button class="icon-btn" id="topBack" type="button" aria-label="Back to dashboard">
+    <button class="icon-btn" id="topBack" type="button" aria-label="Back to home">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
     </button>
     <div class="brand">
@@ -71,7 +71,7 @@
   </main>
 
   <nav class="bottom-nav" aria-label="Primary">
-    <button class="nav-item" type="button" data-nav="dashboard.html">
+    <button class="nav-item" type="button" data-nav="home">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
       <span>Home</span>
     </button>
@@ -113,6 +113,7 @@ const token=sessionStorage.getItem('token')||localStorage.getItem('token');
 if(!token)location.href='login.html';
 const auth={Authorization:'Bearer '+token};
 const $=id=>document.getElementById(id);
+const HOME=(sessionStorage.getItem('role')||localStorage.getItem('role'))==='student'?'home.html':'dashboard.html';
 const ROLE_LABELS={student:'Student',organizer:'Organizer',hod:'HOD',super_admin:'Admin'};
 const GROUP_TYPES_BY_TAB={groups:['academic','official'],clubs:['community']};
 const PALETTE=['#e11d48','#7c3aed','#059669','#ea580c','#0ea5e9','#db2777','#4f46e5','#16a34a'];
@@ -386,10 +387,10 @@ $('dialogBody').addEventListener('click',async e=>{
   }
 });
 
-$('topBack').addEventListener('click',()=>location.href='dashboard.html');
-$('sheetBack').addEventListener('click',()=>location.href='dashboard.html');
+$('topBack').addEventListener('click',()=>location.href=HOME);
+$('sheetBack').addEventListener('click',()=>location.href=HOME);
 $('topAvatar').addEventListener('click',()=>location.href='profile.html');
-document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>{location.href=b.dataset.nav}));
+document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>{location.href=b.dataset.nav==='home'?HOME:b.dataset.nav}));
 
 function connectRealtime(){
   if(typeof io!=='function')return;

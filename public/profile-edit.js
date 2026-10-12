@@ -96,7 +96,7 @@ async function saveChanges(event) {
     }
 }
 
-const leave = () => ERP.goBack('profile.html');
+const leave = () => { location.href = 'profile.html'; };
 
 function requestLeave(event) {
     if (event) event.preventDefault();

@@ -174,7 +174,6 @@ $('photoForm').addEventListener('submit', async event => {
 
 $('cancelUpload').addEventListener('click', () => { if (activeUpload) activeUpload.abort(); });
 $('retryLoad').addEventListener('click', load);
-$('backLink').addEventListener('click', event => { event.preventDefault(); ERP.goBack('profile.html'); });
 window.addEventListener('beforeunload', event => {
     if (activeUpload) { event.preventDefault(); event.returnValue = ''; }
 });

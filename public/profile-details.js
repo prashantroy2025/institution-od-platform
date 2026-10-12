@@ -411,6 +411,5 @@ const renderers = { personal: renderPersonal, achievements: renderAchievements, 
 
 $('pageTitle').textContent = TITLES[section];
 document.title = `${TITLES[section]} · College ERP`;
-$('backLink').onclick = event => { event.preventDefault(); ERP.goBack('profile.html'); };
 ERP.bottomNav('profile');
 renderers[section]();

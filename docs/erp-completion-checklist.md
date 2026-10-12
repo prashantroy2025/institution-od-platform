@@ -22,9 +22,9 @@ Audit date: 2026-10-09
 | Library | PARTIAL | Catalog/search, copies, issue/return, configurable baseline fine calculation, reservations, private digital download, audit, RBAC, and tests implemented. Added responsive `public/library.html` for catalog, student loans, reservations, and private downloads. Renewals/waitlists, admin UI, fine policy configuration, and richer reports remain. |
 | Shared ERP UI shell | PARTIAL | Existing login/dashboard shell preserved and extended with responsive `profile.html`, `attendance.html`, `messages.html`, and campus-feed-enabled `dashboard.html`. Mobile bottom navigation uses Home, Messages, Attendance, Profile. Browser automation is not configured in this repository. |
 | Student Profile | PARTIAL | Added `/api/profile` read/update, private document upload/download, emergency-contact/privacy updates, and `public/profile.html`. Academic fields remain read-only where no secure edit policy/endpoint exists. Sensitive identity documents are not collected. |
-| Student Attendance | PARTIAL | Dedicated dashboard `public/attendance.html` with semester selector, eligibility from `attendance_settings.shortage_threshold`, and eight shortcuts opening `public/attendance-view.html`. Attendance records, subject-wise, monthly, analytics, history, and today's classes use `/api/attendance/*` and class-attendance tables. Leave requests use migration `016_attendance_leave.sql`. Compensatory classes and HOD leave-decision UI remain unbuilt. See "Attendance module continuation" below. |
+| Student Attendance | PARTIAL (code COMPLETE; demo data seeded) | Dedicated dashboard `public/attendance.html` + 8 shortcut views in `public/attendance-view.html` (mark, history, subjects, monthly, leave, od, analytics, compensatory), all wired to `/api/attendance/*`, `/api/timetable`, `/api/student/my-od`. Migration `016_attendance_leave.sql` applied. **Demo data (2026-10-13):** added guarded seeder `scripts/seedAttendanceDemoData.js` (Milestone option c) that seeds a small, internally-consistent dataset for demo student id=22 (Tara Saxena) in her service-resolved current semester (Semester 1 / EE033 Control Systems): 2 timetable slots (Tue 11:00, Thu 14:00) + 4 class sessions/records in Sep 2026 (2 Present, 1 Late, 1 Absent → 75%). Verified via authenticated APIs (19/19 checks): analytics total=4/attended=3/75%/eligible, records=4 (all EE033), timetable shows EE033 sem1, Leave & OD unaffected, cross-student isolation holds (other student sees 0). Idempotent via `erp_college_demo_registry` (entity_type attendance_timetable/attendance_session); transactional; only INSERT-if-missing; targets `institution_od_demo` only. Compensatory Classes has no policy/schema (documented blocker, not a defect). HOD leave-decision **API** exists; no dedicated HOD UI screen. See "Attendance module continuation" below. |
 | Home / Campus Feed | PARTIAL | Added additive persistent feed/follow/like/save/comment/report/block tables and `/api/community`; `public/dashboard.html` includes College Updates, Following, Classmates, official-post labels, text/media posting, pagination contract, and honest unavailable states. Search, full moderation UI, sharing, and People You May Know UI remain. |
-| Messages / Academic Groups | PARTIAL | Added persistent groups, direct conversations, membership, message history, unread/read state, replies, reactions, pins, attachments, authorization, and authenticated Socket.IO delivery hooks under `/api/messages`; `public/messages.html` supports conversations, eligible groups, join/open flow, messages, and attachments. Browser realtime/reconnect behavior remains manually unverified. |
+| Messages / Academic Groups | PARTIAL (code COMPLETE; inbox empty by data) | Added persistent groups, direct conversations, membership, message history, unread/read state, replies, reactions, pins, attachments, authorization, and authenticated Socket.IO delivery hooks under `/api/messages`; `public/messages.html` supports conversations, eligible groups, join/open flow, messages, and attachments. **Contract verified (2026-10-13):** the failing `profileFeedMessages` `c.is_member` assertion was an outdated expectation — conversation membership is enforced by server-side scoping (`WHERE cm.user_id=?` in `INBOX_SELECT`), not a per-row flag; verified live that a student gets 403 "Conversation access denied" for a conversation they don't belong to, 200 for their own, and the inbox never leaks other members' conversations. The groups `g.is_member` flag (join eligibility) is genuinely used and preserved. Migration 018 applied in `institution_od_demo`. Browser realtime/reconnect behavior remains manually unverified. |
 | Demo people import | PARTIAL | Added `data/demo/college_erp_demo_people_100.csv` and guarded `scripts/seedDemoPeople.js`; development/test-only, transactional, idempotent conflict-skipping, bcrypt-hashed random passwords, academic-ID resolution, registry cleanup. It does not seed attendance, marks, payments, documents, or announcements. |
 | Admissions & Enrollment | NOT IMPLEMENTED | No admissions/application/document-vault workflow found. |
 | Academic administration extensions | PARTIAL | Core academic foundation exists; calendar/holidays/policies/faculty-assignment administration are not implemented. |
@@ -149,11 +149,19 @@ Audit date: 2026-10-12. Statuses reflect source inspection and automated tests. 
 - The failing test is `test/examinationIntegration.test.js`. Its create request returns 400 before any changed code runs. The diff leaves `create` and `normalize` untouched, so this predates this work and has not been diagnosed.
 - Not verified: browser behavior of all screens, live-database behavior of the changed list, registration and seat queries.
 
+### Examinations time-bomb test fixed (2026-10-13)
+
+- **Root cause (test defect, not production):** `test/examinationIntegration.test.js` hardcoded `registration_open_at='2027-01-01T08:00'`. The production `register()` rule (reject when `registration_open_at` is in the future → 400 "Registration has not opened yet") is correct; because the machine date (2026-10-13) precedes 2027-01-01, the student `register` returned 400 instead of the expected 201, failing the suite.
+- **Fix (test-only; production unchanged):** the exam fixture now computes `registration_open_at`/`registration_deadline`/`scheduled_start`/`scheduled_end` deterministically relative to `Date.now()` (opened 1 day ago, closes in 30 days) so the window is open regardless of the calendar date the suite runs on. Added explicit registration-window coverage: a not-yet-open exam (opens in 5 days) and a past-deadline exam (closed 1 day ago) must both be rejected with 400.
+- **Verified the test is meaningful:** temporarily disabling the "not yet open" production rule made the test fail (`201 !== 400`); restoring it made the test pass. Production `examinationService.js` is unchanged (no diff after restore).
+- **Frontend↔backend paths audited (match):** `examinations.js`/`examinations-view.html` call `/api/examinations`, `/api/examinations/:id/register`, `/api/examinations/:id/result`, `/api/examinations/:id/admit-card`, `/api/academic/student/calendar|syllabus`, `/api/auth/me`, `/api/notifications/unread-count` — all present in `routes/examinationRoutes.js` with `verifyToken` + `allowRoles`.
+- **Live student check (institution_od_demo, student id=22):** `GET /api/examinations` → 200 with 2 published exams, `my_registration_status` correctly scoped (Registered for EE034, null for EE033); student JWT on staff-only `/api/examinations/reports/summary` → 403.
+
 ### Examinations next steps
 
-- Diagnose the 400 from the integration test's create call, then rerun the suite.
-- Browser-check the dashboard and all 12 screens at 390px and desktop width.
+- Browser-check the dashboard and all 12 screens at 390px and desktop width (browser environment not available in this workspace).
 - Decide on the storage design for question papers, revaluation, internal marks and guidelines, and on a PDF generator for admit cards.
+- Remaining suite failure is unrelated to Examinations: `test/profileFeedMessages.test.js` (Messages frontend expects `c.is_member`; `public/messages.html` only contains `g.is_member`).
 
 ### Messages frontend status
 
@@ -163,3 +171,49 @@ Audit date: 2026-10-12. Statuses reflect source inspection and automated tests. 
 - Database-dependent, deferred: migration `db/migrations/018_message_preferences.sql` is not applied. Until it is, the conversations list and the mute, pin, and archive updates fail, and the inbox shows its inline error with Retry. Apply it through `scripts/runMigrations.js` only after confirming the runner does not replay earlier migrations unsafely.
 - Unverified backend workflows against live MySQL: conversation details and participants, preference updates, authorized message search, recipient search, unread count, and per-user Socket.IO room delivery (`user:<id>` joined in `server.js`).
 - Not implemented: presence (online indicators) has no data source in the app; avatars use initials.
+
+### Attendance data relationship (2026-10-13)
+
+- Verified live against `institution_od_demo` with the existing seeded student (`users.id=22`, Tara Saxena, dept 13 / EE, batch 1, section 1). No new users or seed rows were created for this check; the one TEMP-VERIFY leave row created during the workflow test was deleted afterward.
+- Endpoint results (all HTTP 200, student-scoped from the bearer token):
+  - `/api/attendance/semesters` → 8 semesters, `current_semester_id` resolved by session date range.
+  - `/api/attendance/analytics` → `overall.total=0`, `eligibility.status='no_records'`, `subjects=[]`.
+  - `/api/attendance/records` → `items=0`, `pagination.total=0`.
+  - `/api/attendance/leave` → `items=0` (before the workflow test).
+  - `/api/student/my-od` → `items=0`.
+  - `/api/timetable` → `items=1`.
+- **Root cause of the reported "historical vs current semester" mismatch (this is correct-by-design, not a bug):**
+  - Analytics/records join `class_attendance_records → class_attendance_sessions → timetable_entries → subjects` and filter by `timetable_entries.semester_id`. Attendance therefore belongs to the semester of the **timetable entry**, i.e. the semester in which the class was actually taught.
+  - The CSV importer's `importAttendance()` (scripts/importCollegeDemoData.js:342) requires `subject.semester === person.semester` (the student's single current-semester value in `students_1000.csv`). Demo student STU0001 is recorded in semester 2, but their attendance rows reference SUB031/SUB032 which are semesters 7/8. The guard rejects these as "student, subject, and source semester do not exactly match" → 0 of 12,000 rows imported.
+  - This intentionally prevents fabricating attendance or forcing multi-semester history into the current semester. Consistent with the milestone rule "Do not fabricate attendance."
+- **State:** `class_attendance_sessions=0`, `class_attendance_records=0`, `timetable_entries=1`. Data-driven views render honest empty states; the service math (attended = Present+Late+Excused, threshold 75, classes-needed) is covered by `test/attendanceStudent.test.js` (mocked fixtures).
+
+### Attendance verification test results (2026-10-13)
+
+- `test/attendanceStudent.test.js` + `test/classAttendanceIntegration.test.js` + `test/facultyAttendanceIntegration.test.js`: **12 pass / 0 fail**.
+- Full suite: **89 tests · 86 pass · 2 fail · 1 skip** — unchanged from baseline. The 2 failures are pre-existing and unrelated to Attendance: `examinationIntegration.test.js` (test hardcodes `registration_open_at=2027-01-01`, a time-bomb vs. today) and `profileFeedMessages.test.js` (Messages frontend `c.is_member` contract drift).
+- Leave workflow verified end-to-end against the real server: student POST `/api/attendance/leave` → 201; student list self-scoped (sees own); HOD (id=1069, dept 13) list sees it; HOD `POST /leave/:id/decision` (Approved) → 200 and persists (student list reflects status + decision_note). TEMP-VERIFY row removed after.
+
+### Attendance next steps (blockers / decisions, no code changed)
+
+- **To make the data-driven views non-empty, choose ONE (not done here — needs a policy decision):**
+  1. Extend the importer to import attendance into the semester of its referenced subject (per-row semester), OR
+  2. Generate a full `timetable_entries` grid for each batch/section and seed matching `class_attendance_sessions`/`records` for the students' current semester via a guarded seed script (mirrors `seedAcademicDemoData.js`), OR
+  3. Add a documented demo-only seeder for class attendance scoped to the student's current semester.
+- Compensatory Classes: no schema/policy exists; the UI already shows an honest "not available" state. Blocked pending a compensatory-class policy decision — not a defect.
+- HOD leave-decision UI: the API (`POST /api/attendance/leave/:id/decision`, `GET /api/attendance/leave` for HOD) exists and is tested; a dedicated HOD screen is still unbuilt.
+- Browser verification of `attendance.html` and all 8 views at mobile/desktop widths: **not performed** (no browser/Puppeteer configured in this environment).
+
+
+### Messages contract verification (2026-10-13)
+
+- **Confirmed root cause:** the failing `profileFeedMessages` assertion `assert.match(ui, /c\.is_member/)` was an outdated expectation, not a product defect.
+  - The **conversations/inbox** API (`services/messageService.js` `INBOX_SELECT`) is scoped server-side to the member (`FROM erp_message_conversation_members cm ... WHERE cm.user_id=?`). It never returns an `is_member` field — every row is, by definition, a conversation the caller belongs to, so such a flag would always be `1` (redundant).
+  - The frontend `conversationRow()` never reads a conversation-level `is_member` (it uses `is_muted`, `is_pinned`, `unread_count`, peer/group names).
+  - The **groups** API (`listGroups`) genuinely returns `is_member` (`g.is_member`), consumed by `joinableGroups()` to filter groups the user hasn't joined. Both `g.is_member` references are preserved and untouched.
+- **Fix (test-only; no product change):** replaced the incorrect `c.is_member` UI assertion with `assert.match(messages, /WHERE cm\.user_id=\?/)`, which verifies the real conversation-membership mechanism (server-side scoping). The intent (membership boundaries enforced) is preserved and arguably strengthened.
+- **Verified the test is meaningful:** temporarily removing the `WHERE cm.user_id=?` scoping made the suite fail; restoring it made it pass. `services/messageService.js` confirmed unchanged afterward (no net diff).
+- **Live authorization checks (institution_od_demo, read-mostly, temp conversation cleaned up):** Tara (id=22) → `GET /api/messages/conversations/<other>` = **403 "Conversation access denied"**; Tara → `GET .../messages` of another conversation = **403**; member (id=1069) → **200**; Tara's inbox = 200 and never includes the other conversation. Migration 018 columns (`is_muted`, `is_pinned`, `is_archived`) are present.
+- **Tests:** focused `profileFeedMessages.test.js` **5 pass / 0 fail**; full regression suite **89 tests · 88 pass · 0 fail · 1 skip** (baseline was 87/1/1). The single skip is the guarded live-integration suite.
+- **Remaining Messages limitations:** no conversations or groups seeded in the demo DB (inbox/groups naturally empty); Socket.IO realtime/reconnect and browser rendering at mobile/desktop widths were NOT verified (no browser configured in this environment); presence (online indicators) has no data source by design.
+

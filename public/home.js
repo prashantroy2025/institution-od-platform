@@ -645,7 +645,7 @@
         const items = [
             ['🏠', 'Home', 'home.html'],
             ['📅', 'Attendance', 'attendance.html'],
-            ['📚', 'Academic', 'learning.html'],
+            ['📚', 'Academic', 'academic.html'],
             ['📝', 'Examinations', 'examinations.html'],
             ['📋', 'Assignments', 'learning.html?view=assignments'],
             ['📖', 'Library', 'library.html'],

@@ -38,7 +38,6 @@ $('qr').addEventListener('error', () => {
     $('qrError').hidden = false;
 });
 $('retryLoad').addEventListener('click', load);
-$('backLink').addEventListener('click', event => { event.preventDefault(); ERP.goBack('profile.html'); });
 
 ERP.bottomNav('profile');
 load();

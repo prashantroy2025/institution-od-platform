@@ -40,11 +40,7 @@ const ERP = (() => {
     const signOut = () => { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); location.replace('login.html'); };
     const redirectToLogin = () => { location.replace('login.html'); };
     function expireSession() { sessionStorage.removeItem(TOKEN_KEY); localStorage.removeItem(TOKEN_KEY); location.replace('login.html'); }
-    const goBack = fallback => {
-        const sameOrigin = document.referrer && new URL(document.referrer).origin === location.origin;
-        if (sameOrigin && history.length > 1) history.back();
-        else location.href = fallback;
-    };
+    const homeUrl = () => ((sessionStorage.getItem('role') || localStorage.getItem('role')) === 'student' ? 'home.html' : 'dashboard.html');
 
     /* Page-level status region: announced to assistive tech via aria-live. */
     const status = (message, variant = 'info') => {
@@ -62,20 +58,28 @@ const ERP = (() => {
     const bottomNav = (active) => {
         const nav = document.querySelector('.bottom-nav');
         if (!nav) return;
-        const targets = { home: 'dashboard.html', messages: 'messages.html', attendance: 'attendance.html', profile: 'profile.html' };
+        const targets = { home: homeUrl(), messages: 'messages.html', attendance: 'attendance.html', profile: 'profile.html' };
         const entries = [['home', '⌂', 'Home'], ['messages', '✉', 'Messages'], ['attendance', '▦', 'Attendance'], ['profile', '♙', 'Profile']];
         nav.innerHTML = entries.map(([key, glyph, label]) =>
             `<button type="button" data-bottom="${key}" class="${key === active ? 'active' : ''}" aria-current="${key === active ? 'page' : 'false'}">${glyph}<span>${label}</span></button>`).join('');
         nav.addEventListener('click', event => { const button = event.target.closest('[data-bottom]'); if (button) location.href = targets[button.dataset.bottom]; });
     };
 
-    const backLink = () => { document.querySelectorAll('[data-back]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); location.href = 'dashboard.html'; })); };
+    const backLink = () => { document.querySelectorAll('[data-back]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); location.href = homeUrl(); })); };
 
-    return { el, call, blob, authHeaders, apiBase, token, remember, roleName, roleLabels, escapeHtml, signOut, redirectToLogin, status, setMessage, flash, bottomNav, backLink, goBack };
+    const bindHomeLinks = () => {
+        document.querySelectorAll('[data-home]').forEach(node => {
+            if (node.tagName === 'A') node.href = homeUrl();
+            else node.addEventListener('click', () => { location.href = homeUrl(); });
+        });
+    };
+
+    return { el, call, blob, authHeaders, apiBase, token, remember, roleName, roleLabels, escapeHtml, signOut, redirectToLogin, status, setMessage, flash, bottomNav, backLink, bindHomeLinks };
 })();
 
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-signout]').forEach(button => button.addEventListener('click', event => { event.preventDefault(); ERP.signOut(); }));
     ERP.backLink();
+    ERP.bindHomeLinks();
     ERP.flash();
 });
